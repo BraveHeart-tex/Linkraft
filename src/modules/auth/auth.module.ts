@@ -6,11 +6,18 @@ import { SessionService } from './session.service';
 import { SessionRepository } from './session.repository';
 import { DatabaseModule } from '../database/database.module';
 import { UserModule } from '../user/user.module';
+import { CookieService } from './cookie.service';
 
 @Module({
   imports: [DatabaseModule, UserModule],
   controllers: [AuthController],
-  providers: [AuthService, AuthRepository, SessionService, SessionRepository],
+  providers: [
+    AuthService,
+    AuthRepository,
+    SessionService,
+    SessionRepository,
+    CookieService,
+  ],
   exports: [AuthService, SessionService],
 })
 export class AuthModule {}

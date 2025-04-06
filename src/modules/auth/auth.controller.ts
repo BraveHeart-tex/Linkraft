@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { zodPipe } from 'src/pipes/zod.pipe.factory';
 import {
@@ -9,14 +9,18 @@ import {
   SignInDto,
   SignInSchema,
 } from 'src/common/validation/schemas/sign-in.schema';
+import { Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('sign-up')
-  signUp(@Body(zodPipe(SignUpSchema)) signUpDto: SignUpDto) {
-    return this.authService.signUp(signUpDto);
+  signUp(
+    @Body(zodPipe(SignUpSchema)) signUpDto: SignUpDto,
+    @Res() response: Response
+  ) {
+    return this.authService.signUp(response, signUpDto);
   }
 
   @Post('sign-in')

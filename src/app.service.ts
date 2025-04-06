@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { Database, DRIZZLE_CONNECTION } from './drizzle/drizzle.module';
-import { users } from './schema';
+import { Database, DRIZZLE_CONNECTION } from './modules/drizzle.module';
+import { users } from './db/schema';
 
 @Injectable()
 export class AppService {

@@ -1,17 +1,18 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
-import { Database, DRIZZLE_CONNECTION } from '../drizzle.module';
-import { sessions, users } from 'src/db/schema';
+import { SessionInsertDto, sessions, users } from 'src/db/schema';
+import { DbTransactionAdapter } from '../database/database.types';
+import { TransactionHost } from '@nestjs-cls/transactional';
 
 @Injectable()
 export class SessionRepository {
-  constructor(@Inject(DRIZZLE_CONNECTION) private db: Database) {}
-  insertSession(session: { id: string; userId: number; expiresAt: Date }) {
-    return this.db.insert(sessions).values(session);
+  constructor(private readonly txHost: TransactionHost<DbTransactionAdapter>) {}
+  insertSession(session: SessionInsertDto) {
+    return this.txHost.tx.insert(sessions).values(session);
   }
 
   async getSessionWithUser(sessionId: string) {
-    const [row] = await this.db
+    const [row] = await this.txHost.tx
       .select({
         session: sessions,
         user: users,
@@ -24,15 +25,15 @@ export class SessionRepository {
   }
 
   deleteSession(sessionId: string) {
-    return this.db.delete(sessions).where(eq(sessions.id, sessionId));
+    return this.txHost.tx.delete(sessions).where(eq(sessions.id, sessionId));
   }
 
   deleteAllSessionsForUser(userId: number) {
-    return this.db.delete(sessions).where(eq(sessions.userId, userId));
+    return this.txHost.tx.delete(sessions).where(eq(sessions.userId, userId));
   }
 
   updateSessionExpiry(sessionId: string, newExpiry: Date) {
-    return this.db
+    return this.txHost.tx
       .update(sessions)
       .set({ expiresAt: newExpiry })
       .where(eq(sessions.id, sessionId));

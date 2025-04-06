@@ -4,10 +4,11 @@ import { AuthService } from './auth.service';
 import { AuthRepository } from './auth.repository';
 import { SessionService } from './session.service';
 import { SessionRepository } from './session.repository';
-import { DrizzleModule } from '../drizzle.module';
+import { DatabaseModule } from '../database/database.module';
+import { UserModule } from '../user/user.module';
 
 @Module({
-  imports: [DrizzleModule],
+  imports: [DatabaseModule, UserModule],
   controllers: [AuthController],
   providers: [AuthService, AuthRepository, SessionService, SessionRepository],
   exports: [AuthService, SessionService],

@@ -100,3 +100,6 @@ export const accessControls = pgTable('access_controls', {
 
 export type User = typeof users.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
+export type SessionInsertDto = typeof sessions.$inferInsert;
+
+export type UserInsertDto = typeof users.$inferInsert;

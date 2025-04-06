@@ -8,6 +8,13 @@
       "when": 1743940121466,
       "tag": "0000_numerous_shadowcat",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1743956729785,
+      "tag": "0001_groovy_talon",
+      "breakpoints": true
     }
   ]
 }

@@ -5,6 +5,7 @@ import { SessionService } from './session.service';
 import { generateSessionToken } from './utils/token.utils';
 import { UserService } from '../user/user.service';
 import { hashPassword } from './utils/password.utils';
+import { Transactional } from '@nestjs-cls/transactional';
 
 @Injectable()
 export class AuthService {
@@ -12,6 +13,8 @@ export class AuthService {
     private sessionService: SessionService,
     private userService: UserService
   ) {}
+
+  @Transactional()
   async signUp(signUpDto: SignUpDto) {
     const passwordHash = await hashPassword(signUpDto.password);
     const createdUser = await this.userService.createUser({

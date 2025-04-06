@@ -20,6 +20,17 @@ export const users = pgTable('users', {
   profilePicture: varchar('profile_picture', { length: 255 }),
 });
 
+export const sessions = pgTable('sessions', {
+  id: text('id').primaryKey(),
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.id),
+  expiresAt: timestamp('expires_at', {
+    withTimezone: true,
+    mode: 'date',
+  }).notNull(),
+});
+
 export const bookmarks = pgTable(
   'bookmarks',
   {
@@ -86,3 +97,6 @@ export const accessControls = pgTable('access_controls', {
   permissionType: varchar('permission_type', { length: 50 }).notNull(),
   createdAt: timestamp('created_at').defaultNow(),
 });
+
+export type User = typeof users.$inferSelect;
+export type Session = typeof sessions.$inferSelect;

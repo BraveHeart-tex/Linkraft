@@ -30,11 +30,24 @@ export class AuthService {
     });
 
     const token = generateSessionToken();
-    await this.sessionService.createSession(token, createdUser.id);
+    const session = await this.sessionService.createSession(
+      token,
+      createdUser.id
+    );
     const expirationDate = new Date();
     expirationDate.setTime(expirationDate.getTime() + SESSION_COOKIE_MAX_AGE);
     this.setSessionCookie(res, token, expirationDate);
+    return {
+      user: createdUser,
+      session,
+    };
   }
+
+  signIn(signInDto: SignInDto) {
+    return signInDto;
+  }
+
+  signOut() {}
 
   setSessionCookie(res: Response, token: string, expiresAt: Date) {
     this.cookieService.setCookie(res, SESSION_TOKEN_COOKIE_NAME, token, {
@@ -49,10 +62,4 @@ export class AuthService {
   deleteSessionCookie(res: Response) {
     this.cookieService.clearCookie(res, SESSION_TOKEN_COOKIE_NAME);
   }
-
-  signIn(signInDto: SignInDto) {
-    return signInDto;
-  }
-
-  signOut() {}
 }

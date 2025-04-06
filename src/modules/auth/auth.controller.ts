@@ -10,17 +10,19 @@ import {
   SignInSchema,
 } from 'src/common/validation/schemas/sign-in.schema';
 import { Response } from 'express';
+import { ResponseMessage } from 'src/common/response-message.decorator';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('sign-up')
-  signUp(
+  @ResponseMessage('Signed up successfully')
+  async signUp(
     @Body(zodPipe(SignUpSchema)) signUpDto: SignUpDto,
     @Res() response: Response
   ) {
-    return this.authService.signUp(response, signUpDto);
+    return await this.authService.signUp(response, signUpDto);
   }
 
   @Post('sign-in')

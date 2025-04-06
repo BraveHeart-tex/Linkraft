@@ -1,9 +1,11 @@
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ZodExceptionFilter } from './filters/zod-exception.filter';
 import { AuthExceptionFilter } from './filters/auth-exception.filter';
 import * as cookieParser from 'cookie-parser';
-import { doubleCsrf } from 'csrf-csrf';
+
+import { ResponseInterceptor } from './common/interceptors/response.interceptor';
+import { GlobalExceptionFilter } from './filters/global-exception.filter';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare const module: any;
@@ -13,22 +15,14 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
-  const { doubleCsrfProtection } = doubleCsrf({
-    getSecret: () => process.env.CSRF_SECRET,
-    cookieName: '__Host-psifi.x-csrf-token',
-    cookieOptions: {
-      httpOnly: true,
-      sameSite: 'lax',
-      path: '/',
-      secure: process.env.NODE_ENV === 'production',
-    },
-    getTokenFromRequest: (req) => req.headers['x-csrf-token'],
-  });
-
-  app.use(doubleCsrfProtection);
+  app.useGlobalInterceptors(new ResponseInterceptor(app.get(Reflector)));
 
   app.setGlobalPrefix('/api');
-  app.useGlobalFilters(new ZodExceptionFilter(), new AuthExceptionFilter());
+  app.useGlobalFilters(
+    new ZodExceptionFilter(),
+    new AuthExceptionFilter(),
+    new GlobalExceptionFilter()
+  );
 
   await app.listen(process.env.PORT ?? 3000);
 

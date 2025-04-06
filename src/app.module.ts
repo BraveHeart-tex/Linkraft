@@ -9,6 +9,7 @@ import { ClsModule } from 'nestjs-cls';
 import { ClsPluginTransactional } from '@nestjs-cls/transactional';
 import { TransactionalAdapterDrizzleOrm } from '@nestjs-cls/transactional-adapter-drizzle-orm';
 import { ExtendCookieMiddleware } from './common/middleware/extend-cookie.middleware';
+import { ValidateOriginMiddleware } from './common/middleware/validate-origin.middleware';
 
 @Module({
   imports: [
@@ -32,6 +33,8 @@ import { ExtendCookieMiddleware } from './common/middleware/extend-cookie.middle
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(ExtendCookieMiddleware).forRoutes('*');
+    consumer
+      .apply(ExtendCookieMiddleware, ValidateOriginMiddleware)
+      .forRoutes('*');
   }
 }

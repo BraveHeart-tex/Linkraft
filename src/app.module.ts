@@ -9,7 +9,6 @@ import { ClsModule } from 'nestjs-cls';
 import { ClsPluginTransactional } from '@nestjs-cls/transactional';
 import { TransactionalAdapterDrizzleOrm } from '@nestjs-cls/transactional-adapter-drizzle-orm';
 import { ExtendCookieMiddleware } from './common/middleware/extend-cookie.middleware';
-import { ValidateOriginMiddleware } from './common/middleware/validate-origin.middleware';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { CurrentUserInterceptor } from './common/interceptors/current-user.interceptor';
 
@@ -41,8 +40,6 @@ import { CurrentUserInterceptor } from './common/interceptors/current-user.inter
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(ExtendCookieMiddleware, ValidateOriginMiddleware)
-      .forRoutes('*');
+    consumer.apply(ExtendCookieMiddleware).forRoutes('*');
   }
 }

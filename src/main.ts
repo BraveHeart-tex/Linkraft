@@ -14,6 +14,12 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.use(cookieParser());
+  app.enableCors({
+    origin: [process.env.FRONT_END_URL],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    credentials: true,
+  });
 
   app.useGlobalInterceptors(new ResponseInterceptor(app.get(Reflector)));
 

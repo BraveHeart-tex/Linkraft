@@ -122,7 +122,10 @@ export class AuthService {
     };
   }
 
-  signOut() {}
+  async signOut(res: Response, sessionId: string) {
+    await this.sessionService.invalidateSession(sessionId);
+    this.deleteSessionCookie(res);
+  }
 
   setSessionCookie(res: Response, token: string, expiresAt: Date) {
     this.cookieService.setCookie(res, SESSION_TOKEN_COOKIE_NAME, token, {

@@ -14,6 +14,7 @@ import { ResponseMessage } from 'src/common/decorators/response-message.decorato
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { SessionValidationResult } from './session.types';
 import { ApiException } from 'src/exceptions/api.exception';
+import { ResponseStatus } from 'src/common/decorators/response-status.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -61,5 +62,28 @@ export class AuthController {
     }
 
     return this.authService.signIn(response, signInDto);
+  }
+
+  @Post('sign-out')
+  @ResponseMessage('Signed out successfully')
+  @ResponseStatus(HttpStatus.OK)
+  signOut(
+    @Res({
+      passthrough: true,
+    })
+    response: Response,
+    @CurrentUser() userSessionInfo: SessionValidationResult
+  ) {
+    // TODO: Add a guard for this
+    if (!userSessionInfo.user || !userSessionInfo.session) {
+      throw new ApiException(
+        'UNAUTHORIZED',
+        'You must be signed in to perform this action',
+        HttpStatus.UNAUTHORIZED,
+        null
+      );
+    }
+
+    return this.authService.signOut(response, userSessionInfo.session.id);
   }
 }

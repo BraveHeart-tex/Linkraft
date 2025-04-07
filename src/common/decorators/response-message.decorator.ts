@@ -1,4 +1,5 @@
 import { SetMetadata } from '@nestjs/common';
+import { RESPONSE_MESSAGE_METADATA_KEY } from './decorator-constants';
 
 export const ResponseMessage = (message: string) =>
-  SetMetadata('response_message', message);
+  SetMetadata(RESPONSE_MESSAGE_METADATA_KEY, message);

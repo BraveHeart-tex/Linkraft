@@ -10,6 +10,8 @@ import { ClsPluginTransactional } from '@nestjs-cls/transactional';
 import { TransactionalAdapterDrizzleOrm } from '@nestjs-cls/transactional-adapter-drizzle-orm';
 import { ExtendCookieMiddleware } from './common/middleware/extend-cookie.middleware';
 import { ValidateOriginMiddleware } from './common/middleware/validate-origin.middleware';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { CurrentUserInterceptor } from './common/interceptors/current-user.interceptor';
 
 @Module({
   imports: [
@@ -29,6 +31,12 @@ import { ValidateOriginMiddleware } from './common/middleware/validate-origin.mi
     }),
     DatabaseModule,
     AuthModule,
+  ],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: CurrentUserInterceptor,
+    },
   ],
 })
 export class AppModule implements NestModule {

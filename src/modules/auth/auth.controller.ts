@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Res } from '@nestjs/common';
+import { Body, Controller, HttpStatus, Post, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { zodPipe } from 'src/pipes/zod.pipe.factory';
 import {
@@ -10,7 +10,10 @@ import {
   SignInSchema,
 } from 'src/common/validation/schemas/sign-in.schema';
 import { Response } from 'express';
-import { ResponseMessage } from 'src/common/response-message.decorator';
+import { ResponseMessage } from 'src/common/decorators/response-message.decorator';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { SessionValidationResult } from './session.types';
+import { ApiException } from 'src/exceptions/api.exception';
 
 @Controller('auth')
 export class AuthController {
@@ -23,8 +26,18 @@ export class AuthController {
     @Res({
       passthrough: true,
     })
-    response: Response
+    response: Response,
+    @CurrentUser() userSessionInfo: SessionValidationResult
   ) {
+    if (userSessionInfo.user || userSessionInfo.session) {
+      throw new ApiException(
+        'BAD_REQUEST',
+        'You cannot sign-up when you are signed in',
+        HttpStatus.BAD_REQUEST,
+        null
+      );
+    }
+
     return this.authService.signUp(response, signUpDto);
   }
 
@@ -35,8 +48,18 @@ export class AuthController {
     @Res({
       passthrough: true,
     })
-    response: Response
+    response: Response,
+    @CurrentUser() userSessionInfo: SessionValidationResult
   ) {
+    if (userSessionInfo.user || userSessionInfo.session) {
+      throw new ApiException(
+        'BAD_REQUEST',
+        'You are already signed in',
+        HttpStatus.BAD_REQUEST,
+        null
+      );
+    }
+
     return this.authService.signIn(response, signInDto);
   }
 }

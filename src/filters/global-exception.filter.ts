@@ -20,23 +20,21 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     let details = null;
 
     if (exception instanceof ApiException) {
-      const response = exception.getResponse() as ResponseDTO<null>;
+      const apiResponse = exception.getResponse() as ResponseDTO<null>;
       message = exception.message;
-      code = response.error.code;
+      code = apiResponse.error.code;
       status = exception.getStatus();
-      details = response.error.details;
+      details = apiResponse.error.details;
     } else if (exception instanceof Error) {
       message = exception.message;
       code = exception.name;
     } else {
       message = 'Unknown exception';
-      code = 'UNKNOWN_ERROR';
     }
 
     const responseDTO = new ResponseDTO({
       success: false,
       message,
-      data: null,
       status,
       error: {
         code,

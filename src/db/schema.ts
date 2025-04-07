@@ -105,6 +105,7 @@ export const accessControls = pgTable('access_controls', {
 });
 
 export type User = typeof users.$inferSelect;
+export type UserWithoutPasswordHash = Omit<User, 'passwordHash'>;
 export type Session = typeof sessions.$inferSelect;
 export type SessionInsertDto = typeof sessions.$inferInsert;
 

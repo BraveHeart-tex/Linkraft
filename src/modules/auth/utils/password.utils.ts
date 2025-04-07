@@ -1,4 +1,4 @@
-import { hash } from '@node-rs/argon2';
+import { hash, verify } from '@node-rs/argon2';
 
 export const hashPassword = async (password: string): Promise<string> => {
   return await hash(password, {
@@ -7,4 +7,11 @@ export const hashPassword = async (password: string): Promise<string> => {
     outputLen: 32,
     parallelism: 1,
   });
+};
+
+export const verifyPassword = async (
+  hashed: string,
+  password: string
+): Promise<boolean> => {
+  return await verify(hashed, password);
 };

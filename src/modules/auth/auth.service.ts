@@ -4,7 +4,7 @@ import { SignUpDto } from 'src/common/validation/schemas/sign-up.schema';
 import { SessionService } from './session.service';
 import { generateSessionToken } from './utils/token.utils';
 import { UserService } from '../user/user.service';
-import { hashPassword } from './utils/password.utils';
+import { hashPassword, verifyPassword } from './utils/password.utils';
 import { Transactional } from '@nestjs-cls/transactional';
 import { CookieService } from './cookie.service';
 import { Response } from 'express';
@@ -13,6 +13,7 @@ import {
   SESSION_TOKEN_COOKIE_NAME,
 } from './auth.constants';
 import { ApiException } from 'src/exceptions/api.exception';
+import { Session, UserWithoutPasswordHash } from 'src/db/schema';
 
 @Injectable()
 export class AuthService {
@@ -23,7 +24,13 @@ export class AuthService {
   ) {}
 
   @Transactional()
-  async signUp(res: Response, signUpDto: SignUpDto) {
+  async signUp(
+    res: Response,
+    signUpDto: SignUpDto
+  ): Promise<{
+    user: UserWithoutPasswordHash;
+    session: Session;
+  }> {
     const existingUser = await this.userService.findUserByEmail(
       signUpDto.email
     );
@@ -51,13 +58,68 @@ export class AuthService {
     expirationDate.setTime(expirationDate.getTime() + SESSION_COOKIE_MAX_AGE);
     this.setSessionCookie(res, token, expirationDate);
     return {
-      user: createdUser,
+      user: {
+        email: createdUser.email,
+        id: createdUser.id,
+        createdAt: createdUser.createdAt,
+        isActive: createdUser.isActive,
+        profilePicture: createdUser.profilePicture,
+      },
       session,
     };
   }
 
-  signIn(signInDto: SignInDto) {
-    return signInDto;
+  async signIn(
+    res: Response,
+    signInDto: SignInDto
+  ): Promise<{
+    user: UserWithoutPasswordHash;
+    session: Session;
+  }> {
+    const existingUser = await this.userService.findUserByEmail(
+      signInDto.email
+    );
+
+    if (!existingUser) {
+      throw new ApiException(
+        'UNAUTHORIZED',
+        'Invalid email or password',
+        HttpStatus.UNAUTHORIZED
+      );
+    }
+
+    const isPasswordCorrect = await verifyPassword(
+      existingUser.passwordHash,
+      signInDto.password
+    );
+
+    if (!isPasswordCorrect) {
+      throw new ApiException(
+        'UNAUTHORIZED',
+        'Invalid email or password',
+        HttpStatus.UNAUTHORIZED
+      );
+    }
+
+    const token = generateSessionToken();
+    const session = await this.sessionService.createSession(
+      token,
+      existingUser.id
+    );
+    const expirationDate = new Date();
+    expirationDate.setTime(expirationDate.getTime() + SESSION_COOKIE_MAX_AGE);
+    this.setSessionCookie(res, token, expirationDate);
+
+    return {
+      user: {
+        id: existingUser.id,
+        email: existingUser.email,
+        createdAt: existingUser.createdAt,
+        isActive: existingUser.isActive,
+        profilePicture: existingUser.profilePicture,
+      },
+      session,
+    };
   }
 
   signOut() {}

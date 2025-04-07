@@ -29,7 +29,14 @@ export class AuthController {
   }
 
   @Post('sign-in')
-  signIn(@Body(zodPipe(SignInSchema)) signInDto: SignInDto) {
-    return this.authService.signIn(signInDto);
+  @ResponseMessage('Signed in successfully')
+  signIn(
+    @Body(zodPipe(SignInSchema)) signInDto: SignInDto,
+    @Res({
+      passthrough: true,
+    })
+    response: Response
+  ) {
+    return this.authService.signIn(response, signInDto);
   }
 }

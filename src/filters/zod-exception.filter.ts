@@ -5,6 +5,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Response } from 'express';
+import { ResponseDTO } from 'src/common/response.dto';
 import { ZodError } from 'zod';
 
 @Catch(ZodError)
@@ -19,14 +20,17 @@ export class ZodExceptionFilter implements ExceptionFilter {
       details[key] = issue.message;
     }
 
-    response.status(HttpStatus.BAD_REQUEST).json({
-      success: false,
-      data: null,
-      message: 'Validation failed',
-      error: {
-        code: 'VALIDATION_ERROR',
-        details,
-      },
-    });
+    response.status(HttpStatus.BAD_REQUEST).json(
+      new ResponseDTO({
+        success: false,
+        message: 'Validation failed',
+        status: HttpStatus.BAD_REQUEST,
+        data: null,
+        error: {
+          code: 'VALIDATION_ERROR',
+          details,
+        },
+      })
+    );
   }
 }

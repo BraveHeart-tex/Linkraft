@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { SignInDto } from 'src/common/validation/schemas/sign-in.schema';
 import { SignUpDto } from 'src/common/validation/schemas/sign-up.schema';
 import { SessionService } from './session.service';
@@ -12,6 +12,7 @@ import {
   SESSION_COOKIE_MAX_AGE,
   SESSION_TOKEN_COOKIE_NAME,
 } from './auth.constants';
+import { ApiException } from 'src/exceptions/api.exception';
 
 @Injectable()
 export class AuthService {
@@ -23,6 +24,18 @@ export class AuthService {
 
   @Transactional()
   async signUp(res: Response, signUpDto: SignUpDto) {
+    const existingUser = await this.userService.findUserByEmail(
+      signUpDto.email
+    );
+
+    if (existingUser) {
+      throw new ApiException(
+        'CONFLICT',
+        'Provided email is already in use',
+        HttpStatus.CONFLICT
+      );
+    }
+
     const passwordHash = await hashPassword(signUpDto.password);
     const createdUser = await this.userService.createUser({
       email: signUpDto.email,

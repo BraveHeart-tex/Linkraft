@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { UserInsertDto, users } from 'src/db/schema';
+import { lower, User, UserInsertDto, users } from 'src/db/schema';
 import { DbTransactionAdapter } from '../database/database.types';
 import { TransactionHost } from '@nestjs-cls/transactional';
+import { eq } from 'drizzle-orm';
 
 @Injectable()
 export class UserRepository {
   constructor(private txHost: TransactionHost<DbTransactionAdapter>) {}
-  async insertUser(userDto: UserInsertDto) {
+  async insertUser(userDto: UserInsertDto): Promise<User | null> {
     const created = await this.txHost.tx
       .insert(users)
       .values(userDto)
@@ -14,5 +15,11 @@ export class UserRepository {
       .execute();
 
     return created[0];
+  }
+
+  async findUserByEmail(email: string): Promise<User | null> {
+    return this.txHost.tx.query.users.findFirst({
+      where: eq(lower(users.email), email.toLowerCase()),
+    });
   }
 }

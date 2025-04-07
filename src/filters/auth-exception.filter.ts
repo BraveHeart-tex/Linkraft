@@ -7,6 +7,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Response } from 'express';
+import { ResponseDTO } from 'src/common/response.dto';
 
 @Catch(UnauthorizedException, ForbiddenException)
 export class AuthExceptionFilter implements ExceptionFilter {
@@ -22,13 +23,16 @@ export class AuthExceptionFilter implements ExceptionFilter {
         ? HttpStatus.FORBIDDEN
         : HttpStatus.UNAUTHORIZED;
 
-    response.status(status).json({
-      success: false,
-      data: null,
-      message: exception.message || 'Authentication required',
-      error: {
-        code: status === HttpStatus.FORBIDDEN ? 'FORBIDDEN' : 'AUTH_ERROR',
-      },
-    });
+    response.status(status).json(
+      new ResponseDTO({
+        success: false,
+        message: exception.message || 'Authentication required',
+        data: null,
+        status,
+        error: {
+          code: status === HttpStatus.FORBIDDEN ? 'FORBIDDEN' : 'AUTH_ERROR',
+        },
+      })
+    );
   }
 }

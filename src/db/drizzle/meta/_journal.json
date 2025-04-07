@@ -15,6 +15,13 @@
       "when": 1743956729785,
       "tag": "0001_groovy_talon",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1744006916796,
+      "tag": "0002_steady_silver_surfer",
+      "breakpoints": true
     }
   ]
 }

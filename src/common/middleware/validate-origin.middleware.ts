@@ -6,9 +6,15 @@ import { ResponseDTO } from '../response.dto';
 export class ValidateOriginMiddleware implements NestMiddleware {
   private sendOriginErrorResponse(res: Response, message: string) {
     res.status(HttpStatus.FORBIDDEN).send(
-      new ResponseDTO(false, message, null, {
-        code: 'FORBIDDEN',
-        details: null,
+      new ResponseDTO({
+        success: false,
+        message,
+        data: null,
+        status: HttpStatus.FORBIDDEN,
+        error: {
+          code: 'FORBIDDEN',
+          details: null,
+        },
       })
     );
   }

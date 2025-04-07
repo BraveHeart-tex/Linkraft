@@ -1,5 +1,6 @@
-import { sql } from 'drizzle-orm';
+import { SQL, sql } from 'drizzle-orm';
 import {
+  AnyPgColumn,
   boolean,
   index,
   integer,
@@ -8,17 +9,22 @@ import {
   serial,
   text,
   timestamp,
+  uniqueIndex,
   varchar,
 } from 'drizzle-orm/pg-core';
 
-export const users = pgTable('users', {
-  id: serial('id').primaryKey(),
-  email: varchar('email', { length: 255 }).unique().notNull(),
-  passwordHash: varchar('password_hash', { length: 255 }).notNull(),
-  createdAt: timestamp('created_at').defaultNow(),
-  isActive: boolean('is_active').default(true),
-  profilePicture: varchar('profile_picture', { length: 255 }),
-});
+export const users = pgTable(
+  'users',
+  {
+    id: serial('id').primaryKey(),
+    email: varchar('email', { length: 255 }).unique().notNull(),
+    passwordHash: varchar('password_hash', { length: 255 }).notNull(),
+    createdAt: timestamp('created_at').defaultNow(),
+    isActive: boolean('is_active').default(true),
+    profilePicture: varchar('profile_picture', { length: 255 }),
+  },
+  (table) => [uniqueIndex('emailUniqueIndex').on(table.email)]
+);
 
 export const sessions = pgTable('sessions', {
   id: text('id').primaryKey(),
@@ -103,3 +109,7 @@ export type Session = typeof sessions.$inferSelect;
 export type SessionInsertDto = typeof sessions.$inferInsert;
 
 export type UserInsertDto = typeof users.$inferInsert;
+
+export const lower = (email: AnyPgColumn): SQL => {
+  return sql`lower(${email})`;
+};

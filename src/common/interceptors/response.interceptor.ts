@@ -26,27 +26,18 @@ export class ResponseInterceptor<T>
   ): Observable<ResponseDTO<T>> {
     return next.handle().pipe(
       map((data) => {
-        if (data && data.success === false) {
-          return new ResponseDTO(
-            false,
-            data.message || 'An error occurred',
-            null,
-            {
-              code: data.code || 'INTERNAL_ERROR',
-              details: data.details,
-            }
-          );
-        }
-
-        return new ResponseDTO(
-          true,
-          this.reflector.get<string>(
-            'response_message',
-            context.getHandler()
-          ) || '',
-          data || null,
-          null
-        );
+        console.log('data', data);
+        return new ResponseDTO({
+          success: true,
+          message:
+            this.reflector.get<string>(
+              'response_message',
+              context.getHandler()
+            ) || '',
+          data: data || null,
+          error: null,
+          status: null,
+        });
       })
     );
   }

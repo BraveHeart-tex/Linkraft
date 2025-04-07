@@ -18,11 +18,14 @@ export class AuthController {
 
   @Post('sign-up')
   @ResponseMessage('Signed up successfully')
-  async signUp(
+  signUp(
     @Body(zodPipe(SignUpSchema)) signUpDto: SignUpDto,
-    @Res() response: Response
+    @Res({
+      passthrough: true,
+    })
+    response: Response
   ) {
-    return await this.authService.signUp(response, signUpDto);
+    return this.authService.signUp(response, signUpDto);
   }
 
   @Post('sign-in')

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   HttpStatus,
   Post,
   Res,
@@ -27,6 +28,12 @@ import { AuthGuard } from 'src/guards/auth.guard';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @Get('me')
+  @UseGuards(AuthGuard)
+  getCurrentUser(@CurrentUser() userSessionInfo: SessionValidationResult) {
+    return userSessionInfo;
+  }
 
   @Post('sign-up')
   @ResponseMessage('Signed up successfully')

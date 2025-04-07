@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   UnauthorizedException,
   ArgumentsHost,
+  HttpStatus,
 } from '@nestjs/common';
 import { Response } from 'express';
 
@@ -16,14 +17,17 @@ export class AuthExceptionFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
 
-    const status = exception instanceof ForbiddenException ? 403 : 401;
+    const status =
+      exception instanceof ForbiddenException
+        ? HttpStatus.FORBIDDEN
+        : HttpStatus.UNAUTHORIZED;
 
     response.status(status).json({
       success: false,
       data: null,
       message: exception.message || 'Authentication required',
       error: {
-        code: status === 403 ? 'FORBIDDEN' : 'AUTH_ERROR',
+        code: status === HttpStatus.FORBIDDEN ? 'FORBIDDEN' : 'AUTH_ERROR',
       },
     });
   }

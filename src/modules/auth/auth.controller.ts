@@ -1,4 +1,11 @@
-import { Body, Controller, HttpStatus, Post, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpStatus,
+  Post,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { zodPipe } from 'src/pipes/zod.pipe.factory';
 import {
@@ -15,6 +22,7 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { SessionValidationResult } from './session.types';
 import { ApiException } from 'src/exceptions/api.exception';
 import { ResponseStatus } from 'src/common/decorators/response-status.decorator';
+import { AuthGuard } from 'src/guards/auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -67,6 +75,7 @@ export class AuthController {
   @Post('sign-out')
   @ResponseMessage('Signed out successfully')
   @ResponseStatus(HttpStatus.OK)
+  @UseGuards(AuthGuard)
   signOut(
     @Res({
       passthrough: true,
@@ -74,16 +83,6 @@ export class AuthController {
     response: Response,
     @CurrentUser() userSessionInfo: SessionValidationResult
   ) {
-    // TODO: Add a guard for this
-    if (!userSessionInfo.user || !userSessionInfo.session) {
-      throw new ApiException(
-        'UNAUTHORIZED',
-        'You must be signed in to perform this action',
-        HttpStatus.UNAUTHORIZED,
-        null
-      );
-    }
-
     return this.authService.signOut(response, userSessionInfo.session.id);
   }
 }

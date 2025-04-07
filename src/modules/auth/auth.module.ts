@@ -7,6 +7,7 @@ import { SessionRepository } from './session.repository';
 import { DatabaseModule } from '../database/database.module';
 import { UserModule } from '../user/user.module';
 import { CookieService } from './cookie.service';
+import { AuthGuard } from 'src/guards/auth.guard';
 
 @Module({
   imports: [DatabaseModule, UserModule],
@@ -17,6 +18,7 @@ import { CookieService } from './cookie.service';
     SessionService,
     SessionRepository,
     CookieService,
+    AuthGuard,
   ],
   exports: [AuthService, SessionService],
 })

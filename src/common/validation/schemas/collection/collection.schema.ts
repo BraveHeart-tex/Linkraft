@@ -14,4 +14,6 @@ export const CreateCollectionSchema = z.object({
     .optional(),
 });
 
+export const UpdateCollectionSchema = CreateCollectionSchema.optional();
+
 export type CreateCollectionDto = z.infer<typeof CreateCollectionSchema>;

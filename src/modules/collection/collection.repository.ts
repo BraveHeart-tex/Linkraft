@@ -22,6 +22,18 @@ export class CollectionRepository {
     return insertedCollection[0];
   }
 
+  async updateCollection(
+    updatedData: Partial<CollectionInsertDto> & { id: number },
+    userId: User['id']
+  ) {
+    return await this.txHost.tx
+      .update(collections)
+      .set(updatedData)
+      .where(
+        and(eq(collections.id, updatedData.id), eq(collections.userId, userId))
+      );
+  }
+
   async getCollectionsForUser(userId: User['id']) {
     return this.txHost.tx
       .select({

@@ -9,6 +9,12 @@ export class CollectionService {
     return this.collectionRepository.createCollection(data);
   }
 
+  updateCollection(
+    updatedData: Partial<CollectionInsertDto> & { id: number },
+    userId: User['id']
+  ) {
+    return this.collectionRepository.updateCollection(updatedData, userId);
+  }
   getCollectionsForUser(userId: User['id']) {
     return this.collectionRepository.getCollectionsForUser(userId);
   }

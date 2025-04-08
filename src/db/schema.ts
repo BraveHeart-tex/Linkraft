@@ -116,3 +116,6 @@ export type UserInsertDto = typeof users.$inferInsert;
 export const lower = (email: AnyPgColumn): SQL => {
   return sql`lower(${email})`;
 };
+
+export type CollectionInsertDto = typeof collections.$inferInsert;
+export type Collection = typeof collections.$inferSelect;

@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { SignInDto } from 'src/common/validation/schemas/sign-in.schema';
-import { SignUpDto } from 'src/common/validation/schemas/sign-up.schema';
+import { SignInDto } from 'src/common/validation/schemas/auth/sign-in.schema';
+import { SignUpDto } from 'src/common/validation/schemas/auth/sign-up.schema';
 import { SessionService } from './session.service';
 import {
   generateSessionToken,

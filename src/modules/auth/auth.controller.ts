@@ -12,15 +12,15 @@ import { zodPipe } from 'src/pipes/zod.pipe.factory';
 import {
   SignUpDto,
   SignUpSchema,
-} from 'src/common/validation/schemas/sign-up.schema';
+} from 'src/common/validation/schemas/auth/sign-up.schema';
 import {
   SignInDto,
   SignInSchema,
-} from 'src/common/validation/schemas/sign-in.schema';
+} from 'src/common/validation/schemas/auth/sign-in.schema';
 import { Response } from 'express';
 import { ResponseMessage } from 'src/common/decorators/response-message.decorator';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
-import { SessionValidationResult } from './session.types';
+import { SessionValidationResult, UserSessionContext } from './session.types';
 import { ApiException } from 'src/exceptions/api.exception';
 import { ResponseStatus } from 'src/common/decorators/response-status.decorator';
 import { AuthGuard } from 'src/guards/auth.guard';
@@ -31,7 +31,7 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(AuthGuard)
-  getCurrentUser(@CurrentUser() userSessionInfo: SessionValidationResult) {
+  getCurrentUser(@CurrentUser() userSessionInfo: UserSessionContext) {
     return {
       user: userSessionInfo.user,
     };
@@ -51,8 +51,7 @@ export class AuthController {
       throw new ApiException(
         'BAD_REQUEST',
         'You cannot sign-up when you are signed in',
-        HttpStatus.BAD_REQUEST,
-        null
+        HttpStatus.BAD_REQUEST
       );
     }
 
@@ -73,8 +72,7 @@ export class AuthController {
       throw new ApiException(
         'BAD_REQUEST',
         'You are already signed in',
-        HttpStatus.BAD_REQUEST,
-        null
+        HttpStatus.BAD_REQUEST
       );
     }
 
@@ -90,7 +88,7 @@ export class AuthController {
       passthrough: true,
     })
     response: Response,
-    @CurrentUser() userSessionInfo: SessionValidationResult
+    @CurrentUser() userSessionInfo: UserSessionContext
   ) {
     return this.authService.signOut(response, userSessionInfo.session.id);
   }

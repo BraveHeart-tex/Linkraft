@@ -11,6 +11,7 @@ import { TransactionalAdapterDrizzleOrm } from '@nestjs-cls/transactional-adapte
 import { ExtendCookieMiddleware } from './common/middleware/extend-cookie.middleware';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { CurrentUserInterceptor } from './common/interceptors/current-user.interceptor';
+import { CollectionModule } from './modules/collection/collection.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { CurrentUserInterceptor } from './common/interceptors/current-user.inter
     }),
     DatabaseModule,
     AuthModule,
+    CollectionModule,
   ],
   providers: [
     {

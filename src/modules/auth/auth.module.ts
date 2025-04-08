@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { AuthRepository } from './auth.repository';
 import { SessionService } from './session.service';
 import { SessionRepository } from './session.repository';
 import { DatabaseModule } from '../database/database.module';
@@ -14,7 +13,6 @@ import { AuthGuard } from 'src/guards/auth.guard';
   controllers: [AuthController],
   providers: [
     AuthService,
-    AuthRepository,
     SessionService,
     SessionRepository,
     CookieService,

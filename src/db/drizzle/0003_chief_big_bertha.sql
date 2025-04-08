@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "visibleName" varchar(255) NOT NULL;

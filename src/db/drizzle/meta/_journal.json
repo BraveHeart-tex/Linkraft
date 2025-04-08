@@ -22,6 +22,13 @@
       "when": 1744006916796,
       "tag": "0002_steady_silver_surfer",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1744096138185,
+      "tag": "0003_chief_big_bertha",
+      "breakpoints": true
     }
   ]
 }

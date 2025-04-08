@@ -12,4 +12,11 @@ export class CollectionService {
   getCollectionsForUser(userId: User['id']) {
     return this.collectionRepository.getCollectionsForUser(userId);
   }
+
+  deleteUserCollection(params: {
+    userId: User['id'];
+    collectionId: Collection['id'];
+  }) {
+    return this.collectionRepository.deleteUserCollection(params);
+  }
 }

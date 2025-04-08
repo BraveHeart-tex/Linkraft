@@ -1,8 +1,11 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpStatus,
+  Param,
+  ParseIntPipe,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -43,5 +46,17 @@ export class CollectionController {
     return this.collectionService.getCollectionsForUser(
       userSessionInfo.user.id
     );
+  }
+
+  @Delete('/:id')
+  @ResponseStatus(HttpStatus.OK)
+  deleteCollection(
+    @CurrentUser() userSessionInfo: UserSessionContext,
+    @Param('id', ParseIntPipe) collectionId: number
+  ) {
+    return this.collectionService.deleteUserCollection({
+      userId: userSessionInfo.user.id,
+      collectionId,
+    });
   }
 }

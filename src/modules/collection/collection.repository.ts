@@ -3,11 +3,12 @@ import { DbTransactionAdapter } from '../database/database.types';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import {
   bookmarkCollection,
+  Collection,
   CollectionInsertDto,
   collections,
   User,
 } from 'src/db/schema';
-import { count, eq } from 'drizzle-orm';
+import { and, count, eq } from 'drizzle-orm';
 
 @Injectable()
 export class CollectionRepository {
@@ -40,5 +41,19 @@ export class CollectionRepository {
       )
       .groupBy(collections.id)
       .where(eq(collections.userId, userId));
+  }
+
+  deleteUserCollection({
+    collectionId,
+    userId,
+  }: {
+    userId: User['id'];
+    collectionId: Collection['id'];
+  }) {
+    return this.txHost.tx
+      .delete(collections)
+      .where(
+        and(eq(collections.id, collectionId), eq(collections.userId, userId))
+      );
   }
 }

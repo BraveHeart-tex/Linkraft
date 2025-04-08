@@ -72,6 +72,7 @@ export const collections = pgTable('collections', {
     .references(() => users.id),
   name: varchar('name', { length: 255 }).notNull(),
   description: text('description'),
+  color: varchar('color', { length: 16 }),
   createdAt: timestamp('created_at').defaultNow(),
   isDeleted: boolean('is_deleted').default(false),
 });

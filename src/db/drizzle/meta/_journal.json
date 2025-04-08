@@ -29,6 +29,13 @@
       "when": 1744096138185,
       "tag": "0003_chief_big_bertha",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1744105446224,
+      "tag": "0004_friendly_payback",
+      "breakpoints": true
     }
   ]
 }

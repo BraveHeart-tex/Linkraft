@@ -1,4 +1,11 @@
-import { Body, Controller, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpStatus,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ResponseMessage } from 'src/common/decorators/response-message.decorator';
 import { ResponseStatus } from 'src/common/decorators/response-status.decorator';
 import { AuthGuard } from 'src/guards/auth.guard';
@@ -28,5 +35,13 @@ export class CollectionController {
       ...createCollectionDto,
       userId: userSessionInfo.user.id,
     });
+  }
+
+  @Get('/')
+  @ResponseStatus(HttpStatus.OK)
+  getCollections(@CurrentUser() userSessionInfo: UserSessionContext) {
+    return this.collectionService.getCollectionsForUser(
+      userSessionInfo.user.id
+    );
   }
 }

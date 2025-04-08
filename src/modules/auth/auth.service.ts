@@ -2,16 +2,16 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { SignInDto } from 'src/common/validation/schemas/sign-in.schema';
 import { SignUpDto } from 'src/common/validation/schemas/sign-up.schema';
 import { SessionService } from './session.service';
-import { generateSessionToken } from './utils/token.utils';
+import {
+  generateSessionToken,
+  generateAuthTokenExpiryDate,
+} from './utils/token.utils';
 import { UserService } from '../user/user.service';
 import { hashPassword, verifyPassword } from './utils/password.utils';
 import { Transactional } from '@nestjs-cls/transactional';
 import { CookieService } from './cookie.service';
 import { Response } from 'express';
-import {
-  SESSION_COOKIE_MAX_AGE,
-  SESSION_TOKEN_COOKIE_NAME,
-} from './auth.constants';
+import { SESSION_TOKEN_COOKIE_NAME } from './auth.constants';
 import { ApiException } from 'src/exceptions/api.exception';
 import { Session, UserWithoutPasswordHash } from 'src/db/schema';
 
@@ -55,9 +55,8 @@ export class AuthService {
       token,
       createdUser.id
     );
-    const expirationDate = new Date();
-    expirationDate.setTime(expirationDate.getTime() + SESSION_COOKIE_MAX_AGE);
-    this.setSessionCookie(res, token, expirationDate);
+
+    this.setSessionCookie(res, token, generateAuthTokenExpiryDate());
     return {
       user: {
         email: createdUser.email,
@@ -108,9 +107,8 @@ export class AuthService {
       token,
       existingUser.id
     );
-    const expirationDate = new Date();
-    expirationDate.setTime(expirationDate.getTime() + SESSION_COOKIE_MAX_AGE);
-    this.setSessionCookie(res, token, expirationDate);
+
+    this.setSessionCookie(res, token, generateAuthTokenExpiryDate());
 
     return {
       user: {

@@ -22,7 +22,14 @@ export class CurrentUserInterceptor implements NestInterceptor {
       const { user, session } =
         await this.sessionService.validateSessionToken(token);
       if (user && session) {
-        request.currentUser = user;
+        request.currentUser = {
+          id: user.id,
+          visibleName: user.visibleName,
+          email: user.email,
+          createdAt: user.createdAt,
+          isActive: user.isActive,
+          profilePicture: user.profilePicture,
+        };
         request.currentSession = session;
       }
     } else {

@@ -32,7 +32,9 @@ export class AuthController {
   @Get('me')
   @UseGuards(AuthGuard)
   getCurrentUser(@CurrentUser() userSessionInfo: SessionValidationResult) {
-    return userSessionInfo;
+    return {
+      user: userSessionInfo.user,
+    };
   }
 
   @Post('sign-up')

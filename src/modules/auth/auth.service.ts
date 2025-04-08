@@ -13,7 +13,7 @@ import { CookieService } from './cookie.service';
 import { Response } from 'express';
 import { SESSION_TOKEN_COOKIE_NAME } from './auth.constants';
 import { ApiException } from 'src/exceptions/api.exception';
-import { Session, UserWithoutPasswordHash } from 'src/db/schema';
+import { UserWithoutPasswordHash } from 'src/db/schema';
 
 @Injectable()
 export class AuthService {
@@ -29,7 +29,6 @@ export class AuthService {
     signUpDto: SignUpDto
   ): Promise<{
     user: UserWithoutPasswordHash;
-    session: Session;
   }> {
     const existingUser = await this.userService.findUserByEmail(
       signUpDto.email
@@ -51,10 +50,7 @@ export class AuthService {
     });
 
     const token = generateSessionToken();
-    const session = await this.sessionService.createSession(
-      token,
-      createdUser.id
-    );
+    await this.sessionService.createSession(token, createdUser.id);
 
     this.setSessionCookie(res, token, generateAuthTokenExpiryDate());
     return {
@@ -66,7 +62,6 @@ export class AuthService {
         profilePicture: createdUser.profilePicture,
         visibleName: createdUser.visibleName,
       },
-      session,
     };
   }
 
@@ -75,7 +70,6 @@ export class AuthService {
     signInDto: SignInDto
   ): Promise<{
     user: UserWithoutPasswordHash;
-    session: Session;
   }> {
     const existingUser = await this.userService.findUserByEmail(
       signInDto.email
@@ -103,10 +97,7 @@ export class AuthService {
     }
 
     const token = generateSessionToken();
-    const session = await this.sessionService.createSession(
-      token,
-      existingUser.id
-    );
+    await this.sessionService.createSession(token, existingUser.id);
 
     this.setSessionCookie(res, token, generateAuthTokenExpiryDate());
 
@@ -119,7 +110,6 @@ export class AuthService {
         profilePicture: existingUser.profilePicture,
         visibleName: existingUser.visibleName,
       },
-      session,
     };
   }
 

@@ -47,6 +47,7 @@ export class AuthService {
     const createdUser = await this.userService.createUser({
       email: signUpDto.email,
       passwordHash,
+      visibleName: signUpDto.visibleName,
     });
 
     const token = generateSessionToken();
@@ -64,6 +65,7 @@ export class AuthService {
         createdAt: createdUser.createdAt,
         isActive: createdUser.isActive,
         profilePicture: createdUser.profilePicture,
+        visibleName: createdUser.visibleName,
       },
       session,
     };
@@ -117,6 +119,7 @@ export class AuthService {
         createdAt: existingUser.createdAt,
         isActive: existingUser.isActive,
         profilePicture: existingUser.profilePicture,
+        visibleName: existingUser.visibleName,
       },
       session,
     };
@@ -128,10 +131,11 @@ export class AuthService {
   }
 
   setSessionCookie(res: Response, token: string, expiresAt: Date) {
+    const isProd = process.env.NODE_ENV === 'production';
     this.cookieService.setCookie(res, SESSION_TOKEN_COOKIE_NAME, token, {
       httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      sameSite: isProd ? 'none' : 'lax',
+      secure: isProd,
       expires: expiresAt,
       path: '/',
     });

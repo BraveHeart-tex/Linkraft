@@ -3,7 +3,6 @@ import { SessionValidationResult } from 'src/modules/auth/session.types';
 
 export const CurrentUser = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): SessionValidationResult => {
-    // Type here as UserSessionInfo
     const request = ctx.switchToHttp().getRequest();
     return {
       user: request?.currentUser || null,

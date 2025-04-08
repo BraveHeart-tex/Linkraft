@@ -26,6 +26,7 @@ export class AuthGuard implements CanActivate {
 
     const { user, session } =
       await this.sessionService.validateSessionToken(token);
+
     if (!user || !session) {
       throw new ApiException(
         'UNAUTHORIZED',

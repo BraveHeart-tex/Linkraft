@@ -20,6 +20,7 @@ export class SessionService {
 
   async validateSessionToken(token: string): Promise<SessionValidationResult> {
     const sessionId = getSessionId(token);
+
     const result = await this.repo.getSessionWithUser(sessionId);
 
     if (!result) return { session: null, user: null };

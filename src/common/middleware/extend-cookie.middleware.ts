@@ -12,7 +12,7 @@ export class ExtendCookieMiddleware implements NestMiddleware {
       const existingCookie = req.cookies[SESSION_TOKEN_COOKIE_NAME];
 
       if (existingCookie) {
-        res.cookie(SESSION_TOKEN_COOKIE_NAME, {
+        res.cookie(SESSION_TOKEN_COOKIE_NAME, existingCookie, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax',

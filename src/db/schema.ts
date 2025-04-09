@@ -45,22 +45,21 @@ export const bookmarks = pgTable(
     userId: integer('user_id')
       .notNull()
       .references(() => users.id),
-    title: varchar('title', { length: 255 }).notNull(),
     url: text('url').notNull(),
-    createdAt: timestamp('created_at').defaultNow(),
-    keywords: text('keywords[]'),
-    summary: text('summary'),
+    title: varchar('title', { length: 255 }).notNull(),
+    tags: text('tags[]'),
     description: text('description'),
-    category: varchar('category', { length: 255 }),
     thumbnail: varchar('thumbnail', { length: 255 }),
-    notes: text('notes'),
-    isDeleted: boolean('is_deleted').default(false),
-    isPublic: boolean('is_public').default(true),
+    createdAt: timestamp('created_at').defaultNow(),
+    deletedAt: timestamp('deleted_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
   (table) => [
     index('bookmark_search_index').using(
       'gin',
-      sql`to_tsvector('english', ${table.title} || ' ' || ${table.summary} || ' ' || ${table.description})`
+      sql`to_tsvector('english', ${table.title} || ' ' || ${table.description})`
     ),
   ]
 );

@@ -8,7 +8,7 @@ import {
   FindUserBookmarksParams,
   UpdateBookmarkParams,
 } from './bookmark.types';
-import { and, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import { and, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
 
 @Injectable()
 export class BookmarkRepository {
@@ -23,7 +23,7 @@ export class BookmarkRepository {
     const query = this.txHost.tx
       .select()
       .from(bookmarks)
-      .where(eq(bookmarks.userId, userId))
+      .where(and(eq(bookmarks.userId, userId), isNull(bookmarks.deletedAt)))
       .$dynamic();
 
     if (searchQuery) {

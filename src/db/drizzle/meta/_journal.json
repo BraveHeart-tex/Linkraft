@@ -64,6 +64,13 @@
       "when": 1744705882510,
       "tag": "0008_flashy_frightful_four",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1744714757427,
+      "tag": "0009_zippy_hellfire_club",
+      "breakpoints": true
     }
   ]
 }

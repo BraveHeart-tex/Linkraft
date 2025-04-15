@@ -2,7 +2,11 @@ import { TransactionHost } from '@nestjs-cls/transactional';
 import { Injectable } from '@nestjs/common';
 import { DbTransactionAdapter } from '../database/database.types';
 import { bookmarks, User } from 'src/db/schema';
-import { Bookmark, BookmarkOwnershipParams } from './bookmark.types';
+import {
+  Bookmark,
+  BookmarkOwnershipParams,
+  UpdateBookmarkParams,
+} from './bookmark.types';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 
 @Injectable()
@@ -21,6 +25,13 @@ export class BookmarkRepository {
       where: () =>
         and(eq(bookmarks.id, bookmarkId), eq(bookmarks.userId, userId)),
     });
+  }
+
+  updateBookmark({ bookmarkId, updates, userId }: UpdateBookmarkParams) {
+    return this.txHost.tx
+      .update(bookmarks)
+      .set(updates)
+      .where(and(eq(bookmarks.id, bookmarkId), eq(bookmarks.userId, userId)));
   }
 
   softDeleteBookmark({ bookmarkId, userId }: BookmarkOwnershipParams) {

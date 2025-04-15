@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { BookmarkRepository } from './bookmark.repository';
 import { User } from 'src/db/schema';
-import { Bookmark, BookmarkOwnershipParams } from './bookmark.types';
+import {
+  Bookmark,
+  BookmarkOwnershipParams,
+  UpdateBookmarkParams,
+} from './bookmark.types';
 
 @Injectable()
 export class BookmarkService {
@@ -14,6 +18,14 @@ export class BookmarkService {
   getBookmarkById({ bookmarkId, userId }: BookmarkOwnershipParams) {
     return this.bookmarkRepository.getBookmarkById({
       bookmarkId,
+      userId,
+    });
+  }
+
+  updateBookmark({ bookmarkId, updates, userId }: UpdateBookmarkParams) {
+    return this.bookmarkRepository.updateBookmark({
+      bookmarkId,
+      updates,
       userId,
     });
   }

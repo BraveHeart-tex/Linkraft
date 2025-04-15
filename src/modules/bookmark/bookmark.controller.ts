@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Param,
   ParseIntPipe,
+  Put,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from 'src/guards/auth.guard';
@@ -16,6 +17,8 @@ import { zodPipe } from 'src/pipes/zod.pipe.factory';
 import {
   BulkSoftDeleteBookmarkDto,
   bulkSoftDeleteBookmarkSchema,
+  updateBookmarkSchema,
+  UpdateBookmarkDto,
 } from 'src/common/validation/schemas/bookmark/bookmark.schema';
 import { ResponseMessage } from 'src/common/decorators/response-message.decorator';
 import { ResponseStatus } from 'src/common/decorators/response-status.decorator';
@@ -41,13 +44,18 @@ export class BookmarkController {
     });
   }
 
-  // @Post()
-  // @ResponseMessage('Bookmark created successfully.')
-  // @ResponseStatus(HttpStatus.CREATED)
-  // createBookmark(
-  //   @Body(zodPipe(createBookmarkSchema)) data: CreateBookmarkSchemaDto,
-  //   @CurrentUser() userSessionContext: UserSessionContext
-  // ) {}
+  @Put('/:id')
+  updateBookmark(
+    @Param('id', ParseIntPipe) bookmarkId: number,
+    @Body(zodPipe(updateBookmarkSchema)) updates: UpdateBookmarkDto,
+    @CurrentUser() userSessionContext: UserSessionContext
+  ) {
+    return this.bookmarkService.updateBookmark({
+      bookmarkId,
+      updates,
+      userId: userSessionContext.user.id,
+    });
+  }
 
   @Delete('/:id')
   @ResponseMessage('Bookmark moved to trash successfully.')
@@ -62,6 +70,7 @@ export class BookmarkController {
     });
   }
 
+  @Delete('bulk')
   bulkSoftDeleteBookmark(
     @Body(zodPipe(bulkSoftDeleteBookmarkSchema))
     data: BulkSoftDeleteBookmarkDto,

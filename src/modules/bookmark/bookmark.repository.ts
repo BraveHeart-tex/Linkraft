@@ -1,7 +1,7 @@
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { Injectable } from '@nestjs/common';
 import { DbTransactionAdapter } from '../database/database.types';
-import { bookmarks, User } from 'src/db/schema';
+import { BookmarkInsertDto, bookmarks, User } from 'src/db/schema';
 import {
   Bookmark,
   BookmarkOwnershipParams,
@@ -25,6 +25,10 @@ export class BookmarkRepository {
       where: () =>
         and(eq(bookmarks.id, bookmarkId), eq(bookmarks.userId, userId)),
     });
+  }
+
+  createBookmark(data: BookmarkInsertDto) {
+    return this.txHost.tx.insert(bookmarks).values(data).returning();
   }
 
   updateBookmark({ bookmarkId, updates, userId }: UpdateBookmarkParams) {

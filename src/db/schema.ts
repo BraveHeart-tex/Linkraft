@@ -64,7 +64,7 @@ export const bookmarks = pgTable(
     deletedAt: timestamp('deleted_at', {
       withTimezone: true,
       mode: 'date',
-    }).notNull(),
+    }).default(sql`null`),
   },
   (table) => [
     index('bookmark_search_index').using(
@@ -127,3 +127,5 @@ export type UserInsertDto = typeof users.$inferInsert;
 
 export type CollectionInsertDto = typeof collections.$inferInsert;
 export type Collection = typeof collections.$inferSelect;
+
+export type BookmarkInsertDto = typeof bookmarks.$inferInsert;

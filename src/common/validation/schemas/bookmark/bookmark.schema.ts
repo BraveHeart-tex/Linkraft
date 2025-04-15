@@ -17,6 +17,11 @@ export const createBookmarkSchema = createInsertSchema(bookmarks, {
     .max(255, 'Thumbnail URL is too long')
     .optional()
     .nullable(),
+}).omit({
+  id: true,
+  createdAt: true,
+  deletedAt: true,
+  userId: true,
 });
 
 export const updateBookmarkSchema = createBookmarkSchema

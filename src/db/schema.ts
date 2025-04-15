@@ -118,3 +118,5 @@ export const lower = (email: AnyPgColumn): SQL => {
 
 export type CollectionInsertDto = typeof collections.$inferInsert;
 export type Collection = typeof collections.$inferSelect;
+
+export type Bookmark = typeof bookmarks.$inferSelect;

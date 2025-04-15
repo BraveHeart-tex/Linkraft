@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { BookmarkRepository } from './bookmark.repository';
-import { Bookmark, User } from 'src/db/schema';
+import { User } from 'src/db/schema';
+import { Bookmark, BookmarkOwnershipParams } from './bookmark.types';
 
 @Injectable()
 export class BookmarkService {
@@ -10,16 +11,31 @@ export class BookmarkService {
     return this.bookmarkRepository.getBookmarks(userId);
   }
 
-  getBookmarkById({
-    bookmarkId,
-    userId,
-  }: {
-    bookmarkId: Bookmark['id'];
-    userId: User['id'];
-  }) {
+  getBookmarkById({ bookmarkId, userId }: BookmarkOwnershipParams) {
     return this.bookmarkRepository.getBookmarkById({
       bookmarkId,
       userId,
     });
+  }
+
+  softDeleteBookmark({ bookmarkId, userId }: BookmarkOwnershipParams) {
+    return this.bookmarkRepository.softDeleteBookmark({
+      bookmarkId,
+      userId,
+    });
+  }
+
+  async bulkSoftDeleteBookmark(
+    bookmarkIds: Bookmark['id'][],
+    userId: User['id']
+  ) {
+    const result = await this.bookmarkRepository.bulkSoftDeleteBookmark(
+      bookmarkIds,
+      userId
+    );
+
+    return {
+      deleted: result.length,
+    };
   }
 }

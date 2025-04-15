@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { lower, User, UserInsertDto, users } from 'src/db/schema';
+import { User, UserInsertDto, users } from 'src/db/schema';
+import { lower } from 'src/db/drizzle.utils';
 import { DbTransactionAdapter } from '../database/database.types';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { eq } from 'drizzle-orm';

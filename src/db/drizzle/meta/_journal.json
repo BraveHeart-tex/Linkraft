@@ -43,6 +43,27 @@
       "when": 1744210516026,
       "tag": "0005_curvy_sharon_carter",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1744705768315,
+      "tag": "0006_chubby_chronomancer",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1744705795875,
+      "tag": "0007_orange_nightshade",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1744705882510,
+      "tag": "0008_flashy_frightful_four",
+      "breakpoints": true
     }
   ]
 }

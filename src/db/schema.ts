@@ -1,6 +1,5 @@
-import { SQL, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import {
-  AnyPgColumn,
   boolean,
   index,
   integer,
@@ -38,6 +37,18 @@ export const sessions = pgTable('sessions', {
   }).notNull(),
 });
 
+export const tags = pgTable(
+  'tags',
+  {
+    id: serial('id').primaryKey(),
+    name: varchar('name', { length: 64 }).notNull(),
+    userId: integer('user_id')
+      .references(() => users.id)
+      .notNull(),
+  },
+  (table) => [uniqueIndex('unique_tag_per_user').on(table.userId, table.name)]
+);
+
 export const bookmarks = pgTable(
   'bookmarks',
   {
@@ -47,7 +58,6 @@ export const bookmarks = pgTable(
       .references(() => users.id),
     url: text('url').notNull(),
     title: varchar('title', { length: 255 }).notNull(),
-    tags: text('tags[]'),
     description: text('description'),
     thumbnail: varchar('thumbnail', { length: 255 }),
     createdAt: timestamp('created_at').defaultNow(),
@@ -62,6 +72,20 @@ export const bookmarks = pgTable(
       sql`to_tsvector('english', ${table.title} || ' ' || ${table.description})`
     ),
   ]
+);
+
+export const bookmarkTags = pgTable(
+  'bookmark_tags',
+  {
+    bookmarkId: integer('bookmark_id')
+      .notNull()
+      .references(() => bookmarks.id, { onDelete: 'cascade' }),
+
+    tagId: integer('tag_id')
+      .notNull()
+      .references(() => tags.id, { onDelete: 'cascade' }),
+  },
+  (table) => [primaryKey({ columns: [table.bookmarkId, table.tagId] })]
 );
 
 export const collections = pgTable('collections', {
@@ -94,17 +118,6 @@ export const bookmarkCollection = pgTable(
   ]
 );
 
-export const accessControls = pgTable('access_controls', {
-  id: serial('id').primaryKey(),
-  resourceId: integer('resource_id').notNull(),
-  resourceType: varchar('resource_type', { length: 255 }).notNull(),
-  userId: integer('user_id')
-    .notNull()
-    .references(() => users.id),
-  permissionType: varchar('permission_type', { length: 50 }).notNull(),
-  createdAt: timestamp('created_at').defaultNow(),
-});
-
 export type User = typeof users.$inferSelect;
 export type UserWithoutPasswordHash = Omit<User, 'passwordHash'>;
 export type Session = typeof sessions.$inferSelect;
@@ -112,11 +125,5 @@ export type SessionInsertDto = typeof sessions.$inferInsert;
 
 export type UserInsertDto = typeof users.$inferInsert;
 
-export const lower = (email: AnyPgColumn): SQL => {
-  return sql`lower(${email})`;
-};
-
 export type CollectionInsertDto = typeof collections.$inferInsert;
 export type Collection = typeof collections.$inferSelect;
-
-export type Bookmark = typeof bookmarks.$inferSelect;

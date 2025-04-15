@@ -13,7 +13,7 @@ export class SessionService {
     const session = {
       id: sessionId,
       userId,
-      expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
+      expiresAt: new Date(Date.now() + SESSION_LIFETIME_MS),
     };
     await this.repo.insertSession(session);
     return session;

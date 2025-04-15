@@ -33,12 +33,12 @@ export class CollectionController {
   @Post('/')
   @ResponseMessage('Collection created successfully')
   @ResponseStatus(HttpStatus.CREATED)
-  createCollection(
+  createCollectionForUser(
     @Body(zodPipe(CreateCollectionSchema))
     createCollectionDto: CreateCollectionDto,
     @CurrentUser() userSessionInfo: UserSessionContext
   ) {
-    return this.collectionService.createCollection({
+    return this.collectionService.createCollectionForUser({
       ...createCollectionDto,
       userId: userSessionInfo.user.id,
     });
@@ -46,7 +46,7 @@ export class CollectionController {
 
   @Get('/')
   @ResponseStatus(HttpStatus.OK)
-  getCollections(@CurrentUser() userSessionInfo: UserSessionContext) {
+  getCollectionsForUser(@CurrentUser() userSessionInfo: UserSessionContext) {
     return this.collectionService.getCollectionsForUser(
       userSessionInfo.user.id
     );
@@ -54,7 +54,7 @@ export class CollectionController {
 
   @Delete('/:id')
   @ResponseStatus(HttpStatus.OK)
-  deleteCollection(
+  deleteUserCollection(
     @CurrentUser() userSessionInfo: UserSessionContext,
     @Param('id', ParseIntPipe) collectionId: number
   ) {
@@ -67,7 +67,7 @@ export class CollectionController {
   @Put('/:id')
   @ResponseMessage('Collection updated successfully')
   @ResponseStatus(HttpStatus.OK)
-  updateCollection(
+  updateUserCollection(
     @Body(zodPipe(UpdateCollectionSchema))
     updateCollectionDto: Partial<CollectionInsertDto>,
     @CurrentUser() userSessionInfo: UserSessionContext,
@@ -81,7 +81,7 @@ export class CollectionController {
       );
     }
 
-    return this.collectionService.updateCollection(
+    return this.collectionService.updateUserCollection(
       { ...updateCollectionDto, id: collectionId },
       userSessionInfo.user.id
     );

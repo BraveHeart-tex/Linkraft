@@ -3,17 +3,17 @@ import { DbTransactionAdapter } from '../database/database.types';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import {
   bookmarkCollection,
-  Collection,
   CollectionInsertDto,
   collections,
   User,
 } from 'src/db/schema';
 import { and, count, eq } from 'drizzle-orm';
+import { CollectionOwnershipParams } from './collection.types';
 
 @Injectable()
 export class CollectionRepository {
   constructor(private txHost: TransactionHost<DbTransactionAdapter>) {}
-  async createCollection(data: CollectionInsertDto) {
+  async create(data: CollectionInsertDto) {
     const insertedCollection = await this.txHost.tx
       .insert(collections)
       .values(data)
@@ -22,7 +22,7 @@ export class CollectionRepository {
     return insertedCollection[0];
   }
 
-  async updateCollection(
+  async update(
     updatedData: Partial<CollectionInsertDto> & { id: number },
     userId: User['id']
   ) {
@@ -55,13 +55,7 @@ export class CollectionRepository {
       .where(eq(collections.userId, userId));
   }
 
-  deleteUserCollection({
-    collectionId,
-    userId,
-  }: {
-    userId: User['id'];
-    collectionId: Collection['id'];
-  }) {
+  deleteUserCollection({ collectionId, userId }: CollectionOwnershipParams) {
     return this.txHost.tx
       .delete(collections)
       .where(

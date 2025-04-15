@@ -47,6 +47,23 @@ export class BookmarkRepository {
     });
   }
 
+  async userHasBookmarkWithUrl({
+    url,
+    userId,
+  }: {
+    url: string;
+    userId: User['id'];
+  }): Promise<boolean> {
+    const result = await this.txHost.tx
+      .select({
+        exists: sql`1`,
+      })
+      .from(bookmarks)
+      .where(and(eq(bookmarks.userId, userId), eq(bookmarks.url, url)));
+
+    return !!result[0]?.exists;
+  }
+
   create(data: BookmarkInsertDto) {
     return this.txHost.tx.insert(bookmarks).values(data).returning();
   }

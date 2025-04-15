@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { BookmarkRepository } from './bookmark.repository';
 import { BookmarkInsertDto, User } from 'src/db/schema';
 import {
@@ -7,6 +7,7 @@ import {
   FindUserBookmarksParams,
   UpdateBookmarkParams,
 } from './bookmark.types';
+import { ApiException } from 'src/exceptions/api.exception';
 
 @Injectable()
 export class BookmarkService {
@@ -23,7 +24,19 @@ export class BookmarkService {
     });
   }
 
-  createBookmarkForUser(data: BookmarkInsertDto) {
+  async createBookmarkForUser(data: BookmarkInsertDto) {
+    if (
+      await this.bookmarkRepository.userHasBookmarkWithUrl({
+        url: data.url,
+        userId: data.userId,
+      })
+    ) {
+      throw new ApiException(
+        'CONFLICT',
+        'A bookmark with the same url already exists',
+        HttpStatus.CONFLICT
+      );
+    }
     return this.bookmarkRepository.create(data);
   }
 

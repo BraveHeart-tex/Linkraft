@@ -11,41 +11,45 @@ import {
 export class BookmarkService {
   constructor(private bookmarkRepository: BookmarkRepository) {}
 
-  getBookmarks(userId: User['id']) {
-    return this.bookmarkRepository.getBookmarks(userId);
+  getUserBookmarks(userId: User['id']) {
+    return this.bookmarkRepository.findAllByUserId(userId);
   }
 
-  getBookmarkById({ bookmarkId, userId }: BookmarkOwnershipParams) {
-    return this.bookmarkRepository.getBookmarkById({
+  getUserBookmarkById({ bookmarkId, userId }: BookmarkOwnershipParams) {
+    return this.bookmarkRepository.findByIdAndUserId({
       bookmarkId,
       userId,
     });
   }
 
-  createBookmark(data: BookmarkInsertDto) {
-    return this.bookmarkRepository.createBookmark(data);
+  createBookmarkForUser(data: BookmarkInsertDto) {
+    return this.bookmarkRepository.create(data);
   }
 
-  updateBookmark({ bookmarkId, updates, userId }: UpdateBookmarkParams) {
-    return this.bookmarkRepository.updateBookmark({
+  updateUserBookmarkById({
+    bookmarkId,
+    updates,
+    userId,
+  }: UpdateBookmarkParams) {
+    return this.bookmarkRepository.updateByIdAndUserId({
       bookmarkId,
       updates,
       userId,
     });
   }
 
-  softDeleteBookmark({ bookmarkId, userId }: BookmarkOwnershipParams) {
-    return this.bookmarkRepository.softDeleteBookmark({
+  softDeleteUserBookmark({ bookmarkId, userId }: BookmarkOwnershipParams) {
+    return this.bookmarkRepository.softDeleteByIdAndUserId({
       bookmarkId,
       userId,
     });
   }
 
-  async bulkSoftDeleteBookmark(
+  async bulkSoftDeleteUserBookmarks(
     bookmarkIds: Bookmark['id'][],
     userId: User['id']
   ) {
-    const result = await this.bookmarkRepository.bulkSoftDeleteBookmark(
+    const result = await this.bookmarkRepository.bulkSoftDeleteByIdsAndUserId(
       bookmarkIds,
       userId
     );

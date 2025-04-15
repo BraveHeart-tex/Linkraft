@@ -13,32 +13,32 @@ import { and, eq, inArray, sql } from 'drizzle-orm';
 export class BookmarkRepository {
   constructor(private txHost: TransactionHost<DbTransactionAdapter>) {}
 
-  getBookmarks(userId: User['id']) {
+  findAllByUserId(userId: User['id']) {
     return this.txHost.tx
       .select()
       .from(bookmarks)
       .where(eq(bookmarks.userId, userId));
   }
 
-  getBookmarkById({ bookmarkId, userId }: BookmarkOwnershipParams) {
+  findByIdAndUserId({ bookmarkId, userId }: BookmarkOwnershipParams) {
     return this.txHost.tx.query.bookmarks.findFirst({
       where: () =>
         and(eq(bookmarks.id, bookmarkId), eq(bookmarks.userId, userId)),
     });
   }
 
-  createBookmark(data: BookmarkInsertDto) {
+  create(data: BookmarkInsertDto) {
     return this.txHost.tx.insert(bookmarks).values(data).returning();
   }
 
-  updateBookmark({ bookmarkId, updates, userId }: UpdateBookmarkParams) {
+  updateByIdAndUserId({ bookmarkId, updates, userId }: UpdateBookmarkParams) {
     return this.txHost.tx
       .update(bookmarks)
       .set(updates)
       .where(and(eq(bookmarks.id, bookmarkId), eq(bookmarks.userId, userId)));
   }
 
-  softDeleteBookmark({ bookmarkId, userId }: BookmarkOwnershipParams) {
+  softDeleteByIdAndUserId({ bookmarkId, userId }: BookmarkOwnershipParams) {
     return this.txHost.tx
       .update(bookmarks)
       .set({
@@ -47,7 +47,10 @@ export class BookmarkRepository {
       .where(and(eq(bookmarks.userId, userId), eq(bookmarks.id, bookmarkId)));
   }
 
-  bulkSoftDeleteBookmark(bookmarkIds: Bookmark['id'][], userId: User['id']) {
+  bulkSoftDeleteByIdsAndUserId(
+    bookmarkIds: Bookmark['id'][],
+    userId: User['id']
+  ) {
     return this.txHost.tx
       .update(bookmarks)
       .set({

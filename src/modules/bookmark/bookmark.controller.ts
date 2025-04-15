@@ -32,16 +32,16 @@ export class BookmarkController {
   constructor(private bookmarkService: BookmarkService) {}
 
   @Get()
-  getBookmarks(@CurrentUser() userSessionContext: UserSessionContext) {
-    return this.bookmarkService.getBookmarks(userSessionContext.user.id);
+  getUserBookmarks(@CurrentUser() userSessionContext: UserSessionContext) {
+    return this.bookmarkService.getUserBookmarks(userSessionContext.user.id);
   }
 
   @Get('/:id')
-  getBookmarkById(
+  getUserBookmarkById(
     @Param('id', ParseIntPipe) bookmarkId: number,
     @CurrentUser() userSessionContext: UserSessionContext
   ) {
-    return this.bookmarkService.getBookmarkById({
+    return this.bookmarkService.getUserBookmarkById({
       bookmarkId,
       userId: userSessionContext.user.id,
     });
@@ -50,11 +50,11 @@ export class BookmarkController {
   @Post()
   @ResponseMessage('Bookmark created successfully.')
   @ResponseStatus(HttpStatus.CREATED)
-  createBookmark(
+  createBookmarkForUser(
     @Body(zodPipe(createBookmarkSchema)) data: CreateBookmarkDto,
     @CurrentUser() userSessionContext: UserSessionContext
   ) {
-    return this.bookmarkService.createBookmark({
+    return this.bookmarkService.createBookmarkForUser({
       ...data,
       userId: userSessionContext.user.id,
     });
@@ -63,12 +63,12 @@ export class BookmarkController {
   @Put('/:id')
   @ResponseMessage('Bookmark updated successfully.')
   @ResponseStatus(HttpStatus.OK)
-  updateBookmark(
+  updateUserBookmarkById(
     @Param('id', ParseIntPipe) bookmarkId: number,
     @Body(zodPipe(updateBookmarkSchema)) updates: UpdateBookmarkDto,
     @CurrentUser() userSessionContext: UserSessionContext
   ) {
-    return this.bookmarkService.updateBookmark({
+    return this.bookmarkService.updateUserBookmarkById({
       bookmarkId,
       updates,
       userId: userSessionContext.user.id,
@@ -78,11 +78,11 @@ export class BookmarkController {
   @Delete('/:id')
   @ResponseMessage('Bookmark moved to trash successfully.')
   @ResponseStatus(HttpStatus.OK)
-  softDeleteBookmark(
+  softDeleteUserBookmark(
     @Param('id', ParseIntPipe) bookmarkId: number,
     @CurrentUser() userSessionContext: UserSessionContext
   ) {
-    return this.bookmarkService.softDeleteBookmark({
+    return this.bookmarkService.softDeleteUserBookmark({
       bookmarkId,
       userId: userSessionContext.user.id,
     });
@@ -91,12 +91,12 @@ export class BookmarkController {
   @Delete('bulk')
   @ResponseMessage('Bookmarks moved to trash successfully.')
   @ResponseStatus(HttpStatus.OK)
-  bulkSoftDeleteBookmark(
+  bulkSoftDeleteUserBookmarks(
     @Body(zodPipe(bulkSoftDeleteBookmarkSchema))
     data: BulkSoftDeleteBookmarkDto,
     @CurrentUser() userSessionContext: UserSessionContext
   ) {
-    return this.bookmarkService.bulkSoftDeleteBookmark(
+    return this.bookmarkService.bulkSoftDeleteUserBookmarks(
       data.bookmarkIds,
       userSessionContext.user.id
     );

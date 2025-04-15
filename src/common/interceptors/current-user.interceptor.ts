@@ -7,6 +7,7 @@ import {
 import { Observable } from 'rxjs';
 import { SESSION_TOKEN_COOKIE_NAME } from 'src/modules/auth/auth.constants';
 import { SessionService } from 'src/modules/auth/session.service';
+import { toUserWithoutPassword } from 'src/modules/user/mappers/user.mapper';
 
 @Injectable()
 export class CurrentUserInterceptor implements NestInterceptor {
@@ -22,14 +23,7 @@ export class CurrentUserInterceptor implements NestInterceptor {
       const { user, session } =
         await this.sessionService.validateSessionToken(token);
       if (user && session) {
-        request.currentUser = {
-          id: user.id,
-          visibleName: user.visibleName,
-          email: user.email,
-          createdAt: user.createdAt,
-          isActive: user.isActive,
-          profilePicture: user.profilePicture,
-        };
+        request.currentUser = toUserWithoutPassword(user);
         request.currentSession = session;
       }
     } else {

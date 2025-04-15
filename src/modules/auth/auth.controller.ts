@@ -31,7 +31,7 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(AuthGuard)
-  getCurrentUser(@CurrentUser() userSessionInfo: UserSessionContext) {
+  getAuthenticatedUser(@CurrentUser() userSessionInfo: UserSessionContext) {
     return {
       user: userSessionInfo.user,
     };
@@ -55,7 +55,7 @@ export class AuthController {
       );
     }
 
-    return this.authService.signUp(response, signUpDto);
+    return this.authService.registerUserWithSession(response, signUpDto);
   }
 
   @Post('sign-in')
@@ -76,7 +76,10 @@ export class AuthController {
       );
     }
 
-    return this.authService.signIn(response, signInDto);
+    return this.authService.authenticateUserAndCreateSession(
+      response,
+      signInDto
+    );
   }
 
   @Post('sign-out')
@@ -90,6 +93,6 @@ export class AuthController {
     response: Response,
     @CurrentUser() userSessionInfo: UserSessionContext
   ) {
-    return this.authService.signOut(response, userSessionInfo.session.id);
+    return this.authService.logoutUser(response, userSessionInfo.session.id);
   }
 }

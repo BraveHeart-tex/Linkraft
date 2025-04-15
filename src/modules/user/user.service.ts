@@ -6,11 +6,11 @@ import { User, UserInsertDto } from 'src/db/schema';
 export class UserService {
   constructor(private userRepo: UserRepository) {}
 
-  createUser(userDto: UserInsertDto): Promise<User> {
-    return this.userRepo.insertUser(userDto);
+  signUpUser(userDto: UserInsertDto): Promise<User> {
+    return this.userRepo.create(userDto);
   }
 
-  findUserByEmail(email: string): Promise<User | undefined> {
-    return this.userRepo.findUserByEmail(email);
+  getUserByEmail(email: string): Promise<User | undefined> {
+    return this.userRepo.findByEmail(email);
   }
 }

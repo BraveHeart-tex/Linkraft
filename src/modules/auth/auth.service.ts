@@ -14,6 +14,7 @@ import { Response } from 'express';
 import { SESSION_TOKEN_COOKIE_NAME } from './auth.constants';
 import { ApiException } from 'src/exceptions/api.exception';
 import { UserWithoutPasswordHash } from 'src/db/schema';
+import { toUserWithoutPassword } from '../user/mappers/user.mapper';
 
 @Injectable()
 export class AuthService {
@@ -24,15 +25,13 @@ export class AuthService {
   ) {}
 
   @Transactional()
-  async signUp(
+  async registerUserWithSession(
     res: Response,
     signUpDto: SignUpDto
   ): Promise<{
     user: UserWithoutPasswordHash;
   }> {
-    const existingUser = await this.userService.findUserByEmail(
-      signUpDto.email
-    );
+    const existingUser = await this.userService.getUserByEmail(signUpDto.email);
 
     if (existingUser) {
       throw new ApiException(
@@ -43,7 +42,7 @@ export class AuthService {
     }
 
     const passwordHash = await hashPassword(signUpDto.password);
-    const createdUser = await this.userService.createUser({
+    const createdUser = await this.userService.signUpUser({
       email: signUpDto.email,
       passwordHash,
       visibleName: signUpDto.visibleName,
@@ -54,26 +53,17 @@ export class AuthService {
 
     this.setSessionCookie(res, token, generateAuthTokenExpiryDate());
     return {
-      user: {
-        email: createdUser.email,
-        id: createdUser.id,
-        createdAt: createdUser.createdAt,
-        isActive: createdUser.isActive,
-        profilePicture: createdUser.profilePicture,
-        visibleName: createdUser.visibleName,
-      },
+      user: toUserWithoutPassword(createdUser),
     };
   }
 
-  async signIn(
+  async authenticateUserAndCreateSession(
     res: Response,
     signInDto: SignInDto
   ): Promise<{
     user: UserWithoutPasswordHash;
   }> {
-    const existingUser = await this.userService.findUserByEmail(
-      signInDto.email
-    );
+    const existingUser = await this.userService.getUserByEmail(signInDto.email);
 
     if (!existingUser) {
       throw new ApiException(
@@ -102,18 +92,11 @@ export class AuthService {
     this.setSessionCookie(res, token, generateAuthTokenExpiryDate());
 
     return {
-      user: {
-        id: existingUser.id,
-        email: existingUser.email,
-        createdAt: existingUser.createdAt,
-        isActive: existingUser.isActive,
-        profilePicture: existingUser.profilePicture,
-        visibleName: existingUser.visibleName,
-      },
+      user: toUserWithoutPassword(existingUser),
     };
   }
 
-  async signOut(res: Response, sessionId: string) {
+  async logoutUser(res: Response, sessionId: string) {
     await this.sessionService.invalidateSession(sessionId);
     this.deleteSessionCookie(res);
   }

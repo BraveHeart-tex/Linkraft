@@ -8,6 +8,7 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from 'src/guards/auth.guard';
@@ -32,8 +33,19 @@ export class BookmarkController {
   constructor(private bookmarkService: BookmarkService) {}
 
   @Get()
-  getUserBookmarks(@CurrentUser() userSessionContext: UserSessionContext) {
-    return this.bookmarkService.getUserBookmarks(userSessionContext.user.id);
+  getUserBookmarks(
+    @Query('page', ParseIntPipe) page: number = 1,
+    @Query('pageSize', ParseIntPipe) pageSize: number = 10,
+    @Query('search') searchQuery: string = '',
+    @CurrentUser() userSessionContext: UserSessionContext
+  ) {
+    const offset = (page - 1) * pageSize;
+    return this.bookmarkService.getUserBookmarks({
+      userId: userSessionContext.user.id,
+      limit: pageSize,
+      offset,
+      searchQuery,
+    });
   }
 
   @Get('/:id')

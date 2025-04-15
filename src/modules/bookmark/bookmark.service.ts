@@ -4,6 +4,7 @@ import { BookmarkInsertDto, User } from 'src/db/schema';
 import {
   Bookmark,
   BookmarkOwnershipParams,
+  FindUserBookmarksParams,
   UpdateBookmarkParams,
 } from './bookmark.types';
 
@@ -11,8 +12,8 @@ import {
 export class BookmarkService {
   constructor(private bookmarkRepository: BookmarkRepository) {}
 
-  getUserBookmarks(userId: User['id']) {
-    return this.bookmarkRepository.findAllByUserId(userId);
+  getUserBookmarks(params: FindUserBookmarksParams) {
+    return this.bookmarkRepository.findAllByUserId(params);
   }
 
   getUserBookmarkById({ bookmarkId, userId }: BookmarkOwnershipParams) {

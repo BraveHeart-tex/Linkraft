@@ -10,4 +10,14 @@ export type UpdateBookmarkParams = BookmarkOwnershipParams & {
   updates: UpdateBookmarkDto;
 };
 
+export interface FindUserBookmarksParams extends PaginateSearchParams {
+  userId: User['id'];
+}
+
+export interface PaginateSearchParams {
+  limit: number;
+  offset: number;
+  searchQuery?: string;
+}
+
 export type Bookmark = typeof bookmarks.$inferSelect;

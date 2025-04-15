@@ -5,19 +5,39 @@ import { BookmarkInsertDto, bookmarks, User } from 'src/db/schema';
 import {
   Bookmark,
   BookmarkOwnershipParams,
+  FindUserBookmarksParams,
   UpdateBookmarkParams,
 } from './bookmark.types';
-import { and, eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 
 @Injectable()
 export class BookmarkRepository {
   constructor(private txHost: TransactionHost<DbTransactionAdapter>) {}
 
-  findAllByUserId(userId: User['id']) {
-    return this.txHost.tx
+  async findAllByUserId({
+    userId,
+    limit = 10,
+    offset = 0,
+    searchQuery = '',
+  }: FindUserBookmarksParams) {
+    const query = this.txHost.tx
       .select()
       .from(bookmarks)
-      .where(eq(bookmarks.userId, userId));
+      .where(eq(bookmarks.userId, userId))
+      .$dynamic();
+
+    if (searchQuery) {
+      query.where(
+        or(
+          ilike(bookmarks.title, `%${searchQuery}%`),
+          ilike(bookmarks.description, `%${searchQuery}%`)
+        )
+      );
+    }
+
+    query.limit(limit).offset(offset);
+
+    return query.execute();
   }
 
   findByIdAndUserId({ bookmarkId, userId }: BookmarkOwnershipParams) {

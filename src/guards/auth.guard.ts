@@ -25,7 +25,7 @@ export class AuthGuard implements CanActivate {
     }
 
     const { user, session } =
-      await this.sessionService.validateSessionToken(token);
+      await this.sessionService.validateAndRefreshSession(token);
 
     if (!user || !session) {
       throw new ApiException(

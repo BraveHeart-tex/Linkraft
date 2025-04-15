@@ -21,7 +21,7 @@ export class CurrentUserInterceptor implements NestInterceptor {
 
     if (token) {
       const { user, session } =
-        await this.sessionService.validateSessionToken(token);
+        await this.sessionService.validateAndRefreshSession(token);
       if (user && session) {
         request.currentUser = toUserWithoutPassword(user);
         request.currentSession = session;

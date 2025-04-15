@@ -3,7 +3,7 @@ import {
   encodeBase32LowerCaseNoPadding,
   encodeHexLowerCase,
 } from '@oslojs/encoding';
-import { SESSION_COOKIE_MAX_AGE } from '../auth.constants';
+import { SESSION_LIFETIME_MS } from '../auth.constants';
 
 export const generateSessionToken = (): string => {
   const bytes = new Uint8Array(20);
@@ -18,6 +18,6 @@ export const getSessionId = (token: string): string => {
 
 export const generateAuthTokenExpiryDate = (): Date => {
   const expirationDate = new Date();
-  expirationDate.setTime(expirationDate.getTime() + SESSION_COOKIE_MAX_AGE);
+  expirationDate.setTime(expirationDate.getTime() + SESSION_LIFETIME_MS);
   return expirationDate;
 };

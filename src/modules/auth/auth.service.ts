@@ -49,7 +49,7 @@ export class AuthService {
     });
 
     const token = generateSessionToken();
-    await this.sessionService.createSession(token, createdUser.id);
+    await this.sessionService.createUserSession(token, createdUser.id);
 
     this.setSessionCookie(res, token, generateAuthTokenExpiryDate());
     return {
@@ -87,7 +87,7 @@ export class AuthService {
     }
 
     const token = generateSessionToken();
-    await this.sessionService.createSession(token, existingUser.id);
+    await this.sessionService.createUserSession(token, existingUser.id);
 
     this.setSessionCookie(res, token, generateAuthTokenExpiryDate());
 

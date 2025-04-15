@@ -29,6 +29,7 @@ export const updateBookmarkSchema = createBookmarkSchema
     title: true,
     description: true,
     thumbnail: true,
+    url: true,
   })
   .partial()
   .refine((data) => Object.keys(data).length > 0, {

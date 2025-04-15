@@ -33,18 +33,38 @@ export class BookmarkService {
     ) {
       throw new ApiException(
         'CONFLICT',
-        'A bookmark with the same url already exists',
+        'A bookmark with the same URL already exists',
         HttpStatus.CONFLICT
       );
     }
     return this.bookmarkRepository.create(data);
   }
 
-  updateUserBookmarkById({
+  async updateUserBookmarkById({
     bookmarkId,
     updates,
     userId,
   }: UpdateBookmarkParams) {
+    if (updates?.url) {
+      const bookmarkWithSameUrl =
+        await this.bookmarkRepository.findByUserIdAndUrlExcludingBookmark({
+          excludeBookmarkId: bookmarkId,
+          url: updates.url,
+          userId,
+        });
+
+      if (bookmarkWithSameUrl) {
+        throw new ApiException(
+          'CONFLICT',
+          'A bookmark with the same URL already exists',
+          HttpStatus.CONFLICT,
+          {
+            bookmarkWithSameUrl,
+          }
+        );
+      }
+    }
+
     return this.bookmarkRepository.updateByIdAndUserId({
       bookmarkId,
       updates,

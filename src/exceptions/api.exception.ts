@@ -5,7 +5,7 @@ export class ApiException extends HttpException {
     code: string,
     message: string,
     status: HttpStatus,
-    details?: Record<string, string>
+    details?: Record<string, string | unknown>
   ) {
     super(
       {

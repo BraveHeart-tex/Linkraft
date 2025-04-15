@@ -53,21 +53,13 @@ export class BookmarkRepository {
   }: {
     url: string;
     userId: User['id'];
-  }): Promise<boolean> {
+  }) {
     const result = await this.txHost.tx
-      .select({
-        exists: sql`1`,
-      })
+      .select()
       .from(bookmarks)
-      .where(
-        and(
-          eq(bookmarks.userId, userId),
-          eq(bookmarks.url, url),
-          isNull(bookmarks.deletedAt)
-        )
-      );
+      .where(and(eq(bookmarks.userId, userId), eq(bookmarks.url, url)));
 
-    return !!result[0]?.exists;
+    return result[0];
   }
 
   create(data: BookmarkInsertDto) {
@@ -120,8 +112,7 @@ export class BookmarkRepository {
       where: and(
         eq(bookmarks.userId, userId),
         eq(bookmarks.url, url),
-        ne(bookmarks.id, excludeBookmarkId),
-        isNull(bookmarks.deletedAt)
+        ne(bookmarks.id, excludeBookmarkId)
       ),
     });
   }

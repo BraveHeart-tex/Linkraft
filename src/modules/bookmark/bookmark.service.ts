@@ -25,16 +25,19 @@ export class BookmarkService {
   }
 
   async createBookmarkForUser(data: BookmarkInsertDto) {
-    if (
+    const bookmarkWithSameUrl =
       await this.bookmarkRepository.userHasBookmarkWithUrl({
         url: data.url,
         userId: data.userId,
-      })
-    ) {
+      });
+    if (bookmarkWithSameUrl) {
       throw new ApiException(
         'CONFLICT',
         'A bookmark with the same URL already exists',
-        HttpStatus.CONFLICT
+        HttpStatus.CONFLICT,
+        {
+          bookmarkWithSameUrl,
+        }
       );
     }
     return this.bookmarkRepository.create(data);

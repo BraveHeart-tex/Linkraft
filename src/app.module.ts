@@ -12,6 +12,7 @@ import { ExtendCookieMiddleware } from './common/middleware/extend-cookie.middle
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { CurrentUserInterceptor } from './common/interceptors/current-user.interceptor';
 import { CollectionModule } from './modules/collection/collection.module';
+import { BookmarkModule } from 'src/modules/bookmark/bookmark.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { CollectionModule } from './modules/collection/collection.module';
     DatabaseModule,
     AuthModule,
     CollectionModule,
+    BookmarkModule,
   ],
   providers: [
     {

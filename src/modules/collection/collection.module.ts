@@ -2,16 +2,11 @@ import { Module } from '@nestjs/common';
 import { CollectionService } from './collection.service';
 import { CollectionRepository } from './collection.repository';
 import { CollectionController } from './collection.controller';
-import { SessionService } from '../auth/session.service';
-import { SessionRepository } from '../auth/session.repository';
+import { AuthModule } from 'src/modules/auth/auth.module';
 
 @Module({
-  providers: [
-    CollectionService,
-    CollectionRepository,
-    SessionService,
-    SessionRepository,
-  ],
+  imports: [AuthModule],
+  providers: [CollectionService, CollectionRepository],
   controllers: [CollectionController],
 })
 export class CollectionModule {}

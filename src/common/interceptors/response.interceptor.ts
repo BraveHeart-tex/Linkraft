@@ -12,7 +12,7 @@ import { ResponseDTO } from '../response.dto';
 import {
   RESPONSE_MESSAGE_METADATA_KEY,
   RESPONSE_STATUS_METADATA_KEY,
-} from '../decorators/decorator-constants';
+} from 'src/common/decorators/decorator-constants';
 
 export interface Response<T> {
   statusCode: number;

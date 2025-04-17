@@ -18,6 +18,6 @@ import { AuthGuard } from 'src/guards/auth.guard';
     CookieService,
     AuthGuard,
   ],
-  exports: [AuthService, SessionService],
+  exports: [AuthService, SessionService, SessionRepository],
 })
 export class AuthModule {}

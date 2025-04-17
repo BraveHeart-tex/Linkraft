@@ -7,6 +7,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { BOOKMARK_METADATA_QUEUE_NAME } from 'src/common/processors/queueNames';
 import { BookmarkGateway } from 'src/modules/bookmark/bookmark.gateway';
 import { BookmarkMetadataProcessor } from 'src/modules/bookmark/bookmark.processor';
+import { MetadataService } from 'src/modules/metadata/metadata.service';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { BookmarkMetadataProcessor } from 'src/modules/bookmark/bookmark.process
     BookmarkRepository,
     BookmarkGateway,
     BookmarkMetadataProcessor,
+    MetadataService,
   ],
 })
 export class BookmarkModule {}

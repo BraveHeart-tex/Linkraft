@@ -1,16 +1,14 @@
 import { WorkerHost, Processor } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
-
 import { BOOKMARK_METADATA_QUEUE_NAME } from 'src/common/processors/queueNames';
 import { BookmarkRepository } from 'src/modules/bookmark/bookmark.repository';
+import { FetchBookmarkMetadataJob } from 'src/common/processors/processors.types';
+import { BookmarkGateway } from 'src/modules/bookmark/bookmark.gateway';
+import { Logger, OnModuleDestroy } from '@nestjs/common';
 import metascraper from 'metascraper';
 import metascraperTitle from 'metascraper-title';
 import metascraperDescription from 'metascraper-description';
-import { FetchBookmarkMetadataJob } from 'src/common/processors/processors.types';
-import { BookmarkGateway } from 'src/modules/bookmark/bookmark.gateway';
-import { HttpStatus, Logger, OnModuleDestroy } from '@nestjs/common';
-
-const scraper = metascraper([metascraperTitle(), metascraperDescription()]);
+import { MetadataService } from 'src/modules/metadata/metadata.service';
 
 @Processor(BOOKMARK_METADATA_QUEUE_NAME)
 export class BookmarkMetadataProcessor
@@ -18,10 +16,12 @@ export class BookmarkMetadataProcessor
   implements OnModuleDestroy
 {
   private readonly logger = new Logger(BookmarkMetadataProcessor.name);
+  private scraper = metascraper([metascraperTitle(), metascraperDescription()]);
 
   constructor(
     private readonly bookmarkGateway: BookmarkGateway,
-    private readonly bookmarkRepository: BookmarkRepository
+    private readonly bookmarkRepository: BookmarkRepository,
+    private readonly metadataService: MetadataService
   ) {
     super();
   }
@@ -32,27 +32,9 @@ export class BookmarkMetadataProcessor
     const { url, bookmarkId, userId } = job.data;
 
     try {
-      const { default: ky } = await import('ky-universal');
+      const { html } = await this.metadataService.fetchHtml(url);
 
-      const html = await ky(url, {
-        timeout: 10_000,
-        retry: {
-          limit: 3,
-          methods: ['get'],
-          statusCodes: [
-            HttpStatus.REQUEST_TIMEOUT,
-            HttpStatus.PAYLOAD_TOO_LARGE,
-            HttpStatus.TOO_MANY_REQUESTS,
-            HttpStatus.INTERNAL_SERVER_ERROR,
-            HttpStatus.BAD_GATEWAY,
-            HttpStatus.SERVICE_UNAVAILABLE,
-            HttpStatus.GATEWAY_TIMEOUT,
-          ],
-          backoffLimit: 3_000,
-        },
-      }).text();
-
-      const metadata = await scraper({
+      const metadata = await this.scraper({
         html,
         url,
       });

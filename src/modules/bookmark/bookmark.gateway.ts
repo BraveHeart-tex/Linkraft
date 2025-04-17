@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -16,6 +17,8 @@ import { Bookmark } from 'src/modules/bookmark/bookmark.types';
 export class BookmarkGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
+  private readonly logger = new Logger(BookmarkGateway.name);
+
   @WebSocketServer()
   server!: Server;
 
@@ -30,6 +33,10 @@ export class BookmarkGateway
     bookmarkId: Bookmark['id'],
     metadata: { title: string }
   ) {
+    this.logger.log(
+      `notifyBookmarkUpdate bookmark:update:${bookmarkId}`,
+      JSON.stringify(metadata)
+    );
     this.server.emit(`bookmark:update:${bookmarkId}`, metadata);
   }
 }

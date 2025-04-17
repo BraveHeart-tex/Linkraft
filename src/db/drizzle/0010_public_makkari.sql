@@ -1,0 +1,1 @@
+ALTER TABLE "bookmarks" ADD COLUMN "is_metadata_pending" boolean NOT NULL;

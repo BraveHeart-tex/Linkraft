@@ -20,7 +20,6 @@ export const DRIZZLE_CONNECTION = Symbol('DRIZZLE_CONNECTION');
         const pool = new Pool({
           connectionString: configService.get<string>('DATABASE_URL'),
         });
-
         return drizzle(pool, {
           schema,
           logger: drizzleLogger,

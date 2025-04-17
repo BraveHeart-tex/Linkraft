@@ -6,18 +6,19 @@ export const createBookmarkSchema = createInsertSchema(bookmarks, {
   url: z
     .string({ required_error: 'URL is required' })
     .url('Please enter a valid URL'),
-  title: z
+  title: z.string().max(255, 'Title must be under 255 characters').optional(),
+  description: z
     .string()
-    .max(255, 'Title must be under 255 characters')
+    .max(10_000, 'Description is too long')
     .nullable()
     .optional(),
-  description: z.string().max(10_000, 'Description is too long').optional(),
   thumbnail: z
     .string()
     .url('Thumbnail must be a valid URL')
     .max(255, 'Thumbnail URL is too long')
     .optional()
     .nullable(),
+  isMetadataPending: z.boolean().optional(),
 }).omit({
   id: true,
   createdAt: true,
@@ -31,6 +32,7 @@ export const updateBookmarkSchema = createBookmarkSchema
     description: true,
     thumbnail: true,
     url: true,
+    isMetadataPending: true,
   })
   .partial()
   .refine((data) => Object.keys(data).length > 0, {

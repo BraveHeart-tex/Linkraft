@@ -13,6 +13,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { CurrentUserInterceptor } from './common/interceptors/current-user.interceptor';
 import { CollectionModule } from './modules/collection/collection.module';
 import { BookmarkModule } from 'src/modules/bookmark/bookmark.module';
+import { BullModule } from '@nestjs/bullmq';
 
 @Module({
   imports: [
@@ -29,6 +30,12 @@ import { BookmarkModule } from 'src/modules/bookmark/bookmark.module';
           }),
         }),
       ],
+    }),
+    BullModule.forRoot({
+      connection: {
+        host: process.env.REDIS_HOST || 'redis',
+        port: parseInt(process.env.REDIS_PORT!) || 6379,
+      },
     }),
     DatabaseModule,
     AuthModule,

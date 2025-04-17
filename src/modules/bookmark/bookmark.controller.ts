@@ -68,6 +68,8 @@ export class BookmarkController {
   ) {
     return this.bookmarkService.createBookmarkForUser({
       ...data,
+      title: data.title || 'Fetching title...',
+      isMetadataPending: true,
       userId: userSessionContext.user.id,
     });
   }

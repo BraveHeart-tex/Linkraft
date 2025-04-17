@@ -8,10 +8,21 @@ import {
   UpdateBookmarkParams,
 } from './bookmark.types';
 import { ApiException } from 'src/exceptions/api.exception';
+import { InjectQueue } from '@nestjs/bullmq';
+import {
+  BOOKMARK_METADATA_QUEUE_NAME,
+  FETCH_METADATA_QUEUE_NAME,
+} from 'src/common/processors/queueNames';
+import { Queue } from 'bullmq';
+import { FetchBookmarkMetadataJob } from 'src/common/processors/processors.types';
 
 @Injectable()
 export class BookmarkService {
-  constructor(private bookmarkRepository: BookmarkRepository) {}
+  constructor(
+    private bookmarkRepository: BookmarkRepository,
+    @InjectQueue(BOOKMARK_METADATA_QUEUE_NAME)
+    private metadataQueue: Queue<FetchBookmarkMetadataJob>
+  ) {}
 
   getUserBookmarks(params: FindUserBookmarksParams) {
     return this.bookmarkRepository.findAllByUserId(params);
@@ -40,7 +51,20 @@ export class BookmarkService {
         }
       );
     }
-    return this.bookmarkRepository.create(data);
+
+    const bookmark = await this.bookmarkRepository.create({
+      ...data,
+      title: data?.title ? data?.title : 'Fetching title...',
+      isMetadataPending: true,
+    });
+
+    await this.metadataQueue.add(FETCH_METADATA_QUEUE_NAME, {
+      bookmarkId: bookmark.id,
+      url: data.url,
+      userId: data.userId,
+    });
+
+    return bookmark;
   }
 
   async updateUserBookmarkById({

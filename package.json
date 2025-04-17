@@ -10,6 +10,11 @@
       "eslint --fix"
     ]
   },
+  "pnpm": {
+    "overrides": {
+      "webpack": "5.98.0"
+    }
+  },
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
@@ -30,6 +35,8 @@
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^10.0.0",
     "@nestjs/platform-express": "^10.0.0",
+    "@nestjs/platform-socket.io": "^11.0.20",
+    "@nestjs/websockets": "^11.0.20",
     "@node-rs/argon2": "^2.0.2",
     "@oslojs/crypto": "^1.0.1",
     "@oslojs/encoding": "^1.1.0",
@@ -39,10 +46,16 @@
     "drizzle-orm": "^0.41.0",
     "drizzle-zod": "^0.7.1",
     "express": "^5.1.0",
+    "ky": "^1.8.1",
+    "ky-universal": "^0.12.0",
+    "metascraper": "^5.46.11",
+    "metascraper-description": "^5.46.11",
+    "metascraper-title": "^5.46.11",
     "nestjs-cls": "^5.4.2",
     "pg": "^8.14.1",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
+    "socket.io": "^4.8.1",
     "zod": "^3.24.2"
   },
   "devDependencies": {
@@ -73,5 +86,6 @@
     "typescript-eslint": "^8.29.0",
     "webpack": "^5.98.0",
     "webpack-node-externals": "^3.0.0"
-  }
+  },
+  "packageManager": "pnpm@10.8.1+sha512.c50088ba998c67b8ca8c99df8a5e02fd2ae2e2b29aaf238feaa9e124248d3f48f9fb6db2424949ff901cffbb5e0f0cc1ad6aedb602cd29450751d11c35023677"
 }

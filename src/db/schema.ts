@@ -65,6 +65,7 @@ export const bookmarks = pgTable(
       withTimezone: true,
       mode: 'date',
     }).default(sql`null`),
+    isMetadataPending: boolean('is_metadata_pending').notNull(),
   },
   (table) => [
     index('bookmark_search_index').using(
@@ -80,7 +81,6 @@ export const bookmarkTags = pgTable(
     bookmarkId: integer('bookmark_id')
       .notNull()
       .references(() => bookmarks.id, { onDelete: 'cascade' }),
-
     tagId: integer('tag_id')
       .notNull()
       .references(() => tags.id, { onDelete: 'cascade' }),

@@ -62,8 +62,12 @@ export class BookmarkRepository {
     return result[0];
   }
 
-  create(data: BookmarkInsertDto) {
-    return this.txHost.tx.insert(bookmarks).values(data).returning();
+  async create(data: BookmarkInsertDto) {
+    const result = await this.txHost.tx
+      .insert(bookmarks)
+      .values(data)
+      .returning();
+    return result[0];
   }
 
   updateByIdAndUserId({ bookmarkId, updates, userId }: UpdateBookmarkParams) {

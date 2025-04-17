@@ -1,6 +1,6 @@
 import { WorkerHost, Processor } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
-import ky from 'ky-universal';
+
 import { BOOKMARK_METADATA_QUEUE_NAME } from 'src/common/processors/queueNames';
 import { BookmarkRepository } from 'src/modules/bookmark/bookmark.repository';
 import metascraper from 'metascraper';
@@ -8,12 +8,15 @@ import metascraperTitle from 'metascraper-title';
 import metascraperDescription from 'metascraper-description';
 import { FetchBookmarkMetadataJob } from 'src/common/processors/processors.types';
 import { BookmarkGateway } from 'src/modules/bookmark/bookmark.gateway';
-import { HttpStatus, Logger } from '@nestjs/common';
+import { HttpStatus, Logger, OnModuleDestroy } from '@nestjs/common';
 
 const scraper = metascraper([metascraperTitle(), metascraperDescription()]);
 
 @Processor(BOOKMARK_METADATA_QUEUE_NAME)
-export class BookmarkMetadataProcessor extends WorkerHost {
+export class BookmarkMetadataProcessor
+  extends WorkerHost
+  implements OnModuleDestroy
+{
   private readonly logger = new Logger(BookmarkMetadataProcessor.name);
 
   constructor(
@@ -24,9 +27,13 @@ export class BookmarkMetadataProcessor extends WorkerHost {
   }
 
   async process(job: Job<FetchBookmarkMetadataJob>): Promise<void> {
-    this.logger.log('process job', job);
+    this.logger.log('process job', JSON.stringify(job));
+
     const { url, bookmarkId, userId } = job.data;
+
     try {
+      const { default: ky } = await import('ky-universal');
+
       const html = await ky(url, {
         timeout: 10_000,
         retry: {
@@ -77,5 +84,9 @@ export class BookmarkMetadataProcessor extends WorkerHost {
       });
       this.bookmarkGateway.notifyBookmarkUpdate(bookmarkId, updates);
     }
+  }
+
+  onModuleDestroy() {
+    this.worker.close();
   }
 }

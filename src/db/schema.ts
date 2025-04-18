@@ -26,16 +26,20 @@ export const users = pgTable(
   (table) => [uniqueIndex('emailUniqueIndex').on(table.email)]
 );
 
-export const sessions = pgTable('sessions', {
-  id: text('id').primaryKey(),
-  userId: integer('user_id')
-    .notNull()
-    .references(() => users.id),
-  expiresAt: timestamp('expires_at', {
-    withTimezone: true,
-    mode: 'date',
-  }).notNull(),
-});
+export const sessions = pgTable(
+  'sessions',
+  {
+    id: text('id').primaryKey(),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id),
+    expiresAt: timestamp('expires_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
+  },
+  (table) => [index('session_user_id_index').on(table.userId)]
+);
 
 export const tags = pgTable(
   'tags',
@@ -60,6 +64,7 @@ export const bookmarks = pgTable(
     title: varchar('title', { length: 255 }).notNull(),
     description: text('description'),
     thumbnail: varchar('thumbnail', { length: 255 }),
+    faviconUrl: varchar('faviconUrl', { length: 255 }),
     createdAt: timestamp('created_at').defaultNow(),
     deletedAt: timestamp('deleted_at', {
       withTimezone: true,
@@ -72,6 +77,7 @@ export const bookmarks = pgTable(
       'gin',
       sql`to_tsvector('english', ${table.title} || ' ' || ${table.description})`
     ),
+    index('bookmark_user_id_index').on(table.userId),
   ]
 );
 
@@ -88,17 +94,21 @@ export const bookmarkTags = pgTable(
   (table) => [primaryKey({ columns: [table.bookmarkId, table.tagId] })]
 );
 
-export const collections = pgTable('collections', {
-  id: serial('id').primaryKey(),
-  userId: integer('user_id')
-    .notNull()
-    .references(() => users.id),
-  name: varchar('name', { length: 255 }).notNull(),
-  description: text('description'),
-  color: varchar('color', { length: 16 }),
-  createdAt: timestamp('created_at').defaultNow(),
-  isDeleted: boolean('is_deleted').default(false),
-});
+export const collections = pgTable(
+  'collections',
+  {
+    id: serial('id').primaryKey(),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id),
+    name: varchar('name', { length: 255 }).notNull(),
+    description: text('description'),
+    color: varchar('color', { length: 16 }),
+    createdAt: timestamp('created_at').defaultNow(),
+    isDeleted: boolean('is_deleted').default(false),
+  },
+  (table) => [index('collection_user_id_index').on(table.userId)]
+);
 
 export const bookmarkCollection = pgTable(
   'bookmark_collection',

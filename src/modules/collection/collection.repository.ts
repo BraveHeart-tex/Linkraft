@@ -3,6 +3,7 @@ import { DbTransactionAdapter } from '../database/database.types';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import {
   bookmarkCollection,
+  Collection,
   CollectionInsertDto,
   collections,
   User,
@@ -19,7 +20,7 @@ export class CollectionRepository {
       .values(data)
       .returning()
       .execute();
-    return insertedCollection[0];
+    return insertedCollection[0] as Collection;
   }
 
   async update(

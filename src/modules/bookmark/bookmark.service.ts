@@ -41,6 +41,7 @@ export class BookmarkService {
         url: data.url,
         userId: data.userId,
       });
+
     if (bookmarkWithSameUrl) {
       throw new ApiException(
         'CONFLICT',

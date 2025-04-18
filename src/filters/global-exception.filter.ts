@@ -3,6 +3,7 @@ import {
   ExceptionFilter,
   ArgumentsHost,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { ResponseDTO } from 'src/common/response.dto';
@@ -10,6 +11,7 @@ import { ApiException } from 'src/exceptions/api.exception';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(GlobalExceptionFilter.name);
   catch(exception: unknown, host: ArgumentsHost) {
     const context = host.switchToHttp();
     const response = context.getResponse<Response>();
@@ -42,6 +44,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       },
     });
 
+    this.logger.log(JSON.stringify(responseDTO));
     response.status(status).json(responseDTO);
   }
 }

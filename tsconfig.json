@@ -15,6 +15,7 @@
 
     "strict": true,
     "strictNullChecks": true,
+    "noUncheckedIndexedAccess": true,
     "noImplicitAny": true,
     "noImplicitThis": true,
     "alwaysStrict": true,

@@ -67,7 +67,7 @@ export class BookmarkRepository {
       .insert(bookmarks)
       .values(data)
       .returning();
-    return result[0];
+    return result[0] as Bookmark;
   }
 
   updateByIdAndUserId({ bookmarkId, updates, userId }: UpdateBookmarkParams) {

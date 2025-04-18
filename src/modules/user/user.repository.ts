@@ -15,7 +15,7 @@ export class UserRepository {
       .returning()
       .execute();
 
-    return created[0];
+    return created[0] as User;
   }
 
   async findByEmail(email: string): Promise<User | undefined> {

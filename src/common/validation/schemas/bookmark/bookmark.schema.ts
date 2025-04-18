@@ -19,6 +19,7 @@ export const createBookmarkSchema = createInsertSchema(bookmarks, {
     .optional()
     .nullable(),
   isMetadataPending: z.boolean().optional(),
+  faviconUrl: z.string().url().nullable().default(null),
 }).omit({
   id: true,
   createdAt: true,
@@ -33,6 +34,7 @@ export const updateBookmarkSchema = createBookmarkSchema
     thumbnail: true,
     url: true,
     isMetadataPending: true,
+    faviconUrl: true,
   })
   .partial()
   .refine((data) => Object.keys(data).length > 0, {

@@ -8,6 +8,7 @@ import { Logger, OnModuleDestroy } from '@nestjs/common';
 import metascraper from 'metascraper';
 import metascraperTitle from 'metascraper-title';
 import metascraperDescription from 'metascraper-description';
+import metascraperLogoFavicon from 'metascraper-logo-favicon';
 import { MetadataService } from 'src/modules/metadata/metadata.service';
 
 @Processor(BOOKMARK_METADATA_QUEUE_NAME)
@@ -16,7 +17,11 @@ export class BookmarkMetadataProcessor
   implements OnModuleDestroy
 {
   private readonly logger = new Logger(BookmarkMetadataProcessor.name);
-  private scraper = metascraper([metascraperTitle(), metascraperDescription()]);
+  private scraper = metascraper([
+    metascraperTitle(),
+    metascraperDescription(),
+    metascraperLogoFavicon(),
+  ]);
 
   constructor(
     private readonly bookmarkGateway: BookmarkGateway,
@@ -42,7 +47,7 @@ export class BookmarkMetadataProcessor
       const updates = {
         title: metadata.title || 'Untitled',
         isMetadataPending: false,
-        // description: metadata.description || null,
+        faviconUrl: metadata?.logo || null,
       };
 
       await this.bookmarkRepository.updateByIdAndUserId({
@@ -58,6 +63,7 @@ export class BookmarkMetadataProcessor
       const updates = {
         isMetadataPending: false,
         title: 'Metadata fetch failed',
+        faviconUrl: null,
       };
       await this.bookmarkRepository.updateByIdAndUserId({
         bookmarkId,

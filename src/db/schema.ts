@@ -64,7 +64,7 @@ export const bookmarks = pgTable(
     title: varchar('title', { length: 255 }).notNull(),
     description: text('description'),
     thumbnail: varchar('thumbnail', { length: 255 }),
-    faviconUrl: varchar('faviconUrl', { length: 255 }),
+    faviconUrl: varchar('faviconUrl', { length: 255 }).default(sql`null`),
     createdAt: timestamp('created_at').defaultNow(),
     deletedAt: timestamp('deleted_at', {
       withTimezone: true,

@@ -50,6 +50,7 @@
     "express": "^5.1.0",
     "metascraper": "^5.46.11",
     "metascraper-description": "^5.46.11",
+    "metascraper-logo-favicon": "^5.46.11",
     "metascraper-title": "^5.46.11",
     "nestjs-cls": "^5.4.2",
     "pg": "^8.14.1",

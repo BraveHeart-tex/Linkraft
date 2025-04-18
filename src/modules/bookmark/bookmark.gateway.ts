@@ -31,7 +31,7 @@ export class BookmarkGateway
 
   notifyBookmarkUpdate(
     bookmarkId: Bookmark['id'],
-    metadata: { title: string }
+    metadata: { title: string; faviconUrl: string | null }
   ) {
     this.logger.log(
       `notifyBookmarkUpdate bookmark:update:${bookmarkId}`,

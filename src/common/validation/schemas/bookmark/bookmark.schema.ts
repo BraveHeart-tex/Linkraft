@@ -12,12 +12,6 @@ export const createBookmarkSchema = createInsertSchema(bookmarks, {
     .max(10_000, 'Description is too long')
     .nullable()
     .optional(),
-  thumbnail: z
-    .string()
-    .url('Thumbnail must be a valid URL')
-    .max(255, 'Thumbnail URL is too long')
-    .optional()
-    .nullable(),
   isMetadataPending: z.boolean().optional(),
   faviconUrl: z.string().url().nullable().default(null),
 }).omit({
@@ -31,7 +25,6 @@ export const updateBookmarkSchema = createBookmarkSchema
   .pick({
     title: true,
     description: true,
-    thumbnail: true,
     url: true,
     isMetadataPending: true,
     faviconUrl: true,

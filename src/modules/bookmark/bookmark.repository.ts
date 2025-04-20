@@ -8,7 +8,17 @@ import {
   FindUserBookmarksParams,
   UpdateBookmarkParams,
 } from './bookmark.types';
-import { and, eq, ilike, inArray, isNull, ne, or, sql } from 'drizzle-orm';
+import {
+  and,
+  eq,
+  ilike,
+  inArray,
+  isNotNull,
+  isNull,
+  ne,
+  or,
+  sql,
+} from 'drizzle-orm';
 
 @Injectable()
 export class BookmarkRepository {
@@ -19,11 +29,16 @@ export class BookmarkRepository {
     limit = 10,
     offset = 0,
     searchQuery = '',
+    trashed = false,
   }: FindUserBookmarksParams) {
+    const trashedFilter = trashed
+      ? isNotNull(bookmarks.deletedAt)
+      : isNull(bookmarks.deletedAt);
+
     const query = this.txHost.tx
       .select()
       .from(bookmarks)
-      .where(and(eq(bookmarks.userId, userId), isNull(bookmarks.deletedAt)))
+      .where(and(eq(bookmarks.userId, userId), trashedFilter))
       .$dynamic();
 
     if (searchQuery) {
@@ -83,6 +98,12 @@ export class BookmarkRepository {
       .set({
         deletedAt: sql`NOW()`,
       })
+      .where(and(eq(bookmarks.userId, userId), eq(bookmarks.id, bookmarkId)));
+  }
+
+  deleteByIdAndUserId({ bookmarkId, userId }: BookmarkOwnershipParams) {
+    return this.txHost.tx
+      .delete(bookmarks)
       .where(and(eq(bookmarks.userId, userId), eq(bookmarks.id, bookmarkId)));
   }
 

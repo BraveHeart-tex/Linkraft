@@ -17,7 +17,6 @@ export const createBookmarkSchema = createInsertSchema(bookmarks, {
 }).omit({
   id: true,
   createdAt: true,
-  deletedAt: true,
   userId: true,
 });
 
@@ -28,6 +27,7 @@ export const updateBookmarkSchema = createBookmarkSchema
     url: true,
     isMetadataPending: true,
     faviconUrl: true,
+    deletedAt: true,
   })
   .partial()
   .refine((data) => Object.keys(data).length > 0, {

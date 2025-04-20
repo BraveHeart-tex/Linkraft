@@ -7,5 +7,5 @@
     "**/.pnpm-store": true
   },
   "typescript.tsdk": "node_modules/typescript/lib",
-  "workbench.colorTheme": "Armadillo Light Theme"
+  "workbench.colorTheme": "Default Light+"
 }

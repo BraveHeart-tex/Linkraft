@@ -12,6 +12,7 @@ export type UpdateBookmarkParams = BookmarkOwnershipParams & {
 
 export interface FindUserBookmarksParams extends PaginateSearchParams {
   userId: User['id'];
+  trashed?: boolean;
 }
 
 export interface PaginateSearchParams {

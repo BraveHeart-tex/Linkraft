@@ -44,7 +44,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       },
     });
 
-    this.logger.log(JSON.stringify(responseDTO));
+    this.logger.error(JSON.stringify(responseDTO));
     response.status(status).json(responseDTO);
   }
 }

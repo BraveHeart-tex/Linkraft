@@ -93,31 +93,43 @@ export class BookmarkService {
       }
     }
 
-    return this.bookmarkRepository.updateByIdAndUserId({
+    await this.bookmarkRepository.updateByIdAndUserId({
       bookmarkId,
       updates,
       userId,
     });
+
+    return null;
   }
 
-  softDeleteUserBookmark({ bookmarkId, userId }: BookmarkOwnershipParams) {
-    return this.bookmarkRepository.softDeleteByIdAndUserId({
+  async softDeleteUserBookmark({
+    bookmarkId,
+    userId,
+  }: BookmarkOwnershipParams) {
+    await this.bookmarkRepository.softDeleteByIdAndUserId({
       bookmarkId,
       userId,
     });
+
+    return null;
+  }
+
+  async permanentlyDeleteUserBookmark(params: BookmarkOwnershipParams) {
+    await this.bookmarkRepository.deleteByIdAndUserId(params);
+    return null;
   }
 
   async bulkSoftDeleteUserBookmarks(
     bookmarkIds: Bookmark['id'][],
     userId: User['id']
   ) {
-    const result = await this.bookmarkRepository.bulkSoftDeleteByIdsAndUserId(
+    const results = await this.bookmarkRepository.bulkSoftDeleteByIdsAndUserId(
       bookmarkIds,
       userId
     );
 
     return {
-      deleted: result.length,
+      deleted: results.map((result) => result.deleteId),
     };
   }
 }

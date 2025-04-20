@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Delete,
   Get,
   HttpStatus,
@@ -34,9 +35,9 @@ export class BookmarkController {
 
   @Get()
   getUserBookmarks(
-    @Query('page', ParseIntPipe) page: number = 1,
-    @Query('pageSize', ParseIntPipe) pageSize: number = 10,
-    @Query('search') searchQuery: string = '',
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('pageSize', new DefaultValuePipe(10), ParseIntPipe) pageSize: number,
+    @Query('search', new DefaultValuePipe('')) searchQuery: string,
     @CurrentUser() userSessionContext: UserSessionContext
   ) {
     const offset = (page - 1) * pageSize;
@@ -45,6 +46,39 @@ export class BookmarkController {
       limit: pageSize,
       offset,
       searchQuery,
+    });
+  }
+
+  @Get('trash')
+  getTrashedUserBookmarks(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('pageSize', new DefaultValuePipe(10), ParseIntPipe) pageSize: number,
+    @Query('search', new DefaultValuePipe('')) searchQuery: string,
+    @CurrentUser() userSessionContext: UserSessionContext
+  ) {
+    const offset = (page - 1) * pageSize;
+    return this.bookmarkService.getUserBookmarks({
+      userId: userSessionContext.user.id,
+      limit: pageSize,
+      offset,
+      searchQuery,
+      trashed: true,
+    });
+  }
+
+  @Put('/:id/restore')
+  @ResponseMessage('Bookmark restored successfully.')
+  @ResponseStatus(HttpStatus.OK)
+  async restoreUserBookmarkFromTrash(
+    @Param('id', ParseIntPipe) bookmarkId: number,
+    @CurrentUser() userSessionContext: UserSessionContext
+  ) {
+    return this.bookmarkService.updateUserBookmarkById({
+      bookmarkId,
+      userId: userSessionContext.user.id,
+      updates: {
+        deletedAt: null,
+      },
     });
   }
 
@@ -97,6 +131,19 @@ export class BookmarkController {
     @CurrentUser() userSessionContext: UserSessionContext
   ) {
     return this.bookmarkService.softDeleteUserBookmark({
+      bookmarkId,
+      userId: userSessionContext.user.id,
+    });
+  }
+
+  @Delete('/:id/permanent')
+  @ResponseMessage('Bookmark deleted successfully.')
+  @ResponseStatus(HttpStatus.OK)
+  permanentlyDeleteUserBookmark(
+    @Param('id', ParseIntPipe) bookmarkId: number,
+    @CurrentUser() userSessionContext: UserSessionContext
+  ) {
+    return this.bookmarkService.permanentlyDeleteUserBookmark({
       bookmarkId,
       userId: userSessionContext.user.id,
     });

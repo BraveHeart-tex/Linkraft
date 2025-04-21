@@ -67,6 +67,9 @@ export const bookmarks = pgTable(
     description: text('description'),
     faviconUrl: varchar('faviconUrl', { length: 255 }).default(sql`null`),
     createdAt: timestamp('created_at').defaultNow(),
+    collectionId: integer('collection_id').references(() => collections.id, {
+      onDelete: 'cascade',
+    }),
     deletedAt: timestamp('deleted_at', {
       withTimezone: true,
       mode: 'date',
@@ -111,26 +114,6 @@ export const collections = pgTable(
   (table) => [index('collection_user_id_index').on(table.userId)]
 );
 
-export const bookmarkCollection = pgTable(
-  'bookmark_collection',
-  {
-    bookmarkId: integer('bookmark_id')
-      .notNull()
-      .references(() => bookmarks.id, {
-        onDelete: 'cascade',
-      }),
-    collectionId: integer('collection_id')
-      .notNull()
-      .references(() => collections.id, { onDelete: 'cascade' }),
-  },
-  (table) => [
-    primaryKey({
-      name: 'bookmark_collection_id',
-      columns: [table.bookmarkId, table.collectionId],
-    }),
-  ]
-);
-
 export type User = typeof users.$inferSelect;
 export type UserWithoutPasswordHash = Omit<User, 'passwordHash'>;
 export type Session = typeof sessions.$inferSelect;
@@ -142,8 +125,5 @@ export type CollectionInsertDto = typeof collections.$inferInsert;
 export type Collection = typeof collections.$inferSelect;
 
 export type BookmarkInsertDto = typeof bookmarks.$inferInsert;
-
-export type BookmarkCollectionInsertDto =
-  typeof bookmarkCollection.$inferInsert;
 
 export type Tag = typeof tags.$inferSelect;

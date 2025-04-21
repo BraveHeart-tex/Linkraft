@@ -8,7 +8,6 @@ import { BOOKMARK_METADATA_QUEUE_NAME } from 'src/common/processors/queueNames';
 import { BookmarkGateway } from 'src/modules/bookmark/bookmark.gateway';
 import { BookmarkMetadataProcessor } from 'src/modules/bookmark/bookmark.processor';
 import { MetadataService } from 'src/modules/metadata/metadata.service';
-import { BookmarkCollectionModule } from '../bookmark-collection/bookmark-collection.module';
 import { CollectionModule } from '../collection/collection.module';
 import { BookmarkTagModule } from '../bookmark-tag/bookmark-tag.module';
 import { TagModule } from '../tag/tag.module';
@@ -19,7 +18,6 @@ import { TagModule } from '../tag/tag.module';
     BullModule.registerQueue({
       name: BOOKMARK_METADATA_QUEUE_NAME,
     }),
-    BookmarkCollectionModule,
     CollectionModule,
     TagModule,
     BookmarkTagModule,

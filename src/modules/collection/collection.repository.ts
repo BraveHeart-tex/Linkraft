@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { DbTransactionAdapter } from '../database/database.types';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import {
-  bookmarkCollection,
+  bookmarks,
   Collection,
   CollectionInsertDto,
   collections,
@@ -46,13 +46,10 @@ export class CollectionRepository {
         createdAt: collections.createdAt,
         isDeleted: collections.isDeleted,
         color: collections.color,
-        bookmarkCount: count(bookmarkCollection.bookmarkId),
+        bookmarkCount: count(bookmarks.id),
       })
       .from(collections)
-      .leftJoin(
-        bookmarkCollection,
-        eq(bookmarkCollection.collectionId, collections.id)
-      )
+      .leftJoin(bookmarks, eq(bookmarks.collectionId, collections.id))
       .groupBy(collections.id)
       .where(eq(collections.userId, userId));
   }

@@ -16,7 +16,6 @@ import {
 import { Queue } from 'bullmq';
 import { FetchBookmarkMetadataJob } from 'src/common/processors/processors.types';
 import { CreateBookmarkDto } from 'src/common/validation/schemas/bookmark/bookmark.schema';
-import { BookmarkCollectionRepository } from '../bookmark-collection/bookmark-collection.repository';
 import { BookmarkTagRepository } from '../bookmark-tag/bookmark-tag.repository';
 import { CollectionService } from '../collection/collection.service';
 import { TagRepository } from '../tag/tag.repository';
@@ -27,7 +26,6 @@ export class BookmarkService {
     private readonly bookmarkRepository: BookmarkRepository,
     @InjectQueue(BOOKMARK_METADATA_QUEUE_NAME)
     private readonly metadataQueue: Queue<FetchBookmarkMetadataJob>,
-    private readonly bookmarkCollectionRepository: BookmarkCollectionRepository,
     private readonly bookmarkTagRepository: BookmarkTagRepository,
     private readonly collectionService: CollectionService,
     private readonly tagRepository: TagRepository
@@ -81,13 +79,6 @@ export class BookmarkService {
       title: dto?.title ? dto?.title : 'Fetching title...',
       isMetadataPending: true,
     });
-
-    if (dto.collectionId) {
-      await this.bookmarkCollectionRepository.addToCollection({
-        bookmarkId: bookmark.id,
-        collectionId: dto.collectionId,
-      });
-    }
 
     const bookmarkTagIds: number[] = [...(dto?.existingTagIds || [])];
     if (dto.newTags) {

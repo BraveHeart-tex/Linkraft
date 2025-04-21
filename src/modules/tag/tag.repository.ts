@@ -1,11 +1,12 @@
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { Injectable } from '@nestjs/common';
 import { DbTransactionAdapter } from '../database/database.types';
-import { tags, User } from 'src/db/schema';
+import { bookmarkTags, Tag, tags, User } from 'src/db/schema';
+import { and, count, eq } from 'drizzle-orm';
 
 @Injectable()
 export class TagRepository {
-  constructor(private txHost: TransactionHost<DbTransactionAdapter>) {}
+  constructor(private readonly txHost: TransactionHost<DbTransactionAdapter>) {}
 
   bulkCreate(
     tagNames: string[],
@@ -22,5 +23,24 @@ export class TagRepository {
       .returning({
         id: tags.id,
       });
+  }
+
+  async getUserTags(
+    userId: User['id']
+  ): Promise<(Tag & { usageCount: number })[]> {
+    const rows = await this.txHost.tx
+      .select({
+        tag: tags,
+        usageCount: count(bookmarkTags.bookmarkId),
+      })
+      .from(tags)
+      .leftJoin(bookmarkTags, eq(bookmarkTags.tagId, tags.id))
+      .where(and(eq(tags.userId, userId)))
+      .groupBy(tags.id);
+
+    return rows.map((row) => ({
+      ...row.tag,
+      usageCount: row.usageCount,
+    }));
   }
 }

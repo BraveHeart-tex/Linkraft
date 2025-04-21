@@ -41,7 +41,6 @@ export class BookmarkRepository {
       ? isNotNull(bookmarks.deletedAt)
       : isNull(bookmarks.deletedAt);
 
-    // TODO: Will try to re-write this with the query api
     const query = this.txHost.tx
       .select({
         bookmark: bookmarks,

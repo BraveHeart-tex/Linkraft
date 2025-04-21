@@ -145,3 +145,5 @@ export type BookmarkInsertDto = typeof bookmarks.$inferInsert;
 
 export type BookmarkCollectionInsertDto =
   typeof bookmarkCollection.$inferInsert;
+
+export type Tag = typeof tags.$inferSelect;

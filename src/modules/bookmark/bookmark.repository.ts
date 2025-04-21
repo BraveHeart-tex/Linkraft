@@ -1,7 +1,13 @@
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { Injectable } from '@nestjs/common';
 import { DbTransactionAdapter } from '../database/database.types';
-import { BookmarkInsertDto, bookmarks, User } from 'src/db/schema';
+import {
+  BookmarkInsertDto,
+  bookmarks,
+  bookmarkTags,
+  tags,
+  User,
+} from 'src/db/schema';
 import {
   Bookmark,
   BookmarkOwnershipParams,
@@ -35,10 +41,21 @@ export class BookmarkRepository {
       ? isNotNull(bookmarks.deletedAt)
       : isNull(bookmarks.deletedAt);
 
+    // TODO: Will try to re-write this with the query api
     const query = this.txHost.tx
-      .select()
+      .select({
+        bookmark: bookmarks,
+        tags: sql`COALESCE(
+          json_agg(json_build_object('id', ${tags.id}, 'name', ${tags.name}))
+          FILTER (WHERE ${tags.id} IS NOT NULL),
+          '[]'
+        )`.as('tags'),
+      })
       .from(bookmarks)
       .where(and(eq(bookmarks.userId, userId), trashedFilter))
+      .leftJoin(bookmarkTags, eq(bookmarkTags.bookmarkId, bookmarks.id))
+      .leftJoin(tags, eq(bookmarkTags.tagId, tags.id))
+      .groupBy(bookmarks.id)
       .$dynamic();
 
     if (searchQuery) {
@@ -52,7 +69,12 @@ export class BookmarkRepository {
 
     query.limit(limit).offset(offset);
 
-    return query.execute();
+    const result = await query.execute();
+
+    return result.map((row) => ({
+      ...row.bookmark,
+      tags: row.tags || [],
+    }));
   }
 
   findByIdAndUserId({ bookmarkId, userId }: BookmarkOwnershipParams) {

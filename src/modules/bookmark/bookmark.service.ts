@@ -15,13 +15,20 @@ import {
 } from 'src/common/processors/queueNames';
 import { Queue } from 'bullmq';
 import { FetchBookmarkMetadataJob } from 'src/common/processors/processors.types';
+import { CreateBookmarkDto } from 'src/common/validation/schemas/bookmark/bookmark.schema';
+import { BookmarkCollectionRepository } from '../bookmark-collection/bookmark-collection.repository';
+import { BookmarkTagRepository } from '../bookmark-tag/bookmark-tag.repository';
+import { CollectionService } from '../collection/collection.service';
 
 @Injectable()
 export class BookmarkService {
   constructor(
-    private bookmarkRepository: BookmarkRepository,
+    private readonly bookmarkRepository: BookmarkRepository,
     @InjectQueue(BOOKMARK_METADATA_QUEUE_NAME)
-    private metadataQueue: Queue<FetchBookmarkMetadataJob>
+    private readonly metadataQueue: Queue<FetchBookmarkMetadataJob>,
+    private readonly bookmarkCollectionRepository: BookmarkCollectionRepository,
+    private readonly bookmarkTagRepository: BookmarkTagRepository,
+    private readonly collectionService: CollectionService
   ) {}
 
   getUserBookmarks(params: FindUserBookmarksParams) {
@@ -35,11 +42,11 @@ export class BookmarkService {
     });
   }
 
-  async createBookmarkForUser(data: BookmarkInsertDto) {
+  async createBookmarkForUser(dto: BookmarkInsertDto & CreateBookmarkDto) {
     const bookmarkWithSameUrl =
       await this.bookmarkRepository.userHasBookmarkWithUrl({
-        url: data.url,
-        userId: data.userId,
+        url: dto.url,
+        userId: dto.userId,
       });
 
     if (bookmarkWithSameUrl) {
@@ -53,16 +60,46 @@ export class BookmarkService {
       );
     }
 
+    if (dto.collectionId) {
+      const userHasAccessToCollection =
+        await this.collectionService.userHasAccessToCollection({
+          collectionId: dto.collectionId,
+          userId: dto.userId,
+        });
+
+      if (!userHasAccessToCollection) {
+        throw new ApiException(
+          'UNAUTHORIZED',
+          'You do not have access to this collection',
+          HttpStatus.UNAUTHORIZED
+        );
+      }
+    }
+
     const bookmark = await this.bookmarkRepository.create({
-      ...data,
-      title: data?.title ? data?.title : 'Fetching title...',
+      ...dto,
+      title: dto?.title ? dto?.title : 'Fetching title...',
       isMetadataPending: true,
     });
 
+    if (dto.collectionId) {
+      await this.bookmarkCollectionRepository.addToCollection({
+        bookmarkId: bookmark.id,
+        collectionId: dto.collectionId,
+      });
+    }
+
+    if (dto.tagIds?.length) {
+      await this.bookmarkTagRepository.addTagsToBookmark(
+        bookmark.id,
+        dto.tagIds
+      );
+    }
+
     await this.metadataQueue.add(FETCH_METADATA_QUEUE_NAME, {
       bookmarkId: bookmark.id,
-      url: data.url,
-      userId: data.userId,
+      url: dto.url,
+      userId: dto.userId,
     });
 
     return bookmark;

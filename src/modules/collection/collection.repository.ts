@@ -8,8 +8,9 @@ import {
   collections,
   User,
 } from 'src/db/schema';
-import { and, count, eq } from 'drizzle-orm';
+import { and, count, eq, sql } from 'drizzle-orm';
 import { CollectionOwnershipParams } from './collection.types';
+import { QueryResult } from 'pg';
 
 @Injectable()
 export class CollectionRepository {
@@ -62,5 +63,17 @@ export class CollectionRepository {
       .where(
         and(eq(collections.id, collectionId), eq(collections.userId, userId))
       );
+  }
+
+  async userHasAccessToCollection({
+    collectionId,
+    userId,
+  }: CollectionOwnershipParams): Promise<boolean> {
+    const result: QueryResult<{ user_has_access: boolean }> =
+      await this.txHost.tx.execute(
+        sql`SELECT exists (SELECT 1 FROM ${collections} WHERE ${collections.id} = ${collectionId} AND ${collections.userId} = ${userId}) as user_has_access`
+      );
+
+    return !!result.rows[0]?.user_has_access;
   }
 }

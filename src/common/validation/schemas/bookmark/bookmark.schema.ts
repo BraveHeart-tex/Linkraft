@@ -14,11 +14,16 @@ export const createBookmarkSchema = createInsertSchema(bookmarks, {
     .optional(),
   isMetadataPending: z.boolean().optional(),
   faviconUrl: z.string().url().nullable().default(null),
-}).omit({
-  id: true,
-  createdAt: true,
-  userId: true,
-});
+})
+  .omit({
+    id: true,
+    createdAt: true,
+    userId: true,
+  })
+  .extend({
+    collectionId: z.number().nullable().optional(),
+    tagIds: z.number().array().nullable().optional(),
+  });
 
 export const updateBookmarkSchema = createBookmarkSchema
   .pick({
@@ -28,6 +33,8 @@ export const updateBookmarkSchema = createBookmarkSchema
     isMetadataPending: true,
     faviconUrl: true,
     deletedAt: true,
+    collectionId: true,
+    tagIds: true,
   })
   .partial()
   .refine((data) => Object.keys(data).length > 0, {

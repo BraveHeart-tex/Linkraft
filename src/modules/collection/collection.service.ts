@@ -23,4 +23,8 @@ export class CollectionService {
   deleteUserCollection(params: CollectionOwnershipParams) {
     return this.collectionRepository.deleteUserCollection(params);
   }
+
+  userHasAccessToCollection(params: CollectionOwnershipParams) {
+    return this.collectionRepository.userHasAccessToCollection(params);
+  }
 }

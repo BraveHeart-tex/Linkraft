@@ -14,6 +14,7 @@ import { CurrentUserInterceptor } from './common/interceptors/current-user.inter
 import { CollectionModule } from './modules/collection/collection.module';
 import { BookmarkModule } from 'src/modules/bookmark/bookmark.module';
 import { BullModule } from '@nestjs/bullmq';
+import { TagModule } from './modules/tag/tag.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { BullModule } from '@nestjs/bullmq';
     AuthModule,
     CollectionModule,
     BookmarkModule,
+    TagModule,
   ],
   providers: [
     {

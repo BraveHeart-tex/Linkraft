@@ -8,5 +8,6 @@ import { AuthModule } from 'src/modules/auth/auth.module';
   imports: [AuthModule],
   providers: [CollectionService, CollectionRepository],
   controllers: [CollectionController],
+  exports: [CollectionService, CollectionRepository],
 })
 export class CollectionModule {}

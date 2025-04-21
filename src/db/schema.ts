@@ -59,7 +59,9 @@ export const bookmarks = pgTable(
     id: serial('id').primaryKey(),
     userId: integer('user_id')
       .notNull()
-      .references(() => users.id),
+      .references(() => users.id, {
+        onDelete: 'cascade',
+      }),
     url: text('url').notNull(),
     title: varchar('title', { length: 255 }).notNull(),
     description: text('description'),
@@ -114,10 +116,12 @@ export const bookmarkCollection = pgTable(
   {
     bookmarkId: integer('bookmark_id')
       .notNull()
-      .references(() => bookmarks.id),
+      .references(() => bookmarks.id, {
+        onDelete: 'cascade',
+      }),
     collectionId: integer('collection_id')
       .notNull()
-      .references(() => collections.id),
+      .references(() => collections.id, { onDelete: 'cascade' }),
   },
   (table) => [
     primaryKey({
@@ -138,3 +142,6 @@ export type CollectionInsertDto = typeof collections.$inferInsert;
 export type Collection = typeof collections.$inferSelect;
 
 export type BookmarkInsertDto = typeof bookmarks.$inferInsert;
+
+export type BookmarkCollectionInsertDto =
+  typeof bookmarkCollection.$inferInsert;

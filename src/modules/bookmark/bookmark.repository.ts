@@ -5,6 +5,7 @@ import {
   BookmarkInsertDto,
   bookmarks,
   bookmarkTags,
+  collections,
   tags,
   User,
 } from 'src/db/schema';
@@ -49,12 +50,17 @@ export class BookmarkRepository {
           FILTER (WHERE ${tags.id} IS NOT NULL),
           '[]'
         )`.as('tags'),
+        collection: {
+          id: collections.id,
+          name: collections.name,
+        },
       })
       .from(bookmarks)
       .where(and(eq(bookmarks.userId, userId), trashedFilter))
       .leftJoin(bookmarkTags, eq(bookmarkTags.bookmarkId, bookmarks.id))
       .leftJoin(tags, eq(bookmarkTags.tagId, tags.id))
-      .groupBy(bookmarks.id)
+      .leftJoin(collections, eq(bookmarks.collectionId, collections.id))
+      .groupBy(bookmarks.id, collections.id)
       .$dynamic();
 
     if (searchQuery) {
@@ -73,6 +79,7 @@ export class BookmarkRepository {
     return result.map((row) => ({
       ...row.bookmark,
       tags: row.tags || [],
+      collection: row.collection,
     }));
   }
 

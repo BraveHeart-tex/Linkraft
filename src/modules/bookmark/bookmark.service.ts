@@ -81,7 +81,7 @@ export class BookmarkService {
     });
 
     const bookmarkTagIds: number[] = [...(dto?.existingTagIds || [])];
-    if (dto.newTags) {
+    if (dto.newTags?.length) {
       const createdTagIds = await this.tagRepository.bulkCreate(
         dto.newTags,
         dto.userId

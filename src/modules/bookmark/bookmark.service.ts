@@ -19,6 +19,7 @@ import { CreateBookmarkDto } from 'src/common/validation/schemas/bookmark/bookma
 import { BookmarkCollectionRepository } from '../bookmark-collection/bookmark-collection.repository';
 import { BookmarkTagRepository } from '../bookmark-tag/bookmark-tag.repository';
 import { CollectionService } from '../collection/collection.service';
+import { TagRepository } from '../tag/tag.repository';
 
 @Injectable()
 export class BookmarkService {
@@ -28,7 +29,8 @@ export class BookmarkService {
     private readonly metadataQueue: Queue<FetchBookmarkMetadataJob>,
     private readonly bookmarkCollectionRepository: BookmarkCollectionRepository,
     private readonly bookmarkTagRepository: BookmarkTagRepository,
-    private readonly collectionService: CollectionService
+    private readonly collectionService: CollectionService,
+    private readonly tagRepository: TagRepository
   ) {}
 
   getUserBookmarks(params: FindUserBookmarksParams) {
@@ -89,10 +91,20 @@ export class BookmarkService {
       });
     }
 
-    if (dto.tagIds?.length) {
+    const bookmarkTagIds: number[] = [...(dto?.existingTagIds || [])];
+    if (dto.newTags) {
+      const createdTagIds = await this.tagRepository.bulkCreate(
+        dto.newTags,
+        dto.userId
+      );
+
+      bookmarkTagIds.push(...createdTagIds.map((result) => result.id));
+    }
+
+    if (bookmarkTagIds?.length) {
       await this.bookmarkTagRepository.addTagsToBookmark(
         bookmark.id,
-        dto.tagIds
+        bookmarkTagIds
       );
     }
 

@@ -22,7 +22,8 @@ export const createBookmarkSchema = createInsertSchema(bookmarks, {
   })
   .extend({
     collectionId: z.number().nullable().optional(),
-    tagIds: z.number().array().nullable().optional(),
+    existingTagIds: z.number().array().nullable().optional(),
+    newTags: z.string().array().nullable().optional(),
   });
 
 export const updateBookmarkSchema = createBookmarkSchema
@@ -34,7 +35,8 @@ export const updateBookmarkSchema = createBookmarkSchema
     faviconUrl: true,
     deletedAt: true,
     collectionId: true,
-    tagIds: true,
+    existingTagIds: true,
+    newTags: true,
   })
   .partial()
   .refine((data) => Object.keys(data).length > 0, {

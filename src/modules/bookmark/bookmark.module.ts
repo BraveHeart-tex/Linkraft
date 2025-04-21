@@ -11,6 +11,7 @@ import { MetadataService } from 'src/modules/metadata/metadata.service';
 import { BookmarkCollectionModule } from '../bookmark-collection/bookmark-collection.module';
 import { CollectionModule } from '../collection/collection.module';
 import { BookmarkTagModule } from '../bookmark-tag/bookmark-tag.module';
+import { TagModule } from '../tag/tag.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { BookmarkTagModule } from '../bookmark-tag/bookmark-tag.module';
     }),
     BookmarkCollectionModule,
     CollectionModule,
+    TagModule,
     BookmarkTagModule,
   ],
   controllers: [BookmarkController],

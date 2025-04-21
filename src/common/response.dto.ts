@@ -5,7 +5,6 @@ export class ResponseDTO<T> {
   data: T | null;
   message: string;
   error: {
-    code: string;
     details?: unknown;
   } | null;
   status: HttpStatus;
@@ -21,7 +20,7 @@ export class ResponseDTO<T> {
     message: string;
     status: HttpStatus;
     data?: T | null;
-    error?: { code: string; details?: unknown } | null;
+    error?: { details?: unknown } | null;
   }) {
     this.success = success;
     this.message = message;

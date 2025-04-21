@@ -35,7 +35,6 @@ export class AuthService {
 
     if (existingUser) {
       throw new ApiException(
-        'CONFLICT',
         'Provided email is already in use',
         HttpStatus.CONFLICT
       );
@@ -67,7 +66,6 @@ export class AuthService {
 
     if (!existingUser) {
       throw new ApiException(
-        'UNAUTHORIZED',
         'Invalid email or password',
         HttpStatus.UNAUTHORIZED
       );
@@ -80,7 +78,6 @@ export class AuthService {
 
     if (!isPasswordCorrect) {
       throw new ApiException(
-        'UNAUTHORIZED',
         'Invalid email or password',
         HttpStatus.UNAUTHORIZED
       );

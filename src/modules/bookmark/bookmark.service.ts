@@ -53,7 +53,6 @@ export class BookmarkService {
 
     if (bookmarkWithSameUrl) {
       throw new ApiException(
-        'CONFLICT',
         'A bookmark with the same URL already exists',
         HttpStatus.CONFLICT,
         {
@@ -71,7 +70,6 @@ export class BookmarkService {
 
       if (!userHasAccessToCollection) {
         throw new ApiException(
-          'UNAUTHORIZED',
           'You do not have access to this collection',
           HttpStatus.UNAUTHORIZED
         );
@@ -132,7 +130,6 @@ export class BookmarkService {
 
       if (bookmarkWithSameUrl) {
         throw new ApiException(
-          'CONFLICT',
           'A bookmark with the same URL already exists',
           HttpStatus.CONFLICT,
           {

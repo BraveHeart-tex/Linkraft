@@ -18,18 +18,15 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     let status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal Server Error';
-    let code = 'UNKNOWN_ERROR';
     let details: unknown = null;
 
     if (exception instanceof ApiException) {
       const apiResponse = exception.getResponse() as ResponseDTO<null>;
       message = exception.message;
-      code = apiResponse?.error!.code;
       status = exception.getStatus();
       details = apiResponse?.error!.details;
     } else if (exception instanceof Error) {
       message = exception.message;
-      code = exception.name;
     } else {
       message = 'Unknown exception';
     }
@@ -39,7 +36,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       message,
       status,
       error: {
-        code,
         details,
       },
     });

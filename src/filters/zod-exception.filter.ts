@@ -27,7 +27,6 @@ export class ZodExceptionFilter implements ExceptionFilter {
         status: HttpStatus.BAD_REQUEST,
         data: null,
         error: {
-          code: 'VALIDATION_ERROR',
           details,
         },
       })

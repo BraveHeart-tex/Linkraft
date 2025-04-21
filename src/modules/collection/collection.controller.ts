@@ -75,7 +75,6 @@ export class CollectionController {
   ) {
     if (Object.keys(updateCollectionDto).length === 0) {
       throw new ApiException(
-        'BAD_REQUEST',
         'Please provide fields to update',
         HttpStatus.BAD_REQUEST
       );

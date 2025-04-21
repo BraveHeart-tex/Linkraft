@@ -14,7 +14,6 @@ export class ZodValidationPipe implements PipeTransform {
         errors[key] = err.message;
       });
       throw new ApiException(
-        'VALIDATION_ERROR',
         'Validation failed',
         HttpStatus.BAD_REQUEST,
         errors

@@ -49,7 +49,6 @@ export class AuthController {
   ) {
     if (userSessionInfo.user || userSessionInfo.session) {
       throw new ApiException(
-        'BAD_REQUEST',
         'You cannot sign-up when you are signed in',
         HttpStatus.BAD_REQUEST
       );
@@ -70,7 +69,6 @@ export class AuthController {
   ) {
     if (userSessionInfo.user || userSessionInfo.session) {
       throw new ApiException(
-        'BAD_REQUEST',
         'You are already signed in',
         HttpStatus.BAD_REQUEST
       );

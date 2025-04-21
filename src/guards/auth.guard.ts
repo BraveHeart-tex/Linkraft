@@ -20,7 +20,6 @@ export class AuthGuard implements CanActivate {
 
     if (!token) {
       throw new ApiException(
-        'UNAUTHORIZED',
         'Session token not provided',
         HttpStatus.UNAUTHORIZED
       );
@@ -33,7 +32,6 @@ export class AuthGuard implements CanActivate {
       response.cookie(SESSION_TOKEN_COOKIE_NAME, '', { maxAge: 0 });
 
       throw new ApiException(
-        'UNAUTHORIZED',
         'Invalid or expired session token',
         HttpStatus.UNAUTHORIZED
       );

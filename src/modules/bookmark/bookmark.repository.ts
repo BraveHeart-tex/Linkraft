@@ -114,6 +114,13 @@ export class BookmarkRepository {
   }
 
   updateByIdAndUserId({ bookmarkId, updates, userId }: UpdateBookmarkParams) {
+    console.log(
+      '🚀 ~ BookmarkRepository ~ updateByIdAndUserId ~ bookmarkId, updates, userId:',
+      bookmarkId,
+      updates,
+      userId
+    );
+    if (Object.keys(updates || {}).length === 0) return;
     return this.txHost.tx
       .update(bookmarks)
       .set(updates)

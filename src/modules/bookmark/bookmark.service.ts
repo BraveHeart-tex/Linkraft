@@ -19,6 +19,8 @@ import { CreateBookmarkDto } from 'src/common/validation/schemas/bookmark/bookma
 import { BookmarkTagRepository } from '../bookmark-tag/bookmark-tag.repository';
 import { CollectionService } from '../collection/collection.service';
 import { TagRepository } from '../tag/tag.repository';
+import { TagService } from '../tag/tag.service';
+import { buildBookmarkUpdateDto } from './bookmark.utils';
 
 @Injectable()
 export class BookmarkService {
@@ -28,7 +30,8 @@ export class BookmarkService {
     private readonly metadataQueue: Queue<FetchBookmarkMetadataJob>,
     private readonly bookmarkTagRepository: BookmarkTagRepository,
     private readonly collectionService: CollectionService,
-    private readonly tagRepository: TagRepository
+    private readonly tagRepository: TagRepository,
+    private readonly tagService: TagService
   ) {}
 
   getUserBookmarks(params: FindUserBookmarksParams) {
@@ -111,6 +114,15 @@ export class BookmarkService {
     updates,
     userId,
   }: UpdateBookmarkParams) {
+    const bookmark = await this.bookmarkRepository.findByIdAndUserId({
+      bookmarkId,
+      userId,
+    });
+
+    if (!bookmark) {
+      throw new ApiException('Bookmark not found', HttpStatus.NOT_FOUND);
+    }
+
     if (updates?.url) {
       const bookmarkWithSameUrl =
         await this.bookmarkRepository.findByUserIdAndUrlExcludingBookmark({
@@ -130,13 +142,46 @@ export class BookmarkService {
       }
     }
 
-    await this.bookmarkRepository.updateByIdAndUserId({
+    const urlChanged = updates.url && updates.url !== bookmark.url;
+    const titleChanged = updates.title && updates.title !== bookmark.title;
+
+    const bookmarkUpdates = {
+      ...buildBookmarkUpdateDto(bookmark, updates),
+      ...(urlChanged && titleChanged
+        ? {
+            isMetadataPending: true,
+          }
+        : {}),
+    };
+
+    if (Object.keys(bookmarkUpdates).length > 0) {
+      await this.bookmarkRepository.updateByIdAndUserId({
+        bookmarkId,
+        updates: bookmarkUpdates,
+        userId,
+      });
+    }
+
+    const updatedTagIds = await this.tagService.syncBookmarkTags({
       bookmarkId,
-      updates,
+      existingTagIds: updates.existingTagIds || [],
+      newTags: updates.newTags || [],
       userId,
     });
 
-    return null;
+    if (urlChanged && !titleChanged) {
+      await this.metadataQueue.add(FETCH_METADATA_QUEUE_NAME, {
+        bookmarkId: bookmark.id,
+        url: updates.url as string,
+        userId,
+      });
+    }
+
+    return {
+      success: true,
+      updatedBookmarkId: bookmark.id,
+      updatedTagIds,
+    };
   }
 
   async softDeleteUserBookmark({

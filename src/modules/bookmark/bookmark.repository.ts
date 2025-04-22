@@ -208,4 +208,13 @@ export class BookmarkRepository {
       ),
     });
   }
+
+  async bulkDeleteTrashedUserBookmarks(userId: User['id']) {
+    return this.txHost.tx
+      .delete(bookmarks)
+      .where(and(eq(bookmarks.userId, userId), isNotNull(bookmarks.deletedAt)))
+      .returning({
+        id: bookmarks.id,
+      });
+  }
 }

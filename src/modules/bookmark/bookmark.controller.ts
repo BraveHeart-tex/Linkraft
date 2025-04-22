@@ -149,6 +149,13 @@ export class BookmarkController {
     });
   }
 
+  @Delete('/trash')
+  @ResponseMessage('All trashed bookmarks deleted successfully')
+  @ResponseStatus(HttpStatus.OK)
+  emptyTrash(@CurrentUser() userSessionContext: UserSessionContext) {
+    return this.bookmarkService.emptyTrash(userSessionContext.user.id);
+  }
+
   @Delete('bulk')
   @ResponseMessage('Bookmarks moved to trash successfully.')
   @ResponseStatus(HttpStatus.OK)

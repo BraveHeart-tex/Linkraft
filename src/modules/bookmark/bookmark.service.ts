@@ -228,4 +228,8 @@ export class BookmarkService {
       deleted: results.map((result) => result.deleteId),
     };
   }
+
+  emptyTrash(userId: User['id']) {
+    return this.bookmarkRepository.bulkDeleteTrashedUserBookmarks(userId);
+  }
 }

@@ -23,6 +23,7 @@ export class TagRepository {
       )
       .returning({
         id: tags.id,
+        name: tags.name,
       });
   }
 

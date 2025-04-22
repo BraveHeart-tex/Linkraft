@@ -162,7 +162,7 @@ export class BookmarkService {
       });
     }
 
-    const updatedTagIds = await this.tagService.syncBookmarkTags({
+    const createdTags = await this.tagService.syncBookmarkTags({
       bookmarkId,
       existingTagIds: updates.existingTagIds || [],
       newTags: updates.newTags || [],
@@ -177,10 +177,15 @@ export class BookmarkService {
       });
     }
 
+    const updatedBookmark = await this.bookmarkRepository.findByIdAndUserId({
+      bookmarkId: bookmark.id,
+      userId,
+    });
+
     return {
       success: true,
-      updatedBookmarkId: bookmark.id,
-      updatedTagIds,
+      updatedBookmark,
+      createdTags,
     };
   }
 

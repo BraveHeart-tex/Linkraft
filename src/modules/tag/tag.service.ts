@@ -45,6 +45,6 @@ export class TagService {
       toRemove
     );
 
-    return [...desiredTagIds];
+    return createdTags;
   }
 }

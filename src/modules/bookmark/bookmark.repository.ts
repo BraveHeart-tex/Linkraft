@@ -6,12 +6,14 @@ import {
   bookmarks,
   bookmarkTags,
   collections,
+  Tag,
   tags,
   User,
 } from 'src/db/schema';
 import {
   Bookmark,
   BookmarkOwnershipParams,
+  BookmarkWithTagsAndCollection,
   FindUserBookmarksParams,
   UpdateBookmarkParams,
 } from './bookmark.types';
@@ -37,7 +39,7 @@ export class BookmarkRepository {
     offset = 0,
     searchQuery = '',
     trashed = false,
-  }: FindUserBookmarksParams) {
+  }: FindUserBookmarksParams): Promise<BookmarkWithTagsAndCollection[]> {
     const trashedFilter = trashed
       ? isNotNull(bookmarks.deletedAt)
       : isNull(bookmarks.deletedAt);
@@ -45,7 +47,7 @@ export class BookmarkRepository {
     const query = this.txHost.tx
       .select({
         bookmark: bookmarks,
-        tags: sql`COALESCE(
+        tags: sql<Pick<Tag, 'id' | 'name'>[]>`COALESCE(
           json_agg(json_build_object('id', ${tags.id}, 'name', ${tags.name}))
           FILTER (WHERE ${tags.id} IS NOT NULL),
           '[]'
@@ -90,6 +92,42 @@ export class BookmarkRepository {
     });
   }
 
+  async findWithTagsAndCollectionByIdAndUserId({
+    bookmarkId,
+    userId,
+  }: BookmarkOwnershipParams): Promise<
+    BookmarkWithTagsAndCollection | undefined
+  > {
+    const result = await this.txHost.tx
+      .select({
+        bookmark: bookmarks,
+        tags: sql<Pick<Tag, 'id' | 'name'>[]>`COALESCE(
+          json_agg(json_build_object('id', ${tags.id}, 'name', ${tags.name}))
+          FILTER (WHERE ${tags.id} IS NOT NULL),
+          '[]'
+        )`.as('tags'),
+        collection: {
+          id: collections.id,
+          name: collections.name,
+        },
+      })
+      .from(bookmarks)
+      .where(and(eq(bookmarks.id, bookmarkId), eq(bookmarks.userId, userId)))
+      .leftJoin(bookmarkTags, eq(bookmarkTags.bookmarkId, bookmarks.id))
+      .leftJoin(tags, eq(bookmarkTags.tagId, tags.id))
+      .leftJoin(collections, eq(bookmarks.collectionId, collections.id))
+      .limit(1)
+      .groupBy(bookmarks.id, collections.id);
+
+    if (!result[0]) return;
+
+    return {
+      ...result[0].bookmark,
+      collection: result[0].collection,
+      tags: result[0].tags,
+    };
+  }
+
   async userHasBookmarkWithUrl({
     url,
     userId,
@@ -114,12 +152,6 @@ export class BookmarkRepository {
   }
 
   updateByIdAndUserId({ bookmarkId, updates, userId }: UpdateBookmarkParams) {
-    console.log(
-      '🚀 ~ BookmarkRepository ~ updateByIdAndUserId ~ bookmarkId, updates, userId:',
-      bookmarkId,
-      updates,
-      userId
-    );
     if (Object.keys(updates || {}).length === 0) return;
     return this.txHost.tx
       .update(bookmarks)

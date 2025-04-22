@@ -11,7 +11,7 @@ export class TagRepository {
   async bulkCreate(
     tagNames: string[],
     userId: User['id']
-  ): Promise<{ id: number }[]> {
+  ): Promise<{ id: number; name: string }[]> {
     if (tagNames.length === 0) return [];
     return this.txHost.tx
       .insert(tags)

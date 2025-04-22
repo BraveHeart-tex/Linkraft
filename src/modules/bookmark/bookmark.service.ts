@@ -6,6 +6,7 @@ import {
   BookmarkOwnershipParams,
   FindUserBookmarksParams,
   UpdateBookmarkParams,
+  UpdateBookmarkReturn,
 } from './bookmark.types';
 import { ApiException } from 'src/exceptions/api.exception';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -113,7 +114,7 @@ export class BookmarkService {
     bookmarkId,
     updates,
     userId,
-  }: UpdateBookmarkParams) {
+  }: UpdateBookmarkParams): Promise<UpdateBookmarkReturn> {
     const bookmark = await this.bookmarkRepository.findByIdAndUserId({
       bookmarkId,
       userId,
@@ -177,10 +178,18 @@ export class BookmarkService {
       });
     }
 
-    const updatedBookmark = await this.bookmarkRepository.findByIdAndUserId({
-      bookmarkId: bookmark.id,
-      userId,
-    });
+    const updatedBookmark =
+      await this.bookmarkRepository.findWithTagsAndCollectionByIdAndUserId({
+        bookmarkId: bookmark.id,
+        userId,
+      });
+
+    if (!updatedBookmark) {
+      throw new ApiException(
+        'Updated bookmark not found',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
 
     return {
       success: true,

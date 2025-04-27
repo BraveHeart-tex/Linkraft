@@ -32,17 +32,22 @@ export class BookmarkMetadataProcessor
   }
 
   async process(job: Job<FetchBookmarkMetadataJob>): Promise<void> {
-    this.logger.log('process job', JSON.stringify(job));
-
     const { url, bookmarkId, userId } = job.data;
+    const jobId = job.id;
+    const start = Date.now();
+
+    this.logger.log(
+      `[Job ${jobId}] Starting FetchBookmarkMetadataJob for bookmarkId=${bookmarkId}, userId=${userId}, url=${url}`
+    );
 
     try {
       const { html } = await this.metadataService.fetchHtml(url);
+      this.logger.debug(`[Job ${jobId}] Fetched HTML for URL: ${url}`);
 
-      const metadata = await this.scraper({
-        html,
-        url,
-      });
+      const metadata = await this.scraper({ html, url });
+      this.logger.debug(
+        `[Job ${jobId}] Extracted metadata: ${JSON.stringify(metadata)}`
+      );
 
       const updates = {
         title: metadata.title || 'Untitled',
@@ -55,10 +60,14 @@ export class BookmarkMetadataProcessor
         userId,
         updates,
       });
-
       this.bookmarkGateway.notifyBookmarkUpdate(bookmarkId, updates);
+
+      this.logger.log(`[Job ${jobId}] Successfully updated bookmark metadata`);
     } catch (error) {
-      this.logger.error(`Failed to fetch metadata for URL: ${url}`, error);
+      this.logger.error(
+        `[Job ${jobId}] Failed to fetch metadata for bookmarkId=${bookmarkId}, userId=${userId}, url=${url}`,
+        (error as Error).stack
+      );
 
       const updates = {
         isMetadataPending: false,
@@ -71,6 +80,13 @@ export class BookmarkMetadataProcessor
         updates,
       });
       this.bookmarkGateway.notifyBookmarkUpdate(bookmarkId, updates);
+
+      this.logger.warn(
+        `[Job ${jobId}] Metadata update failed, fallback metadata set`
+      );
+    } finally {
+      const duration = Date.now() - start;
+      this.logger.log(`[Job ${jobId}] Finished processing in ${duration}ms`);
     }
   }
 

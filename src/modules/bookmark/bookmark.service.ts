@@ -10,10 +10,8 @@ import {
 } from './bookmark.types';
 import { ApiException } from 'src/exceptions/api.exception';
 import { InjectQueue } from '@nestjs/bullmq';
-import {
-  BOOKMARK_METADATA_QUEUE_NAME,
-  FETCH_METADATA_QUEUE_NAME,
-} from 'src/common/processors/queueNames';
+import { BOOKMARK_METADATA_QUEUE_NAME } from 'src/common/processors/queueNames';
+import { FETCH_BOOKMARK_METADATA_JOB_NAME } from 'src/common/processors/jobNames';
 import { Queue } from 'bullmq';
 import { FetchBookmarkMetadataJob } from 'src/common/processors/processors.types';
 import { CreateBookmarkDto } from 'src/common/validation/schemas/bookmark/bookmark.schema';
@@ -101,7 +99,7 @@ export class BookmarkService {
       );
     }
 
-    await this.metadataQueue.add(FETCH_METADATA_QUEUE_NAME, {
+    await this.metadataQueue.add(FETCH_BOOKMARK_METADATA_JOB_NAME, {
       bookmarkId: bookmark.id,
       url: dto.url,
       userId: dto.userId,
@@ -171,7 +169,7 @@ export class BookmarkService {
     });
 
     if (urlChanged && !titleChanged) {
-      await this.metadataQueue.add(FETCH_METADATA_QUEUE_NAME, {
+      await this.metadataQueue.add(FETCH_BOOKMARK_METADATA_JOB_NAME, {
         bookmarkId: bookmark.id,
         url: updates.url as string,
         userId,

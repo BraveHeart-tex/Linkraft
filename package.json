@@ -60,6 +60,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@types/multer": "^1.4.12",
     "@commitlint/cli": "^19.8.0",
     "@commitlint/config-conventional": "^19.8.0",
     "@eslint/js": "^9.24.0",

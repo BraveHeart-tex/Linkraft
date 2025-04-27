@@ -6,6 +6,7 @@ import { CollectionModule } from '../collection/collection.module';
 import { BookmarkImportService } from './bookmark-import.service';
 import { BookmarkImportQueueProcessor } from './bookmark-import-queue.processor';
 import { BookmarkImportController } from './bookmark-import.controller';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { BookmarkImportController } from './bookmark-import.controller';
     }),
     BookmarkModule,
     CollectionModule,
+    AuthModule,
   ],
   controllers: [BookmarkImportController],
   providers: [BookmarkImportService, BookmarkImportQueueProcessor],

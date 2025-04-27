@@ -6,3 +6,8 @@ export interface FetchBookmarkMetadataJob {
   url: string;
   userId: User['id'];
 }
+
+export interface ImportBookmarkJob {
+  html: string;
+  userId: User['id'];
+}

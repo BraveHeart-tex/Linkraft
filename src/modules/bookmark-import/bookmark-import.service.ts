@@ -1,12 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { ImportBookmarkJob } from 'src/common/processors/processors.types';
-import { parseBookmarksHtml } from './bookmark-import.utils';
 import { CollectionRepository } from '../collection/collection.repository';
 import { BookmarkRepository } from '../bookmark/bookmark.repository';
 import { truncateBookmarkTitle } from '../bookmark/bookmark.utils';
 import { generateRandomHexColor } from '../collection/collection.utils';
 import { Transactional } from '@nestjs-cls/transactional';
+import { parseNetscapeBookmarks } from 'src/modules/bookmark-import/bookmark-import.utils';
 
 @Injectable()
 export class BookmarkImportService {
@@ -28,7 +28,7 @@ export class BookmarkImportService {
         `Parse and save bookmarks for [Job ${job.id}] and [User ${userId}]`
       );
 
-      const { bookmarks } = parseBookmarksHtml(html);
+      const bookmarks = parseNetscapeBookmarks(html);
 
       const collectionNameToId = new Map<string, number>();
       const uniqueCategories = [

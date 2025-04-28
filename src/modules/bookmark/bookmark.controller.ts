@@ -35,32 +35,30 @@ export class BookmarkController {
 
   @Get()
   getUserBookmarks(
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('cursor', new DefaultValuePipe(0), ParseIntPipe) cursor: number,
     @Query('pageSize', new DefaultValuePipe(10), ParseIntPipe) pageSize: number,
     @Query('search', new DefaultValuePipe('')) searchQuery: string,
     @CurrentUser() userSessionContext: UserSessionContext
   ) {
-    const offset = (page - 1) * pageSize;
     return this.bookmarkService.getUserBookmarks({
       userId: userSessionContext.user.id,
       limit: pageSize,
-      offset,
+      cursor,
       searchQuery,
     });
   }
 
   @Get('trash')
   getTrashedUserBookmarks(
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('cursor', new DefaultValuePipe(0), ParseIntPipe) cursor: number,
     @Query('pageSize', new DefaultValuePipe(10), ParseIntPipe) pageSize: number,
     @Query('search', new DefaultValuePipe('')) searchQuery: string,
     @CurrentUser() userSessionContext: UserSessionContext
   ) {
-    const offset = (page - 1) * pageSize;
     return this.bookmarkService.getUserBookmarks({
       userId: userSessionContext.user.id,
       limit: pageSize,
-      offset,
+      cursor,
       searchQuery,
       trashed: true,
     });

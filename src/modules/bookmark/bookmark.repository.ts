@@ -20,6 +20,7 @@ import {
 import {
   and,
   eq,
+  gt,
   ilike,
   inArray,
   isNotNull,
@@ -36,10 +37,13 @@ export class BookmarkRepository {
   async findAllByUserId({
     userId,
     limit = 10,
-    offset = 0,
+    cursor,
     searchQuery = '',
     trashed = false,
-  }: FindUserBookmarksParams): Promise<BookmarkWithTagsAndCollection[]> {
+  }: FindUserBookmarksParams): Promise<{
+    items: BookmarkWithTagsAndCollection[];
+    nextCursor: number | null;
+  }> {
     const trashedFilter = trashed
       ? isNotNull(bookmarks.deletedAt)
       : isNull(bookmarks.deletedAt);
@@ -63,6 +67,7 @@ export class BookmarkRepository {
       .leftJoin(tags, eq(bookmarkTags.tagId, tags.id))
       .leftJoin(collections, eq(bookmarks.collectionId, collections.id))
       .groupBy(bookmarks.id, collections.id)
+      .orderBy(bookmarks.id)
       .$dynamic();
 
     if (searchQuery) {
@@ -74,15 +79,24 @@ export class BookmarkRepository {
       );
     }
 
-    query.limit(limit).offset(offset);
+    if (cursor) {
+      query.where(gt(bookmarks.id, cursor));
+    }
+
+    query.limit(limit);
 
     const result = await query.execute();
 
-    return result.map((row) => ({
+    const items = result.map((row) => ({
       ...row.bookmark,
       tags: row.tags || [],
       collection: row.collection,
     }));
+
+    const nextCursor =
+      items.length === limit ? (items[items.length - 1]?.id as number) : null;
+
+    return { items, nextCursor };
   }
 
   findByIdAndUserId({ bookmarkId, userId }: BookmarkOwnershipParams) {

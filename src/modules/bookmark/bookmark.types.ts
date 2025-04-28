@@ -10,8 +10,10 @@ export type UpdateBookmarkParams = BookmarkOwnershipParams & {
   updates: UpdateBookmarkDto;
 };
 
-export interface FindUserBookmarksParams extends PaginateSearchParams {
+export interface FindUserBookmarksParams
+  extends Omit<PaginateSearchParams, 'offset'> {
   userId: User['id'];
+  cursor: number | null;
   trashed?: boolean;
 }
 

@@ -10,6 +10,7 @@ import metascraperTitle from 'metascraper-title';
 import metascraperDescription from 'metascraper-description';
 import metascraperLogoFavicon from 'metascraper-logo-favicon';
 import { MetadataService } from 'src/modules/metadata/metadata.service';
+import { truncateBookmarkTitle } from './bookmark.utils';
 
 @Processor(BOOKMARK_METADATA_QUEUE_NAME)
 export class BookmarkMetadataProcessor
@@ -50,7 +51,9 @@ export class BookmarkMetadataProcessor
       );
 
       const updates = {
-        title: metadata.title || 'Untitled',
+        title: metadata.title
+          ? truncateBookmarkTitle(metadata.title)
+          : 'Untitled',
         isMetadataPending: false,
         faviconUrl: metadata?.logo || null,
       };

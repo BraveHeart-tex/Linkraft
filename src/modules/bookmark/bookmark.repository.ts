@@ -151,6 +151,13 @@ export class BookmarkRepository {
     return result[0] as Bookmark;
   }
 
+  async bulkCreate(data: BookmarkInsertDto[]) {
+    return await this.txHost.tx
+      .insert(bookmarks)
+      .values(data)
+      .returning({ id: bookmarks.id });
+  }
+
   updateByIdAndUserId({ bookmarkId, updates, userId }: UpdateBookmarkParams) {
     if (Object.keys(updates || {}).length === 0) return;
     return this.txHost.tx

@@ -19,7 +19,10 @@ import { BookmarkTagRepository } from '../bookmark-tag/bookmark-tag.repository';
 import { CollectionService } from '../collection/collection.service';
 import { TagRepository } from '../tag/tag.repository';
 import { TagService } from '../tag/tag.service';
-import { buildBookmarkUpdateDto } from './bookmark.utils';
+import {
+  buildBookmarkUpdateDto,
+  truncateBookmarkTitle,
+} from './bookmark.utils';
 
 @Injectable()
 export class BookmarkService {
@@ -78,7 +81,9 @@ export class BookmarkService {
 
     const bookmark = await this.bookmarkRepository.create({
       ...dto,
-      title: dto?.title ? dto?.title : 'Fetching title...',
+      title: dto?.title
+        ? truncateBookmarkTitle(dto?.title)
+        : 'Fetching title...',
       isMetadataPending: true,
     });
 

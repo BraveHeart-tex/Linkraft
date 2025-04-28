@@ -24,6 +24,10 @@ export class CollectionRepository {
     return insertedCollection[0] as Collection;
   }
 
+  async bulkCreate(data: CollectionInsertDto[]) {
+    return await this.txHost.tx.insert(collections).values(data).returning();
+  }
+
   async update(
     updatedData: Partial<CollectionInsertDto> & { id: number },
     userId: User['id']

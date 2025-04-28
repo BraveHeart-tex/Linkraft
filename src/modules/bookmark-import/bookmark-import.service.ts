@@ -5,6 +5,7 @@ import { parseBookmarksHtml } from './bookmark-import.utils';
 import { CollectionRepository } from '../collection/collection.repository';
 import { BookmarkRepository } from '../bookmark/bookmark.repository';
 import { truncateBookmarkTitle } from '../bookmark/bookmark.utils';
+import { generateRandomHexColor } from '../collection/collection.utils';
 
 @Injectable()
 export class BookmarkImportService {
@@ -26,9 +27,6 @@ export class BookmarkImportService {
       );
 
       const { bookmarks } = parseBookmarksHtml(html);
-      this.logger.log(
-        `Bookmarks (${bookmarks.length}): ${JSON.stringify(bookmarks, null, 2)}`
-      );
 
       const collectionNameToId = new Map<string, number>();
       const uniqueCategories = [
@@ -43,6 +41,7 @@ export class BookmarkImportService {
         uniqueCategories.map((category) => ({
           name: category,
           userId,
+          color: generateRandomHexColor(),
         }))
       );
 

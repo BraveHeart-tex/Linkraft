@@ -29,7 +29,7 @@ export class BookmarkImportController {
   @UseInterceptors(FileInterceptor('file'))
   async uploadBookmarkFile(
     @UploadedFile(
-      new FileSizeValidationPipe(10 * 1024 * 1024), // 10MB
+      new FileSizeValidationPipe(5 * 1024 * 1024),
       new FileTypeValidationPipe(['text/html'])
     )
     file: Express.Multer.File,

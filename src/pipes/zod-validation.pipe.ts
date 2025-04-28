@@ -3,7 +3,7 @@ import { ApiException } from 'src/exceptions/api.exception';
 import { ZodSchema } from 'zod';
 
 export class ZodValidationPipe implements PipeTransform {
-  constructor(private schema: ZodSchema) {}
+  constructor(private readonly schema: ZodSchema) {}
 
   transform(value: unknown) {
     const result = this.schema.safeParse(value);

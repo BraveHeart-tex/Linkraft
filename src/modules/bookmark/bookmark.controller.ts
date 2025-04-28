@@ -31,7 +31,7 @@ import { ResponseStatus } from 'src/common/decorators/response-status.decorator'
 @Controller('bookmarks')
 @UseGuards(AuthGuard)
 export class BookmarkController {
-  constructor(private bookmarkService: BookmarkService) {}
+  constructor(private readonly bookmarkService: BookmarkService) {}
 
   @Get()
   getUserBookmarks(

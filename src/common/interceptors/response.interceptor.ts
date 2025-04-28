@@ -24,7 +24,7 @@ export interface Response<T> {
 export class ResponseInterceptor<T>
   implements NestInterceptor<T, ResponseDTO<T>>
 {
-  constructor(private reflector: Reflector) {}
+  constructor(private readonly reflector: Reflector) {}
 
   intercept(
     context: ExecutionContext,

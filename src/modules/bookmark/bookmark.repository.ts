@@ -31,7 +31,7 @@ import {
 
 @Injectable()
 export class BookmarkRepository {
-  constructor(private txHost: TransactionHost<DbTransactionAdapter>) {}
+  constructor(private readonly txHost: TransactionHost<DbTransactionAdapter>) {}
 
   async findAllByUserId({
     userId,

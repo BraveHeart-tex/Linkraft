@@ -6,6 +6,7 @@ import { CollectionRepository } from '../collection/collection.repository';
 import { BookmarkRepository } from '../bookmark/bookmark.repository';
 import { truncateBookmarkTitle } from '../bookmark/bookmark.utils';
 import { generateRandomHexColor } from '../collection/collection.utils';
+import { Transactional } from '@nestjs-cls/transactional';
 
 @Injectable()
 export class BookmarkImportService {
@@ -16,6 +17,7 @@ export class BookmarkImportService {
     private readonly bookmarkRepository: BookmarkRepository
   ) {}
 
+  @Transactional()
   async parseAndSaveBookmarks(
     html: string,
     userId: number,

@@ -23,6 +23,7 @@ import {
   buildBookmarkUpdateDto,
   truncateBookmarkTitle,
 } from './bookmark.utils';
+import { Transactional } from '@nestjs-cls/transactional';
 
 @Injectable()
 export class BookmarkService {
@@ -47,6 +48,7 @@ export class BookmarkService {
     });
   }
 
+  @Transactional()
   async createBookmarkForUser(dto: BookmarkInsertDto & CreateBookmarkDto) {
     const bookmarkWithSameUrl =
       await this.bookmarkRepository.userHasBookmarkWithUrl({
@@ -113,6 +115,7 @@ export class BookmarkService {
     return bookmark;
   }
 
+  @Transactional()
   async updateUserBookmarkById({
     bookmarkId,
     updates,

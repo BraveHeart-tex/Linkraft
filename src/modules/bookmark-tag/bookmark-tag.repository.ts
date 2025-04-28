@@ -7,7 +7,7 @@ import { and, eq, inArray } from 'drizzle-orm';
 
 @Injectable()
 export class BookmarkTagRepository {
-  constructor(private txHost: TransactionHost<DbTransactionAdapter>) {}
+  constructor(private readonly txHost: TransactionHost<DbTransactionAdapter>) {}
 
   addTagsToBookmark(bookmarkId: Bookmark['id'], tagIds: Tag['id'][]) {
     if (tagIds.length === 0) return [];

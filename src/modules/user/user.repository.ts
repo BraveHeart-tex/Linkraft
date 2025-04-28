@@ -7,7 +7,7 @@ import { eq } from 'drizzle-orm';
 
 @Injectable()
 export class UserRepository {
-  constructor(private txHost: TransactionHost<DbTransactionAdapter>) {}
+  constructor(private readonly txHost: TransactionHost<DbTransactionAdapter>) {}
   async create(userDto: UserInsertDto): Promise<User> {
     const created = await this.txHost.tx
       .insert(users)

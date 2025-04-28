@@ -5,6 +5,7 @@ type ParsedBookmark = Pick<Bookmark, 'title' | 'url'> & {
   category: string | null;
 };
 
+// FIXME: prevUntil is too naive for getting the category here
 export const parseBookmarksHtml = (htmlContent: string) => {
   const $ = cheerio.load(htmlContent);
   const bookmarks: ParsedBookmark[] = [];

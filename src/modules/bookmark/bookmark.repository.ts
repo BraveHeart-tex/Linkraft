@@ -19,12 +19,13 @@ import {
 } from './bookmark.types';
 import {
   and,
+  desc,
   eq,
-  gt,
   ilike,
   inArray,
   isNotNull,
   isNull,
+  lt,
   ne,
   or,
   SQL,
@@ -54,7 +55,7 @@ export class BookmarkRepository {
             ilike(bookmarks.description, `%${searchQuery}%`)
           )
         : undefined,
-      cursor ? gt(bookmarks.id, cursor) : undefined,
+      cursor ? lt(bookmarks.id, cursor) : undefined,
     ].filter((cond): cond is SQL => Boolean(cond));
 
     const query = this.txHost.tx
@@ -76,7 +77,7 @@ export class BookmarkRepository {
       .leftJoin(tags, eq(bookmarkTags.tagId, tags.id))
       .leftJoin(collections, eq(bookmarks.collectionId, collections.id))
       .groupBy(bookmarks.id, collections.id)
-      .orderBy(bookmarks.id)
+      .orderBy(desc(bookmarks.id))
       .$dynamic();
 
     query.limit(limit);

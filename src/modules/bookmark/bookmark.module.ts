@@ -30,5 +30,6 @@ import { TagModule } from '../tag/tag.module';
     BookmarkMetadataProcessor,
     MetadataService,
   ],
+  exports: [BookmarkService, BookmarkRepository],
 })
 export class BookmarkModule {}

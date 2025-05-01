@@ -54,7 +54,7 @@ export class BookmarkGateway
 
   notifyBookmarkUpdate(
     bookmarkId: Bookmark['id'],
-    metadata: { title: string; faviconUrl: string | null }
+    metadata: { title?: string; faviconUrl: string | null }
   ) {
     const roomName = this.getBookmarkRoomName(bookmarkId);
     this.logger.log(

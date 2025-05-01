@@ -10,10 +10,8 @@ import {
 } from './bookmark.types';
 import { ApiException } from 'src/exceptions/api.exception';
 import { InjectQueue } from '@nestjs/bullmq';
-import {
-  BOOKMARK_METADATA_QUEUE_NAME,
-  FETCH_METADATA_QUEUE_NAME,
-} from 'src/common/processors/queueNames';
+import { BOOKMARK_METADATA_QUEUE_NAME } from 'src/common/processors/queueNames';
+import { FETCH_BOOKMARK_METADATA_JOB_NAME } from 'src/common/processors/jobNames';
 import { Queue } from 'bullmq';
 import { FetchBookmarkMetadataJob } from 'src/common/processors/processors.types';
 import { CreateBookmarkDto } from 'src/common/validation/schemas/bookmark/bookmark.schema';
@@ -21,7 +19,11 @@ import { BookmarkTagRepository } from '../bookmark-tag/bookmark-tag.repository';
 import { CollectionService } from '../collection/collection.service';
 import { TagRepository } from '../tag/tag.repository';
 import { TagService } from '../tag/tag.service';
-import { buildBookmarkUpdateDto } from './bookmark.utils';
+import {
+  buildBookmarkUpdateDto,
+  truncateBookmarkTitle,
+} from './bookmark.utils';
+import { Transactional } from '@nestjs-cls/transactional';
 
 @Injectable()
 export class BookmarkService {
@@ -46,6 +48,7 @@ export class BookmarkService {
     });
   }
 
+  @Transactional()
   async createBookmarkForUser(dto: BookmarkInsertDto & CreateBookmarkDto) {
     const bookmarkWithSameUrl =
       await this.bookmarkRepository.userHasBookmarkWithUrl({
@@ -80,7 +83,9 @@ export class BookmarkService {
 
     const bookmark = await this.bookmarkRepository.create({
       ...dto,
-      title: dto?.title ? dto?.title : 'Fetching title...',
+      title: dto?.title
+        ? truncateBookmarkTitle(dto?.title)
+        : 'Fetching title...',
       isMetadataPending: true,
     });
 
@@ -101,7 +106,7 @@ export class BookmarkService {
       );
     }
 
-    await this.metadataQueue.add(FETCH_METADATA_QUEUE_NAME, {
+    await this.metadataQueue.add(FETCH_BOOKMARK_METADATA_JOB_NAME, {
       bookmarkId: bookmark.id,
       url: dto.url,
       userId: dto.userId,
@@ -110,6 +115,7 @@ export class BookmarkService {
     return bookmark;
   }
 
+  @Transactional()
   async updateUserBookmarkById({
     bookmarkId,
     updates,
@@ -171,7 +177,7 @@ export class BookmarkService {
     });
 
     if (urlChanged && !titleChanged) {
-      await this.metadataQueue.add(FETCH_METADATA_QUEUE_NAME, {
+      await this.metadataQueue.add(FETCH_BOOKMARK_METADATA_JOB_NAME, {
         bookmarkId: bookmark.id,
         url: updates.url as string,
         userId,

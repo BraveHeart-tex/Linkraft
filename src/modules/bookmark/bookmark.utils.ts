@@ -1,3 +1,4 @@
+import { MAX_BOOKMARK_TITLE_LENGTH } from 'src/db/schema';
 import { Bookmark } from './bookmark.types';
 
 export const buildBookmarkUpdateDto = (
@@ -21,3 +22,8 @@ export const buildBookmarkUpdateDto = (
 
   return changedFields;
 };
+
+export const truncateBookmarkTitle = (title: string): string =>
+  title.length > MAX_BOOKMARK_TITLE_LENGTH
+    ? title.slice(0, MAX_BOOKMARK_TITLE_LENGTH)
+    : title;

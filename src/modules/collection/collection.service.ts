@@ -5,7 +5,7 @@ import { CollectionOwnershipParams } from './collection.types';
 
 @Injectable()
 export class CollectionService {
-  constructor(private collectionRepository: CollectionRepository) {}
+  constructor(private readonly collectionRepository: CollectionRepository) {}
   createCollectionForUser(data: CollectionInsertDto): Promise<Collection> {
     return this.collectionRepository.create(data);
   }

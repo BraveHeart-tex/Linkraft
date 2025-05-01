@@ -6,7 +6,7 @@ import { generateAuthTokenExpiryDate } from 'src/modules/auth/utils/token.utils'
 
 @Injectable()
 export class ExtendCookieMiddleware implements NestMiddleware {
-  constructor(private authService: AuthService) {}
+  constructor(private readonly authService: AuthService) {}
   use(req: Request, res: Response, next: NextFunction) {
     if (req.method === 'GET') {
       const existingCookie = req.cookies[SESSION_TOKEN_COOKIE_NAME];

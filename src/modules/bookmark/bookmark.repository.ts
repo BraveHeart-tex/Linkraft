@@ -19,70 +19,81 @@ import {
 } from './bookmark.types';
 import {
   and,
+  desc,
   eq,
   ilike,
   inArray,
   isNotNull,
   isNull,
+  lt,
   ne,
   or,
+  SQL,
   sql,
 } from 'drizzle-orm';
 
 @Injectable()
 export class BookmarkRepository {
-  constructor(private txHost: TransactionHost<DbTransactionAdapter>) {}
+  constructor(private readonly txHost: TransactionHost<DbTransactionAdapter>) {}
 
   async findAllByUserId({
     userId,
     limit = 10,
-    offset = 0,
+    cursor,
     searchQuery = '',
     trashed = false,
-  }: FindUserBookmarksParams): Promise<BookmarkWithTagsAndCollection[]> {
-    const trashedFilter = trashed
-      ? isNotNull(bookmarks.deletedAt)
-      : isNull(bookmarks.deletedAt);
+  }: FindUserBookmarksParams): Promise<{
+    items: BookmarkWithTagsAndCollection[];
+    nextCursor: number | null;
+  }> {
+    const conditions = [
+      eq(bookmarks.userId, userId),
+      trashed ? isNotNull(bookmarks.deletedAt) : isNull(bookmarks.deletedAt),
+      searchQuery
+        ? or(
+            ilike(bookmarks.title, `%${searchQuery}%`),
+            ilike(bookmarks.description, `%${searchQuery}%`)
+          )
+        : undefined,
+      cursor ? lt(bookmarks.id, cursor) : undefined,
+    ].filter((cond): cond is SQL => Boolean(cond));
 
     const query = this.txHost.tx
       .select({
         bookmark: bookmarks,
         tags: sql<Pick<Tag, 'id' | 'name'>[]>`COALESCE(
-          json_agg(json_build_object('id', ${tags.id}, 'name', ${tags.name}))
-          FILTER (WHERE ${tags.id} IS NOT NULL),
-          '[]'
-        )`.as('tags'),
+        json_agg(json_build_object('id', ${tags.id}, 'name', ${tags.name}))
+        FILTER (WHERE ${tags.id} IS NOT NULL),
+        '[]'
+      )`.as('tags'),
         collection: {
           id: collections.id,
           name: collections.name,
         },
       })
       .from(bookmarks)
-      .where(and(eq(bookmarks.userId, userId), trashedFilter))
+      .where(and(...conditions))
       .leftJoin(bookmarkTags, eq(bookmarkTags.bookmarkId, bookmarks.id))
       .leftJoin(tags, eq(bookmarkTags.tagId, tags.id))
       .leftJoin(collections, eq(bookmarks.collectionId, collections.id))
       .groupBy(bookmarks.id, collections.id)
+      .orderBy(desc(bookmarks.id))
       .$dynamic();
 
-    if (searchQuery) {
-      query.where(
-        or(
-          ilike(bookmarks.title, `%${searchQuery}%`),
-          ilike(bookmarks.description, `%${searchQuery}%`)
-        )
-      );
-    }
-
-    query.limit(limit).offset(offset);
+    query.limit(limit);
 
     const result = await query.execute();
 
-    return result.map((row) => ({
+    const items = result.map((row) => ({
       ...row.bookmark,
       tags: row.tags || [],
       collection: row.collection,
     }));
+
+    const nextCursor =
+      items.length === limit ? (items[items.length - 1]?.id as number) : null;
+
+    return { items, nextCursor };
   }
 
   findByIdAndUserId({ bookmarkId, userId }: BookmarkOwnershipParams) {
@@ -149,6 +160,13 @@ export class BookmarkRepository {
       .values(data)
       .returning();
     return result[0] as Bookmark;
+  }
+
+  async bulkCreate(data: BookmarkInsertDto[]) {
+    return await this.txHost.tx
+      .insert(bookmarks)
+      .values(data)
+      .returning({ id: bookmarks.id });
   }
 
   updateByIdAndUserId({ bookmarkId, updates, userId }: UpdateBookmarkParams) {

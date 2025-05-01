@@ -12,6 +12,7 @@ import {
   varchar,
 } from 'drizzle-orm/pg-core';
 
+export const MAX_BOOKMARK_TITLE_LENGTH = 255;
 export const users = pgTable(
   'users',
   {
@@ -63,7 +64,7 @@ export const bookmarks = pgTable(
         onDelete: 'cascade',
       }),
     url: text('url').notNull(),
-    title: varchar('title', { length: 255 }).notNull(),
+    title: varchar('title', { length: MAX_BOOKMARK_TITLE_LENGTH }).notNull(),
     description: text('description'),
     faviconUrl: varchar('faviconUrl', { length: 255 }).default(sql`null`),
     createdAt: timestamp('created_at').defaultNow(),

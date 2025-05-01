@@ -11,7 +11,7 @@ import { toUserWithoutPassword } from 'src/modules/user/mappers/user.mapper';
 
 @Injectable()
 export class CurrentUserInterceptor implements NestInterceptor {
-  constructor(private sessionService: SessionService) {}
+  constructor(private readonly sessionService: SessionService) {}
   async intercept(
     context: ExecutionContext,
     next: CallHandler

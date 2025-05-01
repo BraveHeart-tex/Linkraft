@@ -11,7 +11,7 @@ import { SessionService } from 'src/modules/auth/session.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private sessionService: SessionService) {}
+  constructor(private readonly sessionService: SessionService) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
     const response = context.switchToHttp().getResponse<Response>();

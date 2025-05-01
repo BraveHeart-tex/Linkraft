@@ -5,4 +5,10 @@ export interface FetchBookmarkMetadataJob {
   bookmarkId: Bookmark['id'];
   url: string;
   userId: User['id'];
+  onlyFavicon?: boolean;
+}
+
+export interface ImportBookmarkJob {
+  html: string;
+  userId: User['id'];
 }

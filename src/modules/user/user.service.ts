@@ -4,7 +4,7 @@ import { User, UserInsertDto } from 'src/db/schema';
 
 @Injectable()
 export class UserService {
-  constructor(private userRepo: UserRepository) {}
+  constructor(private readonly userRepo: UserRepository) {}
 
   signUpUser(userDto: UserInsertDto): Promise<User> {
     return this.userRepo.create(userDto);

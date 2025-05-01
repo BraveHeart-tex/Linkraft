@@ -14,7 +14,7 @@ import { QueryResult } from 'pg';
 
 @Injectable()
 export class CollectionRepository {
-  constructor(private txHost: TransactionHost<DbTransactionAdapter>) {}
+  constructor(private readonly txHost: TransactionHost<DbTransactionAdapter>) {}
   async create(data: CollectionInsertDto) {
     const insertedCollection = await this.txHost.tx
       .insert(collections)
@@ -22,6 +22,10 @@ export class CollectionRepository {
       .returning()
       .execute();
     return insertedCollection[0] as Collection;
+  }
+
+  async bulkCreate(data: CollectionInsertDto[]) {
+    return await this.txHost.tx.insert(collections).values(data).returning();
   }
 
   async update(

@@ -33,42 +33,49 @@ export class BookmarkMetadataProcessor
   }
 
   async process(job: Job<FetchBookmarkMetadataJob>): Promise<void> {
-    const { url, bookmarkId, userId } = job.data;
-    const jobId = job.id;
     const start = Date.now();
 
     this.logger.log(
-      `[Job ${jobId}] Starting FetchBookmarkMetadataJob for bookmarkId=${bookmarkId}, userId=${userId}, url=${url}`
+      `[Job ${job.id}] Starting FetchBookmarkMetadataJob for bookmarkId=${job.data.bookmarkId}, userId=${job.data.userId}, url=${job.data.url}`
     );
 
     try {
-      const { html } = await this.metadataService.fetchHtml(url);
-      this.logger.debug(`[Job ${jobId}] Fetched HTML for URL: ${url}`);
-
-      const metadata = await this.scraper({ html, url });
+      const { html } = await this.metadataService.fetchHtml(job.data.url);
       this.logger.debug(
-        `[Job ${jobId}] Extracted metadata: ${JSON.stringify(metadata)}`
+        `[Job ${job.id}] Fetched HTML for URL: ${job.data.url}`
+      );
+
+      const metadata = await this.scraper({ html, url: job.data.url });
+      this.logger.debug(
+        `[Job ${job.id}] Extracted metadata: ${JSON.stringify(metadata)}`
       );
 
       const updates = {
-        title: metadata.title
-          ? truncateBookmarkTitle(metadata.title)
-          : 'Untitled',
+        ...(job.data?.onlyFavicon
+          ? {
+              faviconUrl: metadata?.logo || null,
+            }
+          : {
+              title: metadata.title
+                ? truncateBookmarkTitle(metadata.title)
+                : 'Untitled',
+              faviconUrl: metadata?.logo || null,
+            }),
         isMetadataPending: false,
-        faviconUrl: metadata?.logo || null,
       };
 
       await this.bookmarkRepository.updateByIdAndUserId({
-        bookmarkId,
-        userId,
+        bookmarkId: job.data.bookmarkId,
+        userId: job.data.userId,
         updates,
       });
-      this.bookmarkGateway.notifyBookmarkUpdate(bookmarkId, updates);
 
-      this.logger.log(`[Job ${jobId}] Successfully updated bookmark metadata`);
+      this.bookmarkGateway.notifyBookmarkUpdate(job.data.bookmarkId, updates);
+
+      this.logger.log(`[Job ${job.id}] Successfully updated bookmark metadata`);
     } catch (error) {
       this.logger.error(
-        `[Job ${jobId}] Failed to fetch metadata for bookmarkId=${bookmarkId}, userId=${userId}, url=${url}`,
+        `[Job ${job.id}] Failed to fetch metadata for bookmarkId=${job.data.bookmarkId}, userId=${job.data.userId}, url=${job.data.url}`,
         (error as Error).stack
       );
 
@@ -78,18 +85,18 @@ export class BookmarkMetadataProcessor
         faviconUrl: null,
       };
       await this.bookmarkRepository.updateByIdAndUserId({
-        bookmarkId,
-        userId,
+        bookmarkId: job.data.bookmarkId,
+        userId: job.data.userId,
         updates,
       });
-      this.bookmarkGateway.notifyBookmarkUpdate(bookmarkId, updates);
+      this.bookmarkGateway.notifyBookmarkUpdate(job.data.bookmarkId, updates);
 
       this.logger.warn(
-        `[Job ${jobId}] Metadata update failed, fallback metadata set`
+        `[Job ${job.id}] Metadata update failed, fallback metadata set`
       );
     } finally {
       const duration = Date.now() - start;
-      this.logger.log(`[Job ${jobId}] Finished processing in ${duration}ms`);
+      this.logger.log(`[Job ${job.id}] Finished processing in ${duration}ms`);
     }
   }
 

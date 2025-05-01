@@ -1,12 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Job } from 'bullmq';
-import { ImportBookmarkJob } from 'src/common/processors/processors.types';
+import { Job, Queue } from 'bullmq';
+import {
+  FetchBookmarkMetadataJob,
+  ImportBookmarkJob,
+} from 'src/common/processors/processors.types';
 import { CollectionRepository } from '../collection/collection.repository';
 import { BookmarkRepository } from '../bookmark/bookmark.repository';
 import { truncateBookmarkTitle } from '../bookmark/bookmark.utils';
 import { generateRandomHexColor } from '../collection/collection.utils';
 import { Transactional } from '@nestjs-cls/transactional';
 import { parseNetscapeBookmarks } from 'src/modules/bookmark-import/bookmark-import.utils';
+import { BOOKMARK_METADATA_QUEUE_NAME } from 'src/common/processors/queueNames';
+import { InjectQueue } from '@nestjs/bullmq';
 
 @Injectable()
 export class BookmarkImportService {
@@ -14,7 +19,9 @@ export class BookmarkImportService {
 
   constructor(
     private readonly collectionRepository: CollectionRepository,
-    private readonly bookmarkRepository: BookmarkRepository
+    private readonly bookmarkRepository: BookmarkRepository,
+    @InjectQueue(BOOKMARK_METADATA_QUEUE_NAME)
+    private readonly metadataQueue: Queue<FetchBookmarkMetadataJob>
   ) {}
 
   @Transactional()
@@ -51,7 +58,7 @@ export class BookmarkImportService {
         collectionNameToId.set(category.name, category.id);
       }
 
-      await this.bookmarkRepository.bulkCreate(
+      const createdIds = await this.bookmarkRepository.bulkCreate(
         bookmarks.map((bookmark) => ({
           isMetadataPending: false,
           title: truncateBookmarkTitle(bookmark.title),
@@ -60,6 +67,22 @@ export class BookmarkImportService {
           collectionId: bookmark.category
             ? collectionNameToId.get(bookmark.category)
             : null,
+        }))
+      );
+
+      this.metadataQueue.addBulk(
+        bookmarks.map((bookmark, index) => ({
+          name: BOOKMARK_METADATA_QUEUE_NAME,
+          data: {
+            bookmarkId: createdIds[index]?.id as number,
+            userId,
+            url: bookmark.url,
+            onlyFavicon: true,
+          },
+          opts: {
+            removeOnComplete: true,
+            removeOnFail: true,
+          },
         }))
       );
     } catch (error) {

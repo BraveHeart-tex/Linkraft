@@ -27,6 +27,7 @@ import {
   isNull,
   ne,
   or,
+  SQL,
   sql,
 } from 'drizzle-orm';
 
@@ -44,44 +45,39 @@ export class BookmarkRepository {
     items: BookmarkWithTagsAndCollection[];
     nextCursor: number | null;
   }> {
-    const trashedFilter = trashed
-      ? isNotNull(bookmarks.deletedAt)
-      : isNull(bookmarks.deletedAt);
+    const conditions = [
+      eq(bookmarks.userId, userId),
+      trashed ? isNotNull(bookmarks.deletedAt) : isNull(bookmarks.deletedAt),
+      searchQuery
+        ? or(
+            ilike(bookmarks.title, `%${searchQuery}%`),
+            ilike(bookmarks.description, `%${searchQuery}%`)
+          )
+        : undefined,
+      cursor ? gt(bookmarks.id, cursor) : undefined,
+    ].filter((cond): cond is SQL => Boolean(cond));
 
     const query = this.txHost.tx
       .select({
         bookmark: bookmarks,
         tags: sql<Pick<Tag, 'id' | 'name'>[]>`COALESCE(
-          json_agg(json_build_object('id', ${tags.id}, 'name', ${tags.name}))
-          FILTER (WHERE ${tags.id} IS NOT NULL),
-          '[]'
-        )`.as('tags'),
+        json_agg(json_build_object('id', ${tags.id}, 'name', ${tags.name}))
+        FILTER (WHERE ${tags.id} IS NOT NULL),
+        '[]'
+      )`.as('tags'),
         collection: {
           id: collections.id,
           name: collections.name,
         },
       })
       .from(bookmarks)
-      .where(and(eq(bookmarks.userId, userId), trashedFilter))
+      .where(and(...conditions))
       .leftJoin(bookmarkTags, eq(bookmarkTags.bookmarkId, bookmarks.id))
       .leftJoin(tags, eq(bookmarkTags.tagId, tags.id))
       .leftJoin(collections, eq(bookmarks.collectionId, collections.id))
       .groupBy(bookmarks.id, collections.id)
       .orderBy(bookmarks.id)
       .$dynamic();
-
-    if (searchQuery) {
-      query.where(
-        or(
-          ilike(bookmarks.title, `%${searchQuery}%`),
-          ilike(bookmarks.description, `%${searchQuery}%`)
-        )
-      );
-    }
-
-    if (cursor) {
-      query.where(gt(bookmarks.id, cursor));
-    }
 
     query.limit(limit);
 

@@ -12,7 +12,9 @@ import metascraperLogoFavicon from 'metascraper-logo-favicon';
 import { MetadataService } from 'src/modules/metadata/metadata.service';
 import { truncateBookmarkTitle } from './bookmark.utils';
 
-@Processor(BOOKMARK_METADATA_QUEUE_NAME)
+@Processor(BOOKMARK_METADATA_QUEUE_NAME, {
+  concurrency: 10,
+})
 export class BookmarkMetadataProcessor
   extends WorkerHost
   implements OnModuleDestroy

@@ -1,10 +1,8 @@
 services:
   app:
-    platform: linux/amd64
-    container_name: linkraft-server-dev
     build:
       context: .
-      dockerfile: Dockerfile
+    container_name: linkraft-server-dev
     ports:
       - '3000:3000'
     environment:
@@ -12,14 +10,14 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       FRONT_END_URL: http://localhost:8080
+    volumes:
+      - .:/usr/src/app:delegated
+    command: ['pnpm', 'run', 'start:dev']
     depends_on:
       - postgres
       - redis
     networks:
       - nest-network
-    volumes:
-      - .:/usr/src/app
-      - /usr/src/app/node_modules
 
   postgres:
     image: postgres:latest

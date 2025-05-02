@@ -8,9 +8,10 @@ import { Logger, OnModuleDestroy } from '@nestjs/common';
 import metascraperTitle from 'metascraper-title';
 import metascraperDescription from 'metascraper-description';
 import metascraperLogoFavicon from 'metascraper-logo-favicon';
-import { MetadataService } from 'src/modules/metadata/metadata.service';
+import { HtmlFetcherService } from 'src/modules/metadata/html-fetcher.service';
 import { truncateBookmarkTitle } from './bookmark.utils';
 import { MetadataScraperService } from 'src/modules/metadata/metadata-scraper.service';
+import { BookmarkImportProgressService } from 'src/modules/bookmark-import/bookmark-import-progress.service';
 
 @Processor(BOOKMARK_METADATA_QUEUE_NAME, {
   concurrency: 10,
@@ -24,8 +25,9 @@ export class BookmarkMetadataProcessor
   constructor(
     private readonly bookmarkGateway: BookmarkGateway,
     private readonly bookmarkRepository: BookmarkRepository,
-    private readonly metadataService: MetadataService,
-    private readonly metadataScraperService: MetadataScraperService
+    private readonly htmlFetcherService: HtmlFetcherService,
+    private readonly metadataScraperService: MetadataScraperService,
+    private readonly importProgressService: BookmarkImportProgressService
   ) {
     super();
   }
@@ -38,7 +40,7 @@ export class BookmarkMetadataProcessor
     );
 
     try {
-      const { html } = await this.metadataService.fetchHtml(job.data.url);
+      const { html } = await this.htmlFetcherService.fetchHtml(job.data.url);
       this.logger.debug(
         `[Job ${job.id}] Fetched HTML for URL: ${job.data.url}`
       );
@@ -82,16 +84,24 @@ export class BookmarkMetadataProcessor
 
       this.bookmarkGateway.notifyBookmarkUpdate(job.data.bookmarkId, updates);
 
-      if (job.data.type === 'bulk' && job.id) {
-        // FIXME: Jobs are not guaranteed to be in order, so we need to handle this case
-        const progress = Math.round(
-          ((job.data.currentIndex + 1) / job.data.totalCount) * 100
+      if (job.data.type === 'bulk' && job.data.parentJobId) {
+        await this.importProgressService.incrementProgress(
+          job.data.parentJobId
+        );
+        const progress = await this.importProgressService.getProgress(
+          job.data.parentJobId
         );
 
         this.bookmarkGateway.emitImportProgress(job.data.parentJobId, {
           progress,
           status: progress === 100 ? 'completed' : 'processing',
         });
+
+        if (progress === 100) {
+          await this.importProgressService.cleanupProgress(
+            job.data.parentJobId
+          );
+        }
       }
 
       this.logger.log(`[Job ${job.id}] Successfully updated bookmark metadata`);

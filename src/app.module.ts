@@ -1,9 +1,7 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import {
-  DatabaseModule,
-  DRIZZLE_CONNECTION,
-} from './modules/database/database.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { DatabaseModule } from './modules/database/database.module';
+import { DRIZZLE_CONNECTION } from './modules/database/database.tokens';
 import { AuthModule } from './modules/auth/auth.module';
 import { ClsModule } from 'nestjs-cls';
 import { ClsPluginTransactional } from '@nestjs-cls/transactional';
@@ -34,11 +32,15 @@ import { StatsModule } from 'src/modules/stats/stats.module';
         }),
       ],
     }),
-    BullModule.forRoot({
-      connection: {
-        host: process.env.REDIS_HOST || 'redis',
-        port: parseInt(process.env.REDIS_PORT!) || 6379,
-      },
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        connection: {
+          host: configService.get<string>('REDIS_HOST', 'redis'),
+          port: configService.get<number>('REDIS_PORT', 6379),
+        },
+      }),
+      inject: [ConfigService],
     }),
     DatabaseModule,
     AuthModule,

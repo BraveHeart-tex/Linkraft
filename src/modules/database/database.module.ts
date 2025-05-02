@@ -5,8 +5,7 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from '../../db/schema';
 import { DrizzleLoggerModule } from './drizzle-logger/drizzle-logger.module';
 import { DrizzleLoggerService } from './drizzle-logger/drizzle-logger.service';
-
-export const DRIZZLE_CONNECTION = Symbol('DRIZZLE_CONNECTION');
+import { DRIZZLE_CONNECTION } from 'src/modules/database/database.tokens';
 
 @Module({
   imports: [ConfigModule, DrizzleLoggerModule],

@@ -15,6 +15,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { TagModule } from './modules/tag/tag.module';
 import { BookmarkImportModule } from './modules/bookmark-import/bookmark-import.module';
 import { StatsModule } from 'src/modules/stats/stats.module';
+import { SearchModule } from 'src/modules/search/search.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { StatsModule } from 'src/modules/stats/stats.module';
     TagModule,
     BookmarkImportModule,
     StatsModule,
+    SearchModule,
   ],
   providers: [
     {

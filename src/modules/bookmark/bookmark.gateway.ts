@@ -8,11 +8,18 @@ import {
   MessageBody,
   ConnectedSocket,
 } from '@nestjs/websockets';
+import { Job } from 'bullmq';
 import { Server, Socket } from 'socket.io';
+import {
+  SOCKET_EVENTS,
+  SOCKET_NAMESPACES,
+  SOCKET_ROOMS,
+} from 'src/modules/bookmark/bookmark.constants';
+
 import { Bookmark } from 'src/modules/bookmark/bookmark.types';
 
 @WebSocketGateway({
-  namespace: 'bookmarks',
+  namespace: SOCKET_NAMESPACES.BOOKMARKS,
   cors: {
     origin: process.env.FRONT_END_URL,
   },
@@ -32,7 +39,21 @@ export class BookmarkGateway
     this.logger.log(`Client disconnected from /bookmarks: ${client.id}`);
   }
 
-  @SubscribeMessage('subscribeToBookmark')
+  notifyBookmarkUpdate(
+    bookmarkId: Bookmark['id'],
+    metadata: { title?: string; faviconUrl: string | null }
+  ) {
+    const roomName = this.getBookmarkRoomName(bookmarkId);
+    this.logger.log(
+      `Sending update to ${roomName}: ${JSON.stringify(metadata)}`
+    );
+    this.server.to(roomName).emit(SOCKET_EVENTS.BOOKMARK.UPDATE, {
+      bookmarkId,
+      ...metadata,
+    });
+  }
+
+  @SubscribeMessage(SOCKET_EVENTS.BOOKMARK.SUBSCRIBE)
   handleSubscribe(
     @MessageBody() data: { bookmarkId: Bookmark['id'] },
     @ConnectedSocket() client: Socket
@@ -42,7 +63,7 @@ export class BookmarkGateway
     this.logger.log(`Client ${client.id} joined room ${roomName}`);
   }
 
-  @SubscribeMessage('unsubscribeFromBookmark')
+  @SubscribeMessage(SOCKET_EVENTS.BOOKMARK.UNSUBSCRIBE)
   handleUnsubscribe(
     @MessageBody() data: { bookmarkId: Bookmark['id'] },
     @ConnectedSocket() client: Socket
@@ -52,21 +73,31 @@ export class BookmarkGateway
     this.logger.log(`Client ${client.id} left room ${roomName}`);
   }
 
-  notifyBookmarkUpdate(
-    bookmarkId: Bookmark['id'],
-    metadata: { title?: string; faviconUrl: string | null }
+  @SubscribeMessage(SOCKET_EVENTS.IMPORT.SUBSCRIBE)
+  handleImportSubscribe(
+    @MessageBody() data: { importJobId: string },
+    @ConnectedSocket() client: Socket
   ) {
-    const roomName = this.getBookmarkRoomName(bookmarkId);
-    this.logger.log(
-      `Sending update to ${roomName}: ${JSON.stringify(metadata)}`
-    );
-    this.server.to(roomName).emit('bookmark:update', {
-      bookmarkId,
-      ...metadata,
-    });
+    const room = this.getImportRoomName(data.importJobId);
+    client.join(room);
+    this.logger.log(`Client ${client.id} subscribed to ${room}`);
+  }
+
+  @SubscribeMessage(SOCKET_EVENTS.IMPORT.UNSUBSCRIBE)
+  handleImportUnsubscribe(
+    @MessageBody() data: { importJobId: string },
+    @ConnectedSocket() client: Socket
+  ) {
+    const room = this.getImportRoomName(data.importJobId);
+    client.leave(room);
+    this.logger.log(`Client ${client.id} unsubscribed from ${room}`);
   }
 
   private getBookmarkRoomName(bookmarkId: Bookmark['id']): string {
-    return `bookmark:${bookmarkId}`;
+    return SOCKET_ROOMS.bookmark(bookmarkId);
+  }
+
+  private getImportRoomName(importJobId: Job['id']): string {
+    return SOCKET_ROOMS.importJob(importJobId);
   }
 }

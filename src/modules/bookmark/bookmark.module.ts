@@ -11,6 +11,7 @@ import { MetadataService } from 'src/modules/metadata/metadata.service';
 import { CollectionModule } from '../collection/collection.module';
 import { BookmarkTagModule } from '../bookmark-tag/bookmark-tag.module';
 import { TagModule } from '../tag/tag.module';
+import { MetadataScraperService } from 'src/modules/metadata/metadata-scraper.service';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { TagModule } from '../tag/tag.module';
     BookmarkRepository,
     BookmarkGateway,
     BookmarkMetadataProcessor,
+    MetadataScraperService,
     MetadataService,
   ],
   exports: [BookmarkService, BookmarkRepository],

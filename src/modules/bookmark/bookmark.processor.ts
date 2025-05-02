@@ -5,12 +5,12 @@ import { BookmarkRepository } from 'src/modules/bookmark/bookmark.repository';
 import { FetchBookmarkMetadataJob } from 'src/common/processors/processors.types';
 import { BookmarkGateway } from 'src/modules/bookmark/bookmark.gateway';
 import { Logger, OnModuleDestroy } from '@nestjs/common';
-import metascraper from 'metascraper';
 import metascraperTitle from 'metascraper-title';
 import metascraperDescription from 'metascraper-description';
 import metascraperLogoFavicon from 'metascraper-logo-favicon';
 import { MetadataService } from 'src/modules/metadata/metadata.service';
 import { truncateBookmarkTitle } from './bookmark.utils';
+import { MetadataScraperService } from 'src/modules/metadata/metadata-scraper.service';
 
 @Processor(BOOKMARK_METADATA_QUEUE_NAME, {
   concurrency: 10,
@@ -20,16 +20,12 @@ export class BookmarkMetadataProcessor
   implements OnModuleDestroy
 {
   private readonly logger = new Logger(BookmarkMetadataProcessor.name);
-  private scraper = metascraper([
-    metascraperTitle(),
-    metascraperDescription(),
-    metascraperLogoFavicon(),
-  ]);
 
   constructor(
     private readonly bookmarkGateway: BookmarkGateway,
     private readonly bookmarkRepository: BookmarkRepository,
-    private readonly metadataService: MetadataService
+    private readonly metadataService: MetadataService,
+    private readonly metadataScraperService: MetadataScraperService
   ) {
     super();
   }
@@ -47,7 +43,17 @@ export class BookmarkMetadataProcessor
         `[Job ${job.id}] Fetched HTML for URL: ${job.data.url}`
       );
 
-      const metadata = await this.scraper({ html, url: job.data.url });
+      const scraperModules = [
+        metascraperTitle(),
+        metascraperDescription(),
+        metascraperLogoFavicon(),
+      ];
+
+      const metadata = await this.metadataScraperService.scrapeMetadata({
+        html,
+        url: job.data.url,
+        rules: scraperModules,
+      });
       this.logger.debug(
         `[Job ${job.id}] Extracted metadata: ${JSON.stringify(metadata)}`
       );

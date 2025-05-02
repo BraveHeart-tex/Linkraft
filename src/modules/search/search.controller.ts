@@ -28,7 +28,7 @@ export class SearchController {
     });
 
     const last = results[results.length - 1];
-    const nextCursor = last ? encodeCursor(last?.rank, last.id) : null;
+    const nextCursor = last ? encodeCursor(last.rank, last.id) : null;
 
     return {
       results,

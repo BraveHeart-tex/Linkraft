@@ -5,7 +5,7 @@ export const searchResultSchema = z.object({
   type: z.enum(['bookmark', 'tag', 'collection']),
   title: z.string(),
   description: z.string().nullable(),
-  rank: z.number(),
+  rank: z.number().nullable(),
 });
 
 export const searchAllResponseSchema = z.object({

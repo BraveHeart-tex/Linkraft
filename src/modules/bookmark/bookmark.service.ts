@@ -107,6 +107,7 @@ export class BookmarkService {
     }
 
     await this.metadataQueue.add(FETCH_BOOKMARK_METADATA_JOB_NAME, {
+      type: 'single',
       bookmarkId: bookmark.id,
       url: dto.url,
       userId: dto.userId,
@@ -178,6 +179,7 @@ export class BookmarkService {
 
     if (urlChanged && !titleChanged) {
       await this.metadataQueue.add(FETCH_BOOKMARK_METADATA_JOB_NAME, {
+        type: 'single',
         bookmarkId: bookmark.id,
         url: updates.url as string,
         userId,

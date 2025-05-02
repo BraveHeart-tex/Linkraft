@@ -74,6 +74,18 @@ export class BookmarkMetadataProcessor
 
       this.bookmarkGateway.notifyBookmarkUpdate(job.data.bookmarkId, updates);
 
+      if (job.data.type === 'bulk' && job.id) {
+        // FIXME: Jobs are not guaranteed to be in order, so we need to handle this case
+        const progress = Math.round(
+          ((job.data.currentIndex + 1) / job.data.totalCount) * 100
+        );
+
+        this.bookmarkGateway.emitImportProgress(job.data.parentJobId, {
+          progress,
+          status: progress === 100 ? 'completed' : 'processing',
+        });
+      }
+
       this.logger.log(`[Job ${job.id}] Successfully updated bookmark metadata`);
     } catch (error) {
       this.logger.error(

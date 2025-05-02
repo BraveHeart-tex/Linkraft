@@ -37,10 +37,16 @@ export class BookmarkImportController {
   ) {
     const html = file.buffer.toString('utf-8');
 
-    const job = await this.bookmarkImportQueue.add(PARSE_BOOKMARKS_JOB_NAME, {
-      html,
-      userId: userSessionContext.user.id,
-    });
+    const job = await this.bookmarkImportQueue.add(
+      PARSE_BOOKMARKS_JOB_NAME,
+      {
+        html,
+        userId: userSessionContext.user.id,
+      },
+      {
+        jobId: crypto.randomUUID(),
+      }
+    );
 
     return { jobId: job.id };
   }

@@ -80,7 +80,9 @@ export class BookmarkGateway
   ) {
     const room = this.getImportRoomName(data.importJobId);
     client.join(room);
-    this.logger.log(`Client ${client.id} subscribed to ${room}`);
+    this.logger.log(
+      `[Bookmark-Import]: Client ${client.id} subscribed to ${room}`
+    );
   }
 
   @SubscribeMessage(SOCKET_EVENTS.IMPORT.UNSUBSCRIBE)
@@ -90,7 +92,20 @@ export class BookmarkGateway
   ) {
     const room = this.getImportRoomName(data.importJobId);
     client.leave(room);
-    this.logger.log(`Client ${client.id} unsubscribed from ${room}`);
+    this.logger.log(
+      `[Bookmark-Import] Client ${client.id} unsubscribed from ${room}`
+    );
+  }
+
+  async emitImportProgress(
+    importJobId: string,
+    payload: { progress: number; status: string }
+  ) {
+    const roomName = this.getImportRoomName(importJobId);
+    this.server.to(roomName).emit(SOCKET_EVENTS.IMPORT.PROGRESS, {
+      importJobId,
+      ...payload,
+    });
   }
 
   private getBookmarkRoomName(bookmarkId: Bookmark['id']): string {

@@ -74,10 +74,14 @@ export class BookmarkImportService {
         bookmarks.map((bookmark, index) => ({
           name: BOOKMARK_METADATA_QUEUE_NAME,
           data: {
+            type: 'bulk',
             bookmarkId: createdIds[index]?.id as number,
             userId,
             url: bookmark.url,
             onlyFavicon: true,
+            currentIndex: index,
+            totalCount: bookmarks.length,
+            parentJobId: job.id as string,
           },
           opts: {
             removeOnComplete: true,

@@ -43,11 +43,13 @@ export class BookmarkMetadataProcessor
         `[Job ${job.id}] Fetched HTML for URL: ${job.data.url}`
       );
 
-      const scraperModules = [
-        metascraperTitle(),
-        metascraperDescription(),
-        metascraperLogoFavicon(),
-      ];
+      const scraperModules = job.data.onlyFavicon
+        ? [metascraperLogoFavicon()]
+        : [
+            metascraperTitle(),
+            metascraperDescription(),
+            metascraperLogoFavicon(),
+          ];
 
       const metadata = await this.metadataScraperService.scrapeMetadata({
         html,

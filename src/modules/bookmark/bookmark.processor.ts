@@ -5,12 +5,13 @@ import { BookmarkRepository } from 'src/modules/bookmark/bookmark.repository';
 import { FetchBookmarkMetadataJob } from 'src/common/processors/processors.types';
 import { BookmarkGateway } from 'src/modules/bookmark/bookmark.gateway';
 import { Logger, OnModuleDestroy } from '@nestjs/common';
-import metascraper from 'metascraper';
 import metascraperTitle from 'metascraper-title';
 import metascraperDescription from 'metascraper-description';
 import metascraperLogoFavicon from 'metascraper-logo-favicon';
-import { MetadataService } from 'src/modules/metadata/metadata.service';
+import { HtmlFetcherService } from 'src/modules/metadata/html-fetcher.service';
 import { truncateBookmarkTitle } from './bookmark.utils';
+import { MetadataScraperService } from 'src/modules/metadata/metadata-scraper.service';
+import { BookmarkImportProgressService } from 'src/modules/bookmark-import/bookmark-import-progress.service';
 
 @Processor(BOOKMARK_METADATA_QUEUE_NAME, {
   concurrency: 10,
@@ -20,16 +21,13 @@ export class BookmarkMetadataProcessor
   implements OnModuleDestroy
 {
   private readonly logger = new Logger(BookmarkMetadataProcessor.name);
-  private scraper = metascraper([
-    metascraperTitle(),
-    metascraperDescription(),
-    metascraperLogoFavicon(),
-  ]);
 
   constructor(
     private readonly bookmarkGateway: BookmarkGateway,
     private readonly bookmarkRepository: BookmarkRepository,
-    private readonly metadataService: MetadataService
+    private readonly htmlFetcherService: HtmlFetcherService,
+    private readonly metadataScraperService: MetadataScraperService,
+    private readonly importProgressService: BookmarkImportProgressService
   ) {
     super();
   }
@@ -42,12 +40,24 @@ export class BookmarkMetadataProcessor
     );
 
     try {
-      const { html } = await this.metadataService.fetchHtml(job.data.url);
+      const { html } = await this.htmlFetcherService.fetchHtml(job.data.url);
       this.logger.debug(
         `[Job ${job.id}] Fetched HTML for URL: ${job.data.url}`
       );
 
-      const metadata = await this.scraper({ html, url: job.data.url });
+      const scraperModules = job.data.onlyFavicon
+        ? [metascraperLogoFavicon()]
+        : [
+            metascraperTitle(),
+            metascraperDescription(),
+            metascraperLogoFavicon(),
+          ];
+
+      const metadata = await this.metadataScraperService.scrapeMetadata({
+        html,
+        url: job.data.url,
+        rules: scraperModules,
+      });
       this.logger.debug(
         `[Job ${job.id}] Extracted metadata: ${JSON.stringify(metadata)}`
       );
@@ -73,6 +83,26 @@ export class BookmarkMetadataProcessor
       });
 
       this.bookmarkGateway.notifyBookmarkUpdate(job.data.bookmarkId, updates);
+
+      if (job.data.type === 'bulk' && job.data.parentJobId) {
+        await this.importProgressService.incrementProgress(
+          job.data.parentJobId
+        );
+        const progress = await this.importProgressService.getProgress(
+          job.data.parentJobId
+        );
+
+        this.bookmarkGateway.emitImportProgress(job.data.parentJobId, {
+          progress,
+          status: progress === 100 ? 'completed' : 'processing',
+        });
+
+        if (progress === 100) {
+          await this.importProgressService.cleanupProgress(
+            job.data.parentJobId
+          );
+        }
+      }
 
       this.logger.log(`[Job ${job.id}] Successfully updated bookmark metadata`);
     } catch (error) {

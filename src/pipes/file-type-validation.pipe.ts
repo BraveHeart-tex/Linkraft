@@ -1,5 +1,4 @@
 import { Injectable, PipeTransform, BadRequestException } from '@nestjs/common';
-import type { Express } from 'express';
 
 interface FileWithType extends Express.Multer.File {
   mimetype: string;

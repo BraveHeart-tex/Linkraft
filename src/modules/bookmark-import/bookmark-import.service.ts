@@ -12,6 +12,7 @@ import { Transactional } from '@nestjs-cls/transactional';
 import { parseNetscapeBookmarks } from 'src/modules/bookmark-import/bookmark-import.utils';
 import { BOOKMARK_METADATA_QUEUE_NAME } from 'src/common/processors/queueNames';
 import { InjectQueue } from '@nestjs/bullmq';
+import { BookmarkImportProgressService } from 'src/modules/bookmark-import/bookmark-import-progress.service';
 
 @Injectable()
 export class BookmarkImportService {
@@ -21,7 +22,8 @@ export class BookmarkImportService {
     private readonly collectionRepository: CollectionRepository,
     private readonly bookmarkRepository: BookmarkRepository,
     @InjectQueue(BOOKMARK_METADATA_QUEUE_NAME)
-    private readonly metadataQueue: Queue<FetchBookmarkMetadataJob>
+    private readonly metadataQueue: Queue<FetchBookmarkMetadataJob>,
+    private readonly importProgressService: BookmarkImportProgressService
   ) {}
 
   @Transactional()
@@ -70,14 +72,23 @@ export class BookmarkImportService {
         }))
       );
 
+      await this.importProgressService.setTotalProgress(
+        job.id as string,
+        bookmarks.length
+      );
+
       this.metadataQueue.addBulk(
         bookmarks.map((bookmark, index) => ({
           name: BOOKMARK_METADATA_QUEUE_NAME,
           data: {
+            type: 'bulk',
             bookmarkId: createdIds[index]?.id as number,
             userId,
             url: bookmark.url,
             onlyFavicon: true,
+            currentIndex: index,
+            totalCount: bookmarks.length,
+            parentJobId: job.id as string,
           },
           opts: {
             removeOnComplete: true,

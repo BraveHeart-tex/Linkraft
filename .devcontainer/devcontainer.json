@@ -1,0 +1,24 @@
+{
+  "name": "Linkraft Backend Dev",
+  "dockerComposeFile": ["../docker-compose.yml"],
+  "service": "app",
+  "workspaceFolder": "/usr/src/app",
+  "overrideCommand": false,
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      },
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-azuretools.vscode-docker",
+        "ms-vscode.vscode-typescript-next"
+      ]
+    }
+  },
+  "mounts": [
+    "source=linkraft-devcontainer-node_modules,target=/usr/src/app/node_modules,type=volume"
+  ],
+  "remoteUser": "node"
+}

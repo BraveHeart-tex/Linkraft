@@ -4,7 +4,6 @@ import {
   BadRequestException,
   PayloadTooLargeException,
 } from '@nestjs/common';
-import { Express } from 'express';
 
 interface FileWithSize extends Express.Multer.File {
   size: number;

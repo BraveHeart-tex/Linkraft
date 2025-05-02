@@ -3,7 +3,7 @@ import axios, { AxiosInstance } from 'axios';
 import axiosRetry from 'axios-retry';
 
 @Injectable()
-export class MetadataService {
+export class HtmlFetcherService {
   private readonly axiosInstance: AxiosInstance;
   constructor() {
     this.axiosInstance = axios.create({

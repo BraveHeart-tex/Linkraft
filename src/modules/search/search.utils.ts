@@ -29,3 +29,18 @@ export const decodeCursor = (cursor: string): { rank: number; id: string } => {
 
   return { rank, id };
 };
+
+export const toTsQueryString = (query: string): string => {
+  return query
+    .replace(/\s+$/, '')
+    .replace(/:/g, '\\:') // Escape colons
+    .replace(/&/g, ' & ') // Replace AND with space
+    .replace(/\s+/g, ' & ') // Replace multiple spaces with single space
+    .replace(/'/g, "''") // Escape single quotes
+    .replace(/"/g, '\\"') // Escape double quotes
+    .replace(/!/g, '\\!') // Escape exclamation marks
+    .replace(/\|/g, '\\|') // Escape pipe characters
+    .replace(/\^/g, '\\^') // Escape caret characters
+    .replace(/~/g, '\\~') // Escape tilde characters
+    .replace(/\?/g, '\\?'); // Escape question marks
+};

@@ -11,6 +11,7 @@ import {
   uniqueIndex,
   varchar,
 } from 'drizzle-orm/pg-core';
+import { tsvector } from 'src/db/drizzle.utils';
 
 export const MAX_BOOKMARK_TITLE_LENGTH = 255;
 export const users = pgTable(
@@ -50,8 +51,12 @@ export const tags = pgTable(
     userId: integer('user_id')
       .references(() => users.id)
       .notNull(),
+    tsv: tsvector('tsv'),
   },
-  (table) => [uniqueIndex('unique_tag_per_user').on(table.userId, table.name)]
+  (table) => [
+    uniqueIndex('unique_tag_per_user').on(table.userId, table.name),
+    index('tags_tsv_index').using('gin', table.tsv),
+  ]
 );
 
 export const bookmarks = pgTable(
@@ -76,12 +81,10 @@ export const bookmarks = pgTable(
       mode: 'date',
     }).default(sql`null`),
     isMetadataPending: boolean('is_metadata_pending').notNull(),
+    tsv: tsvector('tsv'),
   },
   (table) => [
-    index('bookmark_search_index').using(
-      'gin',
-      sql`to_tsvector('english', ${table.title} || ' ' || ${table.description})`
-    ),
+    index('bookmarks_tsv_index').using('gin', table.tsv),
     index('bookmark_user_id_index').on(table.userId),
   ]
 );
@@ -111,8 +114,12 @@ export const collections = pgTable(
     color: varchar('color', { length: 16 }),
     createdAt: timestamp('created_at').defaultNow(),
     isDeleted: boolean('is_deleted').default(false),
+    tsv: tsvector('tsv'),
   },
-  (table) => [index('collection_user_id_index').on(table.userId)]
+  (table) => [
+    index('collection_user_id_index').on(table.userId),
+    index('collections_tsv_index').using('gin', table.tsv),
+  ]
 );
 
 export type User = typeof users.$inferSelect;

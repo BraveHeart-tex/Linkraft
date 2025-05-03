@@ -1,33 +1,24 @@
+import { Cursor } from 'src/modules/search/search.types';
+
 export const encodeCursor = (rank: number | null, id: string): string => {
-  return Buffer.from(`${rank !== null ? rank : 'null'}:${id}`).toString(
-    'base64'
-  );
+  const cursorObj = { rank, id };
+  const json = JSON.stringify(cursorObj);
+  return Buffer.from(json).toString('base64');
 };
 
-export const decodeCursor = (cursor: string): { rank: number; id: string } => {
-  if (typeof cursor !== 'string' || !cursor.trim()) {
-    throw new Error('Cursor must be a non-empty base64 string');
-  }
-
-  let decoded: string;
+export const decodeCursor = (encodedCursor: string): Cursor | null => {
   try {
-    decoded = Buffer.from(cursor, 'base64').toString();
-  } catch {
-    throw new Error('Cursor is not valid base64');
+    const json = Buffer.from(encodedCursor, 'base64').toString('utf-8');
+    const obj = JSON.parse(json);
+    if (!obj || typeof obj.id !== 'string') return null;
+    return {
+      rank: typeof obj.rank === 'number' ? obj.rank : null,
+      id: obj.id,
+    };
+  } catch (err) {
+    console.error(err);
+    return null;
   }
-
-  const [rankStr, id] = decoded.split(':');
-
-  if (!rankStr || !id) {
-    throw new Error('Invalid cursor format: expected "rank:id"');
-  }
-
-  const rank = parseFloat(rankStr);
-  if (isNaN(rank)) {
-    throw new Error('Invalid rank in cursor: must be a number');
-  }
-
-  return { rank, id };
 };
 
 export const toTsQueryString = (query: string): string => {

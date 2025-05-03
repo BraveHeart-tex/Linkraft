@@ -1,5 +1,10 @@
 import { User } from 'src/db/schema';
 
+export interface Cursor {
+  rank: number | null;
+  id: string;
+}
+
 export interface SearchAllParams {
   query: string;
   userId: User['id'];

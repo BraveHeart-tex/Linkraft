@@ -23,7 +23,7 @@ export class SearchRepository {
       ? sql`
       WITH 
       search_query AS (
-        SELECT plainto_tsquery('english', ${query}) AS query
+        SELECT to_tsquery('simple', ${query + ':*'}) AS query
       ),
       fts_results AS (
         SELECT 
@@ -31,11 +31,11 @@ export class SearchRepository {
           'bookmark' AS type,
           b.title,
           b.description,
-          ts_rank(to_tsvector('english', b.title || ' ' || coalesce(b.description, '')), sq.query) AS rank
+          ts_rank(to_tsvector('simple', b.title || ' ' || coalesce(b.description, '')), sq.query) AS rank
         FROM bookmarks b, search_query sq
         WHERE b.user_id = ${userId}
           AND b.deleted_at IS NULL
-          AND to_tsvector('english', b.title || ' ' || coalesce(b.description, '')) @@ sq.query
+          AND to_tsvector('simple', b.title || ' ' || coalesce(b.description, '')) @@ sq.query
   
         UNION ALL
   
@@ -44,10 +44,10 @@ export class SearchRepository {
           'tag' AS type,
           t.name AS title,
           NULL AS description,
-          ts_rank(to_tsvector('english', t.name), sq.query) AS rank
+          ts_rank(to_tsvector('simple', t.name), sq.query) AS rank
         FROM tags t, search_query sq
         WHERE t.user_id = ${userId}
-          AND to_tsvector('english', t.name) @@ sq.query
+          AND to_tsvector('simple', t.name) @@ sq.query
   
         UNION ALL
   
@@ -56,11 +56,11 @@ export class SearchRepository {
           'collection' AS type,
           c.name AS title,
           c.description,
-          ts_rank(to_tsvector('english', c.name || ' ' || coalesce(c.description, '')), sq.query) AS rank
+          ts_rank(to_tsvector('simple', c.name || ' ' || coalesce(c.description, '')), sq.query) AS rank
         FROM collections c, search_query sq
         WHERE c.user_id = ${userId}
           AND c.is_deleted = false
-          AND to_tsvector('english', c.name || ' ' || coalesce(c.description, '')) @@ sq.query
+          AND to_tsvector('simple', c.name || ' ' || coalesce(c.description, '')) @@ sq.query
       ),
       fuzzy_results AS (
         SELECT 
@@ -120,46 +120,46 @@ export class SearchRepository {
       LIMIT ${limit};
     `
       : sql`
-        WITH all_results AS (
-          SELECT 
-            b.id::text AS id,
-            'bookmark' AS type,
-            b.title,
-            b.description,
-            NULL::float AS rank
-          FROM bookmarks b
-          WHERE b.user_id = ${userId}
-            AND b.deleted_at IS NULL
+      WITH all_results AS (
+        SELECT 
+          b.id::text AS id,
+          'bookmark' AS type,
+          b.title,
+          b.description,
+          NULL::float AS rank
+        FROM bookmarks b
+        WHERE b.user_id = ${userId}
+          AND b.deleted_at IS NULL
   
-          UNION ALL
+        UNION ALL
   
-          SELECT 
-            t.id::text AS id,
-            'tag' AS type,
-            t.name AS title,
-            NULL AS description,
-            NULL::float AS rank
-          FROM tags t
-          WHERE t.user_id = ${userId}
+        SELECT 
+          t.id::text AS id,
+          'tag' AS type,
+          t.name AS title,
+          NULL AS description,
+          NULL::float AS rank
+        FROM tags t
+        WHERE t.user_id = ${userId}
   
-          UNION ALL
+        UNION ALL
   
-          SELECT 
-            c.id::text AS id,
-            'collection' AS type,
-            c.name AS title,
-            c.description,
-            NULL::float AS rank
-          FROM collections c
-          WHERE c.user_id = ${userId}
-            AND c.is_deleted = false
-        )
-        SELECT DISTINCT ON (id, type) *
-        FROM all_results
-        WHERE ${hasCursorId ? sql`id > ${cursorId}` : sql`TRUE`}
-        ORDER BY id, type, rank DESC
-        LIMIT ${limit}
-      `;
+        SELECT 
+          c.id::text AS id,
+          'collection' AS type,
+          c.name AS title,
+          c.description,
+          NULL::float AS rank
+        FROM collections c
+        WHERE c.user_id = ${userId}
+          AND c.is_deleted = false
+      )
+      SELECT DISTINCT ON (id, type) *
+      FROM all_results
+      WHERE ${hasCursorId ? sql`id > ${cursorId}` : sql`TRUE`}
+      ORDER BY id, type, rank DESC
+      LIMIT ${limit};
+    `;
 
     return this.txHost.tx.execute(rawSearchSql);
   }

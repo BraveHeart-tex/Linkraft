@@ -21,68 +21,111 @@ export class SearchRepository {
 
     const rawSearchSql = hasQuery
       ? sql`
-        WITH search_query AS (
-          SELECT pg_catalog.plainto_tsquery('english', ${query}) AS query
-        ),
-        all_results AS (
-          SELECT 
-            b.id::text AS id,
-            'bookmark' AS type,
-            b.title AS title,
-            b.description AS description,
-            ts_rank(b.tsv, sq.query) AS rank
-          FROM bookmarks b, search_query sq
-          WHERE b.user_id = ${userId}
-            AND b.deleted_at IS NULL
-            AND b.tsv @@ sq.query
+      WITH 
+      search_query AS (
+        SELECT plainto_tsquery('english', ${query}) AS query
+      ),
+      fts_results AS (
+        SELECT 
+          b.id::text AS id,
+          'bookmark' AS type,
+          b.title,
+          b.description,
+          ts_rank(to_tsvector('english', b.title || ' ' || coalesce(b.description, '')), sq.query) AS rank
+        FROM bookmarks b, search_query sq
+        WHERE b.user_id = ${userId}
+          AND b.deleted_at IS NULL
+          AND to_tsvector('english', b.title || ' ' || coalesce(b.description, '')) @@ sq.query
   
-          UNION ALL
+        UNION ALL
   
-          SELECT 
-            t.id::text AS id,
-            'tag' AS type,
-            t.name AS title,
-            NULL AS description,
-            ts_rank(t.tsv, sq.query) AS rank
-          FROM tags t, search_query sq
-          WHERE t.user_id = ${userId}
-            AND t.tsv @@ sq.query
+        SELECT 
+          t.id::text AS id,
+          'tag' AS type,
+          t.name AS title,
+          NULL AS description,
+          ts_rank(to_tsvector('english', t.name), sq.query) AS rank
+        FROM tags t, search_query sq
+        WHERE t.user_id = ${userId}
+          AND to_tsvector('english', t.name) @@ sq.query
   
-          UNION ALL
+        UNION ALL
   
-          SELECT 
-            c.id::text AS id,
-            'collection' AS type,
-            c.name AS title,
-            c.description AS description,
-            ts_rank(c.tsv, sq.query) AS rank
-          FROM collections c, search_query sq
-          WHERE c.user_id = ${userId}
-            AND c.is_deleted = false
-            AND c.tsv @@ sq.query
-        )
-        SELECT *
-        FROM all_results
-        WHERE 
-          ${
-            hasCursorRank && hasCursorId
-              ? sql`(rank < ${cursorRank} OR (rank = ${cursorRank} AND id > ${cursorId}))`
-              : hasCursorRank
-                ? sql`rank < ${cursorRank}`
-                : hasCursorId
-                  ? sql`id > ${cursorId}`
-                  : sql`TRUE`
-          }
-        ORDER BY rank DESC, id ASC
-        LIMIT ${limit}
-      `
+        SELECT 
+          c.id::text AS id,
+          'collection' AS type,
+          c.name AS title,
+          c.description,
+          ts_rank(to_tsvector('english', c.name || ' ' || coalesce(c.description, '')), sq.query) AS rank
+        FROM collections c, search_query sq
+        WHERE c.user_id = ${userId}
+          AND c.is_deleted = false
+          AND to_tsvector('english', c.name || ' ' || coalesce(c.description, '')) @@ sq.query
+      ),
+      fuzzy_results AS (
+        SELECT 
+          b.id::text AS id,
+          'bookmark' AS type,
+          b.title,
+          b.description,
+          similarity(b.title, ${query}) AS rank
+        FROM bookmarks b
+        WHERE b.user_id = ${userId}
+          AND b.deleted_at IS NULL
+          AND b.title % ${query}
+  
+        UNION ALL
+  
+        SELECT 
+          t.id::text AS id,
+          'tag' AS type,
+          t.name AS title,
+          NULL AS description,
+          similarity(t.name, ${query}) AS rank
+        FROM tags t
+        WHERE t.user_id = ${userId}
+          AND t.name % ${query}
+  
+        UNION ALL
+  
+        SELECT 
+          c.id::text AS id,
+          'collection' AS type,
+          c.name AS title,
+          c.description,
+          similarity(c.name, ${query}) AS rank
+        FROM collections c
+        WHERE c.user_id = ${userId}
+          AND c.is_deleted = false
+          AND c.name % ${query}
+      ),
+      all_results AS (
+        SELECT * FROM fts_results
+        UNION
+        SELECT * FROM fuzzy_results
+      )
+      SELECT DISTINCT ON (id, type) *
+      FROM all_results
+      WHERE 
+        ${
+          hasCursorRank && hasCursorId
+            ? sql`(rank < ${cursorRank} OR (rank = ${cursorRank} AND id > ${cursorId}))`
+            : hasCursorRank
+              ? sql`rank < ${cursorRank}`
+              : hasCursorId
+                ? sql`id > ${cursorId}`
+                : sql`TRUE`
+        }
+      ORDER BY id, type, rank DESC
+      LIMIT ${limit};
+    `
       : sql`
         WITH all_results AS (
           SELECT 
             b.id::text AS id,
             'bookmark' AS type,
-            b.title AS title,
-            b.description AS description,
+            b.title,
+            b.description,
             NULL::float AS rank
           FROM bookmarks b
           WHERE b.user_id = ${userId}
@@ -105,17 +148,16 @@ export class SearchRepository {
             c.id::text AS id,
             'collection' AS type,
             c.name AS title,
-            c.description AS description,
+            c.description,
             NULL::float AS rank
           FROM collections c
           WHERE c.user_id = ${userId}
             AND c.is_deleted = false
         )
-        SELECT *
+        SELECT DISTINCT ON (id, type) *
         FROM all_results
-        WHERE 
-          ${hasCursorId ? sql`id > ${cursorId}` : sql`TRUE`}
-        ORDER BY id ASC
+        WHERE ${hasCursorId ? sql`id > ${cursorId}` : sql`TRUE`}
+        ORDER BY id, type, rank DESC
         LIMIT ${limit}
       `;
 

@@ -24,11 +24,17 @@ export class SearchController {
       userId: userSessionContext.user.id,
       cursorRank: cursor?.rank ?? null,
       cursorId: cursor?.id ?? null,
-      limit,
+      limit: limit + 1,
     });
 
-    const last = results[results.length - 1];
-    const nextCursor = last ? encodeCursor(last.rank, last.id) : null;
+    let nextCursor: string | null = null;
+    if (results.length > limit) {
+      const last = results[limit - 1];
+      if (last) {
+        nextCursor = encodeCursor(last.rank, last.id);
+      }
+      results.length = limit;
+    }
 
     return {
       results,

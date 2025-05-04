@@ -6,6 +6,7 @@ export const searchResultSchema = z.object({
   title: z.string(),
   description: z.string().nullable(),
   rank: z.number().nullable(),
+  url: z.string(),
 });
 
 export const searchAllResponseSchema = z.object({

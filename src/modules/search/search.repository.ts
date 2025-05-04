@@ -31,6 +31,7 @@ export class SearchRepository {
         'bookmark' AS type,
         b.title,
         b.description,
+        b.url,
         ts_rank(to_tsvector('simple', b.title || ' ' || coalesce(b.description, '')), sq.query) AS rank
       FROM bookmarks b, search_query sq
       WHERE b.user_id = ${userId}
@@ -43,6 +44,7 @@ export class SearchRepository {
         'bookmark' AS type,
         b.title,
         b.description,
+        b.url,
         similarity(b.title, ${query}) AS rank
       FROM bookmarks b
       WHERE b.user_id = ${userId}
@@ -75,6 +77,7 @@ export class SearchRepository {
       'bookmark' AS type,
       b.title,
       b.description,
+      b.url,
       NULL::float AS rank
     FROM bookmarks b
     WHERE b.user_id = ${userId}

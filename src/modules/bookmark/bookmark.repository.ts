@@ -103,6 +103,43 @@ export class BookmarkRepository {
     });
   }
 
+  async findBookmarkWithDetailsByUserId({
+    bookmarkId,
+    userId,
+  }: BookmarkOwnershipParams): Promise<BookmarkWithTagsAndCollection | null> {
+    const query = this.txHost.tx
+      .select({
+        bookmark: bookmarks,
+        tags: sql<Pick<Tag, 'id' | 'name'>[]>`COALESCE(
+          json_agg(json_build_object('id', ${tags.id}, 'name', ${tags.name}))
+          FILTER (WHERE ${tags.id} IS NOT NULL),
+          '[]'
+        )`.as('tags'),
+        collection: {
+          id: collections.id,
+          name: collections.name,
+        },
+      })
+      .from(bookmarks)
+      .where(and(eq(bookmarks.id, bookmarkId), eq(bookmarks.userId, userId)))
+      .leftJoin(bookmarkTags, eq(bookmarkTags.bookmarkId, bookmarks.id))
+      .leftJoin(tags, eq(bookmarkTags.tagId, tags.id))
+      .leftJoin(collections, eq(bookmarks.collectionId, collections.id))
+      .groupBy(bookmarks.id, collections.id)
+      .limit(1)
+      .$dynamic();
+
+    const [row] = await query.execute();
+
+    if (!row) return null;
+
+    return {
+      ...row.bookmark,
+      tags: row.tags || [],
+      collection: row.collection,
+    };
+  }
+
   async findWithTagsAndCollectionByIdAndUserId({
     bookmarkId,
     userId,

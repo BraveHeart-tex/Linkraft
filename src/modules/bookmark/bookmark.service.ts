@@ -42,7 +42,7 @@ export class BookmarkService {
   }
 
   getUserBookmarkById({ bookmarkId, userId }: BookmarkOwnershipParams) {
-    return this.bookmarkRepository.findByIdAndUserId({
+    return this.bookmarkRepository.findBookmarkWithDetailsByUserId({
       bookmarkId,
       userId,
     });

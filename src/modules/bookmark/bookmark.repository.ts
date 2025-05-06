@@ -272,4 +272,15 @@ export class BookmarkRepository {
         id: bookmarks.id,
       });
   }
+
+  bulkDelete(userId: User['id'], bookmarkIds: Bookmark['id'][]) {
+    return this.txHost.tx
+      .delete(bookmarks)
+      .where(
+        and(eq(bookmarks.userId, userId), inArray(bookmarks.id, bookmarkIds))
+      )
+      .returning({
+        id: bookmarks.id,
+      });
+  }
 }

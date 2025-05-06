@@ -46,7 +46,7 @@ export const updateBookmarkSchema = createBookmarkSchema
 export const bulkSoftDeleteBookmarkSchema = z.object({
   bookmarkIds: z
     .array(z.number())
-    .length(1, 'Please provide at least one bookmark to delete.'),
+    .min(1, 'Please provide at least one bookmark to delete.'),
 });
 
 export type BulkSoftDeleteBookmarkDto = z.infer<

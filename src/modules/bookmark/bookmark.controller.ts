@@ -121,37 +121,18 @@ export class BookmarkController {
     });
   }
 
-  @Delete('/:id')
-  @ResponseMessage('Bookmark moved to trash successfully.')
+  @Delete('bulk/permanent')
+  @ResponseMessage('Bookmarks deleted successfully.')
   @ResponseStatus(HttpStatus.OK)
-  softDeleteUserBookmark(
-    @Param('id', ParseIntPipe) bookmarkId: number,
+  bulkDeleteUserBookmarks(
+    @Body(zodPipe(bulkSoftDeleteBookmarkSchema))
+    data: BulkSoftDeleteBookmarkDto,
     @CurrentUser() userSessionContext: UserSessionContext
   ) {
-    return this.bookmarkService.softDeleteUserBookmark({
-      bookmarkId,
-      userId: userSessionContext.user.id,
-    });
-  }
-
-  @Delete('/:id/permanent')
-  @ResponseMessage('Bookmark deleted successfully.')
-  @ResponseStatus(HttpStatus.OK)
-  permanentlyDeleteUserBookmark(
-    @Param('id', ParseIntPipe) bookmarkId: number,
-    @CurrentUser() userSessionContext: UserSessionContext
-  ) {
-    return this.bookmarkService.permanentlyDeleteUserBookmark({
-      bookmarkId,
-      userId: userSessionContext.user.id,
-    });
-  }
-
-  @Delete('/trash')
-  @ResponseMessage('All trashed bookmarks deleted successfully')
-  @ResponseStatus(HttpStatus.OK)
-  emptyTrash(@CurrentUser() userSessionContext: UserSessionContext) {
-    return this.bookmarkService.emptyTrash(userSessionContext.user.id);
+    return this.bookmarkService.bulkDeleteUserBookmarks(
+      userSessionContext.user.id,
+      data.bookmarkIds
+    );
   }
 
   @Delete('bulk')
@@ -166,5 +147,38 @@ export class BookmarkController {
       data.bookmarkIds,
       userSessionContext.user.id
     );
+  }
+
+  @Delete('/:id(\\d+)/permanent')
+  @ResponseMessage('Bookmark deleted successfully.')
+  @ResponseStatus(HttpStatus.OK)
+  permanentlyDeleteUserBookmark(
+    @Param('id', ParseIntPipe) bookmarkId: number,
+    @CurrentUser() userSessionContext: UserSessionContext
+  ) {
+    return this.bookmarkService.permanentlyDeleteUserBookmark({
+      bookmarkId,
+      userId: userSessionContext.user.id,
+    });
+  }
+
+  @Delete('/:id')
+  @ResponseMessage('Bookmark moved to trash successfully.')
+  @ResponseStatus(HttpStatus.OK)
+  softDeleteUserBookmark(
+    @Param('id', ParseIntPipe) bookmarkId: number,
+    @CurrentUser() userSessionContext: UserSessionContext
+  ) {
+    return this.bookmarkService.softDeleteUserBookmark({
+      bookmarkId,
+      userId: userSessionContext.user.id,
+    });
+  }
+
+  @Delete('/trash')
+  @ResponseMessage('All trashed bookmarks deleted successfully')
+  @ResponseStatus(HttpStatus.OK)
+  emptyTrash(@CurrentUser() userSessionContext: UserSessionContext) {
+    return this.bookmarkService.emptyTrash(userSessionContext.user.id);
   }
 }

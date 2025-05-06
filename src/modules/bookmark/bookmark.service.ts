@@ -240,4 +240,8 @@ export class BookmarkService {
   emptyTrash(userId: User['id']) {
     return this.bookmarkRepository.bulkDeleteTrashedUserBookmarks(userId);
   }
+
+  bulkDeleteUserBookmarks(userId: User['id'], bookmarkIds: Bookmark['id'][]) {
+    return this.bookmarkRepository.bulkDelete(userId, bookmarkIds);
+  }
 }

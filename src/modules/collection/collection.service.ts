@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { Collection, CollectionInsertDto, User } from 'src/db/schema';
 import { CollectionRepository } from './collection.repository';
 import { CollectionOwnershipParams } from './collection.types';
+import { ApiException } from 'src/exceptions/api.exception';
 
 @Injectable()
 export class CollectionService {
@@ -26,5 +27,16 @@ export class CollectionService {
 
   userHasAccessToCollection(params: CollectionOwnershipParams) {
     return this.collectionRepository.userHasAccessToCollection(params);
+  }
+
+  async getAccessibleCollectionById(params: CollectionOwnershipParams) {
+    const collectionWithBookmarks =
+      await this.collectionRepository.getByIdForUser(params);
+
+    if (!collectionWithBookmarks) {
+      throw new ApiException('Collection not found', HttpStatus.NOT_FOUND);
+    }
+
+    return collectionWithBookmarks;
   }
 }

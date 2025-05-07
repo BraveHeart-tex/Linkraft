@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 import {
   boolean,
   index,
@@ -89,6 +89,13 @@ export const bookmarks = pgTable(
   ]
 );
 
+export const bookmarkRelations = relations(bookmarks, ({ one }) => ({
+  collection: one(collections, {
+    fields: [bookmarks.collectionId],
+    references: [collections.id],
+  }),
+}));
+
 export const bookmarkTags = pgTable(
   'bookmark_tags',
   {
@@ -121,6 +128,10 @@ export const collections = pgTable(
     index('collections_tsv_index').using('gin', table.tsv),
   ]
 );
+
+export const collectionRelations = relations(collections, ({ many }) => ({
+  bookmarks: many(bookmarks),
+}));
 
 export type User = typeof users.$inferSelect;
 export type UserWithoutPasswordHash = Omit<User, 'passwordHash'>;

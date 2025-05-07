@@ -23,7 +23,7 @@ import {
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { UserSessionContext } from '../auth/session.types';
 import { ApiException } from 'src/exceptions/api.exception';
-import { CollectionInsertDto } from 'src/db/schema';
+import { Collection, CollectionInsertDto } from 'src/db/schema';
 
 @Controller('collections')
 @UseGuards(AuthGuard)
@@ -52,11 +52,23 @@ export class CollectionController {
     );
   }
 
+  @Get('/:id')
+  @ResponseStatus(HttpStatus.OK)
+  getAccessibleCollectionById(
+    @Param('id', ParseIntPipe) collectionId: Collection['id'],
+    @CurrentUser() userSessionInfo: UserSessionContext
+  ) {
+    return this.collectionService.getAccessibleCollectionById({
+      userId: userSessionInfo.user.id,
+      collectionId,
+    });
+  }
+
   @Delete('/:id')
   @ResponseStatus(HttpStatus.OK)
   deleteUserCollection(
     @CurrentUser() userSessionInfo: UserSessionContext,
-    @Param('id', ParseIntPipe) collectionId: number
+    @Param('id', ParseIntPipe) collectionId: Collection['id']
   ) {
     return this.collectionService.deleteUserCollection({
       userId: userSessionInfo.user.id,

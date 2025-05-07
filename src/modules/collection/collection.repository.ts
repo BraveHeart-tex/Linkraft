@@ -58,6 +58,16 @@ export class CollectionRepository {
       .where(eq(collections.userId, userId));
   }
 
+  async getByIdForUser({ collectionId, userId }: CollectionOwnershipParams) {
+    return this.txHost.tx.query.collections.findFirst({
+      where: () =>
+        and(eq(collections.id, collectionId), eq(collections.userId, userId)),
+      with: {
+        bookmarks: true,
+      },
+    });
+  }
+
   deleteUserCollection({ collectionId, userId }: CollectionOwnershipParams) {
     return this.txHost.tx
       .delete(collections)

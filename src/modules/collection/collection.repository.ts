@@ -8,7 +8,7 @@ import {
   collections,
   User,
 } from 'src/db/schema';
-import { and, count, eq, sql } from 'drizzle-orm';
+import { and, count, eq, isNull, sql } from 'drizzle-orm';
 import { CollectionOwnershipParams } from './collection.types';
 import { QueryResult } from 'pg';
 
@@ -63,12 +63,17 @@ export class CollectionRepository {
       where: () =>
         and(eq(collections.id, collectionId), eq(collections.userId, userId)),
       with: {
-        bookmarks: true,
+        bookmarks: {
+          where: () => isNull(bookmarks.deletedAt),
+        },
       },
     });
   }
 
-  deleteUserCollection({ collectionId, userId }: CollectionOwnershipParams) {
+  async deleteUserCollection({
+    collectionId,
+    userId,
+  }: CollectionOwnershipParams) {
     return this.txHost.tx
       .delete(collections)
       .where(

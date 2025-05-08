@@ -50,12 +50,14 @@ export class CollectionRepository {
         createdAt: collections.createdAt,
         isDeleted: collections.isDeleted,
         color: collections.color,
-        bookmarkCount: count(bookmarks.id),
+        bookmarkCount: count(
+          sql`CASE WHEN ${bookmarks.deletedAt} is null THEN ${bookmarks.id} ELSE NULL END`
+        ),
       })
       .from(collections)
       .leftJoin(bookmarks, eq(bookmarks.collectionId, collections.id))
       .groupBy(collections.id)
-      .where(eq(collections.userId, userId));
+      .where(and(eq(collections.userId, userId)));
   }
 
   async getByIdForUser({ collectionId, userId }: CollectionOwnershipParams) {

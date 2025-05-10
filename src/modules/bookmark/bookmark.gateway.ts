@@ -15,13 +15,14 @@ import {
   SOCKET_NAMESPACES,
   SOCKET_ROOMS,
 } from 'src/modules/bookmark/bookmark.constants';
-
 import { Bookmark } from 'src/modules/bookmark/bookmark.types';
 
 @WebSocketGateway({
   namespace: SOCKET_NAMESPACES.BOOKMARKS,
   cors: {
     origin: process.env.FRONT_END_URL,
+    credentials: true,
+    allowedHeaders: ['Authorization'],
   },
 })
 export class BookmarkGateway
@@ -33,8 +34,11 @@ export class BookmarkGateway
   server!: Server;
 
   handleConnection(client: Socket) {
-    this.logger.log(`Client connected to /bookmarks: ${client.id}`);
+    this.logger.log(
+      `Client connected to ${client.id} ${JSON.stringify(client.data)}`
+    );
   }
+
   handleDisconnect(client: Socket) {
     this.logger.log(`Client disconnected from /bookmarks: ${client.id}`);
   }

@@ -21,3 +21,15 @@ export const generateAuthTokenExpiryDate = (): Date => {
   expirationDate.setTime(expirationDate.getTime() + SESSION_LIFETIME_MS);
   return expirationDate;
 };
+
+export const parseCookies = (cookieHeader: string): Record<string, string> => {
+  return cookieHeader.split(';').reduce(
+    (acc, cookie) => {
+      const [key, ...v] = cookie.trim().split('=');
+      if (!key) return acc;
+      acc[key] = decodeURIComponent(v.join('='));
+      return acc;
+    },
+    {} as Record<string, string>
+  );
+};

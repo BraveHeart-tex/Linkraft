@@ -5,6 +5,8 @@ import { Logger } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { GlobalExceptionFilter } from './filters/global-exception.filter';
+import { SessionService } from 'src/modules/auth/session.service';
+import { AuthenticatedIoAdapter } from 'src/adapters/authenticated-io-adapter';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare const module: any;
@@ -14,13 +16,17 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule);
   app.use(cookieParser());
+
+  const sessionService = app.get(SessionService);
+  const adapter = new AuthenticatedIoAdapter(app, sessionService);
+  app.useWebSocketAdapter(adapter);
+
   app.enableCors({
     origin: [process.env.FRONT_END_URL!],
     allowedHeaders: ['Content-Type', 'Authorization'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true,
   });
-
   app.useGlobalInterceptors(new ResponseInterceptor(app.get(Reflector)));
   app.setGlobalPrefix('/api');
   app.useGlobalFilters(new ZodExceptionFilter(), new GlobalExceptionFilter());

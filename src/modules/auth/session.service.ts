@@ -19,11 +19,11 @@ export class SessionService {
     return session;
   }
 
-  async validateAndRefreshSession(
-    token: string
+  async validateSessionCommon(
+    token: string,
+    shouldRefresh: boolean = false
   ): Promise<SessionValidationResult> {
     const sessionId = getSessionId(token);
-
     const result = await this.repo.getSessionWithUser(sessionId);
 
     if (!result) return { session: null, user: null };
@@ -35,12 +35,25 @@ export class SessionService {
       return { session: null, user: null };
     }
 
-    if (Date.now() >= session.expiresAt.getTime() - SESSION_HALF_LIFE_MS) {
+    if (
+      shouldRefresh &&
+      Date.now() >= session.expiresAt.getTime() - SESSION_HALF_LIFE_MS
+    ) {
       session.expiresAt = new Date(Date.now() + SESSION_LIFETIME_MS);
       await this.repo.updateSessionExpiry(session.id, session.expiresAt);
     }
 
     return { session, user };
+  }
+
+  async validateSession(token: string): Promise<SessionValidationResult> {
+    return this.validateSessionCommon(token, false);
+  }
+
+  async validateAndRefreshSession(
+    token: string
+  ): Promise<SessionValidationResult> {
+    return this.validateSessionCommon(token, true);
   }
 
   async invalidateSession(sessionId: string) {

@@ -48,7 +48,6 @@ export class CollectionRepository {
         name: collections.name,
         description: collections.description,
         createdAt: collections.createdAt,
-        isDeleted: collections.isDeleted,
         color: collections.color,
         bookmarkCount: count(
           sql`CASE WHEN ${bookmarks.deletedAt} is null THEN ${bookmarks.id} ELSE NULL END`

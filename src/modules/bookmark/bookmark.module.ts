@@ -14,6 +14,7 @@ import { TagModule } from '../tag/tag.module';
 import { MetadataScraperService } from 'src/modules/metadata/metadata-scraper.service';
 import { RedisModule } from 'src/modules/redis/redis.module';
 import { BookmarkImportModule } from 'src/modules/bookmark-import/bookmark-import.module';
+import { FaviconModule } from 'src/modules/favicon/favicon.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { BookmarkImportModule } from 'src/modules/bookmark-import/bookmark-impor
     BookmarkTagModule,
     forwardRef(() => BookmarkImportModule),
     RedisModule,
+    FaviconModule,
   ],
   controllers: [BookmarkController],
   providers: [

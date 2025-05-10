@@ -17,7 +17,7 @@ export class StatsRepository {
     }>(sql`
       SELECT
         (SELECT COUNT(*) FROM ${bookmarks} WHERE ${bookmarks.userId} = ${userId} AND ${bookmarks.deletedAt} IS NULL) AS "bookmarkCount",
-        (SELECT COUNT(*) FROM ${collections} WHERE ${collections.userId} = ${userId} AND ${collections.isDeleted} = false) AS "collectionCount",
+        (SELECT COUNT(*) FROM ${collections} WHERE ${collections.userId} = ${userId}) AS "collectionCount",
         (SELECT COUNT(*) FROM ${tags} WHERE ${tags.userId} = ${userId}) AS "tagCount"
     `);
 

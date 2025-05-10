@@ -86,6 +86,8 @@ export const bookmarks = pgTable(
   (table) => [
     index('bookmarks_tsv_index').using('gin', table.tsv),
     index('bookmark_user_id_index').on(table.userId),
+    index('bookmark_collection_id_index').on(table.collectionId),
+    index('bookmark_deleted_at_index').on(table.deletedAt),
   ]
 );
 
@@ -120,12 +122,29 @@ export const collections = pgTable(
     description: text('description'),
     color: varchar('color', { length: 16 }),
     createdAt: timestamp('created_at').defaultNow(),
-    isDeleted: boolean('is_deleted').default(false),
     tsv: tsvector('tsv'),
   },
   (table) => [
     index('collection_user_id_index').on(table.userId),
     index('collections_tsv_index').using('gin', table.tsv),
+  ]
+);
+
+export const favicons = pgTable(
+  'favicons',
+  {
+    id: varchar('id', { length: 36 }).primaryKey(),
+    url: text('url').notNull(),
+    hash: varchar('hash', { length: 64 }).notNull().unique(),
+    r2Key: text('r2_key').notNull(),
+    domain: varchar('domain', { length: 253 }).notNull().unique(),
+    createdAt: timestamp('created_at', { mode: 'date' })
+      .notNull()
+      .default(sql`now()`),
+  },
+  (table) => [
+    uniqueIndex('favicons_unique_hash_index').on(table.hash),
+    uniqueIndex('favicons_unique_domain_index').on(table.domain),
   ]
 );
 
@@ -146,3 +165,6 @@ export type Collection = typeof collections.$inferSelect;
 export type BookmarkInsertDto = typeof bookmarks.$inferInsert;
 
 export type Tag = typeof tags.$inferSelect;
+
+export type Favicon = typeof favicons.$inferSelect;
+export type FaviconInsertDto = typeof favicons.$inferInsert;

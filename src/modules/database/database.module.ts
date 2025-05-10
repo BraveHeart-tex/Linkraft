@@ -1,30 +1,30 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from '../../db/schema';
 import { DrizzleLoggerModule } from './drizzle-logger/drizzle-logger.module';
 import { DrizzleLoggerService } from './drizzle-logger/drizzle-logger.service';
 import { DRIZZLE_CONNECTION } from 'src/modules/database/database.tokens';
+import { AppConfigService } from 'src/config/app-config.service';
 
 @Module({
-  imports: [ConfigModule, DrizzleLoggerModule],
+  imports: [DrizzleLoggerModule],
   providers: [
     {
       provide: DRIZZLE_CONNECTION,
       useFactory: (
-        configService: ConfigService,
+        appConfigService: AppConfigService,
         drizzleLogger: DrizzleLoggerService
       ) => {
         const pool = new Pool({
-          connectionString: configService.get<string>('DATABASE_URL'),
+          connectionString: appConfigService.get('DATABASE_URL'),
         });
         return drizzle(pool, {
           schema,
           logger: drizzleLogger,
         });
       },
-      inject: [ConfigService, DrizzleLoggerService],
+      inject: [AppConfigService, DrizzleLoggerService],
     },
   ],
   exports: [DRIZZLE_CONNECTION],

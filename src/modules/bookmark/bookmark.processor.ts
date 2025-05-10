@@ -12,6 +12,7 @@ import { HtmlFetcherService } from 'src/modules/metadata/html-fetcher.service';
 import { truncateBookmarkTitle } from './bookmark.utils';
 import { MetadataScraperService } from 'src/modules/metadata/metadata-scraper.service';
 import { BookmarkImportProgressService } from 'src/modules/bookmark-import/bookmark-import-progress.service';
+import { FaviconService } from 'src/modules/favicon/favicon.service';
 
 @Processor(BOOKMARK_METADATA_QUEUE_NAME, {
   concurrency: 10,
@@ -27,7 +28,8 @@ export class BookmarkMetadataProcessor
     private readonly bookmarkRepository: BookmarkRepository,
     private readonly htmlFetcherService: HtmlFetcherService,
     private readonly metadataScraperService: MetadataScraperService,
-    private readonly importProgressService: BookmarkImportProgressService
+    private readonly importProgressService: BookmarkImportProgressService,
+    private readonly faviconService: FaviconService
   ) {
     super();
   }
@@ -65,13 +67,19 @@ export class BookmarkMetadataProcessor
       const updates = {
         ...(job.data?.onlyFavicon
           ? {
-              faviconUrl: metadata?.logo || null,
+              faviconUrl: metadata?.logo
+                ? (await this.faviconService.storeFaviconFromUrl(metadata.logo))
+                    .url
+                : null,
             }
           : {
               title: metadata.title
                 ? truncateBookmarkTitle(metadata.title)
                 : 'Untitled',
-              faviconUrl: metadata?.logo || null,
+              faviconUrl: metadata?.logo
+                ? (await this.faviconService.storeFaviconFromUrl(metadata.logo))
+                    .url
+                : null,
             }),
         isMetadataPending: false,
       };

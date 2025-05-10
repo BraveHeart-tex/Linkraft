@@ -9,7 +9,8 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Job } from 'bullmq';
-import { Server, Socket } from 'socket.io';
+import { Server } from 'socket.io';
+import { AuthenticatedSocket } from 'src/common/types/socket.types';
 import {
   SOCKET_EVENTS,
   SOCKET_NAMESPACES,
@@ -33,13 +34,13 @@ export class BookmarkGateway
   @WebSocketServer()
   server!: Server;
 
-  handleConnection(client: Socket) {
+  handleConnection(client: AuthenticatedSocket) {
     this.logger.log(
       `Client connected to ${client.id} ${JSON.stringify(client.data)}`
     );
   }
 
-  handleDisconnect(client: Socket) {
+  handleDisconnect(client: AuthenticatedSocket) {
     this.logger.log(`Client disconnected from /bookmarks: ${client.id}`);
   }
 
@@ -60,7 +61,7 @@ export class BookmarkGateway
   @SubscribeMessage(SOCKET_EVENTS.BOOKMARK.SUBSCRIBE)
   handleSubscribe(
     @MessageBody() data: { bookmarkId: Bookmark['id'] },
-    @ConnectedSocket() client: Socket
+    @ConnectedSocket() client: AuthenticatedSocket
   ) {
     const roomName = this.getBookmarkRoomName(data.bookmarkId);
     client.join(roomName);
@@ -70,7 +71,7 @@ export class BookmarkGateway
   @SubscribeMessage(SOCKET_EVENTS.BOOKMARK.UNSUBSCRIBE)
   handleUnsubscribe(
     @MessageBody() data: { bookmarkId: Bookmark['id'] },
-    @ConnectedSocket() client: Socket
+    @ConnectedSocket() client: AuthenticatedSocket
   ) {
     const roomName = this.getBookmarkRoomName(data.bookmarkId);
     client.leave(roomName);
@@ -80,7 +81,7 @@ export class BookmarkGateway
   @SubscribeMessage(SOCKET_EVENTS.IMPORT.SUBSCRIBE)
   handleImportSubscribe(
     @MessageBody() data: { importJobId: string },
-    @ConnectedSocket() client: Socket
+    @ConnectedSocket() client: AuthenticatedSocket
   ) {
     const room = this.getImportRoomName(data.importJobId);
     client.join(room);
@@ -92,7 +93,7 @@ export class BookmarkGateway
   @SubscribeMessage(SOCKET_EVENTS.IMPORT.UNSUBSCRIBE)
   handleImportUnsubscribe(
     @MessageBody() data: { importJobId: string },
-    @ConnectedSocket() client: Socket
+    @ConnectedSocket() client: AuthenticatedSocket
   ) {
     const room = this.getImportRoomName(data.importJobId);
     client.leave(room);

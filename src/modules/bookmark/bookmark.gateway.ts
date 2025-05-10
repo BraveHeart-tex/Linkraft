@@ -4,19 +4,16 @@ import {
   WebSocketServer,
   OnGatewayConnection,
   OnGatewayDisconnect,
-  SubscribeMessage,
-  MessageBody,
-  ConnectedSocket,
 } from '@nestjs/websockets';
-import { Job } from 'bullmq';
 import { Server } from 'socket.io';
 import { AuthenticatedSocket } from 'src/common/types/socket.types';
+import { User } from 'src/db/schema';
 import {
   SOCKET_EVENTS,
   SOCKET_NAMESPACES,
   SOCKET_ROOMS,
 } from 'src/modules/bookmark/bookmark.constants';
-import { Bookmark } from 'src/modules/bookmark/bookmark.types';
+import { BookmarkOwnershipParams } from 'src/modules/bookmark/bookmark.types';
 
 @WebSocketGateway({
   namespace: SOCKET_NAMESPACES.BOOKMARKS,
@@ -35,89 +32,41 @@ export class BookmarkGateway
   server!: Server;
 
   handleConnection(client: AuthenticatedSocket) {
-    this.logger.log(
-      `Client connected to ${client.id} ${JSON.stringify(client.data)}`
-    );
+    const room = this.getUserRoomName(client.data.user.id);
+    client.join(room);
+    this.logger.log(`Client [${client.id}] connected and joined ${room}`);
   }
 
   handleDisconnect(client: AuthenticatedSocket) {
-    this.logger.log(`Client disconnected from /bookmarks: ${client.id}`);
+    const room = this.getUserRoomName(client.data.user.id);
+    client.leave(room);
+    this.logger.log(`Client [${client.id}] disconnected and left ${room}`);
   }
 
-  notifyBookmarkUpdate(
-    bookmarkId: Bookmark['id'],
-    metadata: { title?: string; faviconUrl: string | null }
-  ) {
-    const roomName = this.getBookmarkRoomName(bookmarkId);
-    this.logger.log(
-      `Sending update to ${roomName}: ${JSON.stringify(metadata)}`
-    );
-    this.server.to(roomName).emit(SOCKET_EVENTS.BOOKMARK.UPDATE, {
+  notifyBookmarkUpdate({
+    userId,
+    bookmarkId,
+    metadata,
+  }: BookmarkOwnershipParams & {
+    metadata: { title?: string; faviconUrl: string | null };
+  }) {
+    const room = this.getUserRoomName(userId);
+    this.logger.log(`Sending bookmark update to ${room}`);
+    this.server.to(room).emit(SOCKET_EVENTS.BOOKMARK.UPDATE, {
       bookmarkId,
       ...metadata,
     });
   }
 
-  @SubscribeMessage(SOCKET_EVENTS.BOOKMARK.SUBSCRIBE)
-  handleSubscribe(
-    @MessageBody() data: { bookmarkId: Bookmark['id'] },
-    @ConnectedSocket() client: AuthenticatedSocket
-  ) {
-    const roomName = this.getBookmarkRoomName(data.bookmarkId);
-    client.join(roomName);
-    this.logger.log(`Client ${client.id} joined room ${roomName}`);
-  }
-
-  @SubscribeMessage(SOCKET_EVENTS.BOOKMARK.UNSUBSCRIBE)
-  handleUnsubscribe(
-    @MessageBody() data: { bookmarkId: Bookmark['id'] },
-    @ConnectedSocket() client: AuthenticatedSocket
-  ) {
-    const roomName = this.getBookmarkRoomName(data.bookmarkId);
-    client.leave(roomName);
-    this.logger.log(`Client ${client.id} left room ${roomName}`);
-  }
-
-  @SubscribeMessage(SOCKET_EVENTS.IMPORT.SUBSCRIBE)
-  handleImportSubscribe(
-    @MessageBody() data: { importJobId: string },
-    @ConnectedSocket() client: AuthenticatedSocket
-  ) {
-    const room = this.getImportRoomName(data.importJobId);
-    client.join(room);
-    this.logger.log(
-      `[Bookmark-Import]: Client ${client.id} subscribed to ${room}`
-    );
-  }
-
-  @SubscribeMessage(SOCKET_EVENTS.IMPORT.UNSUBSCRIBE)
-  handleImportUnsubscribe(
-    @MessageBody() data: { importJobId: string },
-    @ConnectedSocket() client: AuthenticatedSocket
-  ) {
-    const room = this.getImportRoomName(data.importJobId);
-    client.leave(room);
-    this.logger.log(
-      `[Bookmark-Import] Client ${client.id} unsubscribed from ${room}`
-    );
-  }
-
   async emitImportProgress(
-    importJobId: string,
-    payload: { progress: number; status: string }
+    userId: User['id'],
+    payload: { importJobId: string; progress: number; status: string }
   ) {
-    const roomName = this.getImportRoomName(importJobId);
-    this.server.to(roomName).emit(SOCKET_EVENTS.IMPORT.PROGRESS, {
-      importJobId,
-      ...payload,
-    });
+    const roomName = this.getUserRoomName(userId);
+    this.server.to(roomName).emit(SOCKET_EVENTS.IMPORT.PROGRESS, payload);
   }
 
-  private getBookmarkRoomName(bookmarkId: Bookmark['id']): string {
-    return SOCKET_ROOMS.bookmark(bookmarkId);
-  }
-
-  private getImportRoomName(importJobId: Job['id']): string {
-    return SOCKET_ROOMS.importJob(importJobId);
+  private getUserRoomName(userId: User['id']): string {
+    return SOCKET_ROOMS.user(userId);
   }
 }

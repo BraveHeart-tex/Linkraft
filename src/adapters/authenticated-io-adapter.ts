@@ -5,6 +5,7 @@ import { SessionService } from 'src/modules/auth/session.service';
 import { SESSION_TOKEN_COOKIE_NAME } from 'src/modules/auth/auth.constants';
 import { parseCookies } from 'src/modules/auth/utils/token.utils';
 import { toUserWithoutPassword } from 'src/modules/user/mappers/user.mapper';
+import { SOCKET_NAMESPACES } from 'src/modules/bookmark/bookmark.constants';
 
 @Injectable()
 export class AuthenticatedIoAdapter extends IoAdapter {
@@ -53,8 +54,11 @@ export class AuthenticatedIoAdapter extends IoAdapter {
 
     applyAuthMiddleware(server);
 
-    const bookmarksNamespace = server.of('/bookmarks');
-    applyAuthMiddleware(bookmarksNamespace);
+    for (const key of Object.keys(
+      SOCKET_NAMESPACES
+    ) as (keyof typeof SOCKET_NAMESPACES)[]) {
+      applyAuthMiddleware(server.of(`/${SOCKET_NAMESPACES[key]}`));
+    }
 
     return server;
   }

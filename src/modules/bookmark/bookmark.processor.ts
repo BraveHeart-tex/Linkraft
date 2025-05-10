@@ -82,7 +82,11 @@ export class BookmarkMetadataProcessor
         updates,
       });
 
-      this.bookmarkGateway.notifyBookmarkUpdate(job.data.bookmarkId, updates);
+      this.bookmarkGateway.notifyBookmarkUpdate({
+        userId: job.data.userId,
+        bookmarkId: job.data.bookmarkId,
+        metadata: updates,
+      });
 
       if (job.data.type === 'bulk' && job.data.parentJobId) {
         await this.importProgressService.incrementProgress(
@@ -92,7 +96,8 @@ export class BookmarkMetadataProcessor
           job.data.parentJobId
         );
 
-        this.bookmarkGateway.emitImportProgress(job.data.parentJobId, {
+        this.bookmarkGateway.emitImportProgress(job.data.userId, {
+          importJobId: job.data.parentJobId,
           progress,
           status: progress === 100 ? 'completed' : 'processing',
         });
@@ -116,12 +121,18 @@ export class BookmarkMetadataProcessor
         title: 'Metadata fetch failed',
         faviconUrl: null,
       };
+
       await this.bookmarkRepository.updateByIdAndUserId({
         bookmarkId: job.data.bookmarkId,
         userId: job.data.userId,
         updates,
       });
-      this.bookmarkGateway.notifyBookmarkUpdate(job.data.bookmarkId, updates);
+
+      this.bookmarkGateway.notifyBookmarkUpdate({
+        userId: job.data.userId,
+        bookmarkId: job.data.bookmarkId,
+        metadata: updates,
+      });
 
       this.logger.warn(
         `[Job ${job.id}] Metadata update failed, fallback metadata set`

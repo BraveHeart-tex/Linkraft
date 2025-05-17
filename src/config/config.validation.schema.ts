@@ -11,6 +11,12 @@ export const configSchema = z.object({
   REDIS_PASSWORD: z.string(),
   REDIS_PORT: z.coerce.number().min(1, 'REDIS_PORT is required'),
   REDIS_DB: z.coerce.number({ required_error: 'REDIS_DB is required' }),
+  R2_CDN_URL: z
+    .string({
+      required_error: 'R2_CDN_URL is required',
+      invalid_type_error: 'R2_CDN_URL must be a string',
+    })
+    .url('R2_CDN_URL must be a valid URL'),
 });
 
 export type ConfigSchema = z.infer<typeof configSchema>;

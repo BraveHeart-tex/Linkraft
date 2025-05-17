@@ -1,12 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import {
-  GetObjectCommand,
-  PutObjectCommand,
-  S3Client,
-} from '@aws-sdk/client-s3';
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { AppConfigService } from 'src/config/app-config.service';
 import { Readable } from 'stream';
-import axios from 'axios';
 
 @Injectable()
 export class R2Service {
@@ -23,21 +18,12 @@ export class R2Service {
     });
   }
 
-  async downloadImage(faviconUrl: string): Promise<Buffer> {
-    const response = await axios.get(faviconUrl, {
-      responseType: 'arraybuffer',
-    });
-    const buffer = Buffer.from(response.data);
-    return buffer;
-  }
-
   async uploadImage(
     faviconBuffer: Buffer,
-    faviconHash: string
+    faviconDomain: string
   ): Promise<{ url: string; r2Key: string }> {
-    const r2Key = `favicons/${faviconHash}.ico`;
+    const r2Key = `favicons/${faviconDomain}.ico`;
     const bucketName = this.appConfigService.get('R2_BUCKET_NAME');
-    const endpoint = this.appConfigService.get('R2_ENDPOINT');
 
     try {
       const command = new PutObjectCommand({
@@ -50,7 +36,7 @@ export class R2Service {
       await this.s3Client.send(command);
 
       return {
-        url: `https://${bucketName}.${endpoint.startsWith('https') ? endpoint.substring(8) : endpoint}/favicons/${faviconHash}.ico`,
+        url: `${this.appConfigService.get('R2_CDN_URL')}/${faviconDomain}`,
         r2Key,
       };
     } catch (error) {
@@ -59,33 +45,6 @@ export class R2Service {
       }
 
       throw new Error(`An unknown error occurred ${error}`);
-    }
-  }
-
-  async getImage(faviconHash: string): Promise<Buffer> {
-    const downloadParams = {
-      Bucket: process.env.R2_BUCKET_NAME,
-      Key: `favicons/${faviconHash}.ico`,
-    };
-
-    const command = new GetObjectCommand(downloadParams);
-
-    try {
-      const { Body } = await this.s3Client.send(command);
-      if (Body instanceof Readable) {
-        const chunks: Buffer[] = [];
-        for await (const chunk of Body) {
-          chunks.push(chunk);
-        }
-        return Buffer.concat(chunks);
-      }
-      throw new Error('Failed to download image');
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(`Failed to download image: ${error.message}`);
-      }
-
-      throw new Error(`Failed to download image`);
     }
   }
 }

@@ -4,12 +4,14 @@ import { Favicon } from 'src/db/schema';
 import { FaviconRepository } from 'src/modules/favicon/favicon.repository';
 import { R2Service } from 'src/modules/storage/r2.service';
 import { createId } from '@paralleldrive/cuid2';
+import { FaviconFetcherService } from 'src/modules/favicon/favicon-fetcher.service';
 
 @Injectable()
 export class FaviconService {
   constructor(
     private readonly r2Service: R2Service,
-    private readonly faviconRepository: FaviconRepository
+    private readonly faviconRepository: FaviconRepository,
+    private readonly faviconFetcherService: FaviconFetcherService
   ) {}
 
   private hashFaviconImage(faviconBuffer: Buffer): string {
@@ -17,7 +19,8 @@ export class FaviconService {
   }
 
   async storeFaviconFromUrl(faviconUrl: string): Promise<Favicon> {
-    const faviconBuffer = await this.r2Service.downloadImage(faviconUrl);
+    const faviconBuffer =
+      await this.faviconFetcherService.downloadImage(faviconUrl);
     const faviconDomain = new URL(faviconUrl).hostname;
     const faviconHash = this.hashFaviconImage(faviconBuffer);
 
@@ -40,7 +43,7 @@ export class FaviconService {
 
     const r2Result = await this.r2Service.uploadImage(
       faviconBuffer,
-      faviconHash
+      faviconDomain
     );
 
     const newFavicon = this.faviconRepository.create({

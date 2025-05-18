@@ -18,7 +18,7 @@
     }
   },
   "mounts": [
-    "source=linkraft-devcontainer-node_modules,target=/usr/src/app/node_modules,type=volume"
+    "source=linkraft-node_modules,target=/usr/src/app/node_modules,type=volume"
   ],
   "remoteUser": "node"
 }

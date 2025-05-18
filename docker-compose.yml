@@ -11,7 +11,8 @@ services:
       REDIS_PORT: 6379
       FRONT_END_URL: http://localhost:8080
     volumes:
-      - .:/usr/src/app:delegated
+      - .:/usr/src/app:cached
+      - linkraft-node_modules:/usr/src/app/node_modules
     command: ['pnpm', 'run', 'start:dev']
     depends_on:
       - postgres
@@ -48,6 +49,7 @@ services:
 volumes:
   postgres-data:
   redis-data:
+  linkraft-node_modules:
 
 networks:
   nest-network:

@@ -1,4 +1,4 @@
-FROM node:20
+FROM node:20-slim
 
 WORKDIR /usr/src/app
 
@@ -8,7 +8,7 @@ COPY package.json pnpm-lock.yaml ./
 
 SHELL ["/bin/bash", "-c"]
 
-RUN pnpm install
+RUN pnpm install --frozen-lockfile --prefer-offline && pnpm store prune
 
 COPY . .
 

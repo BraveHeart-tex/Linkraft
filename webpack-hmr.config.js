@@ -6,16 +6,16 @@ const { RunScriptWebpackPlugin } = require('run-script-webpack-plugin');
 module.exports = function (options) {
   return {
     ...options,
-    entry: ['webpack/hot/poll?100', options.entry],
+    entry: ['webpack/hot/poll?1000', options.entry],
     externals: [
       nodeExternals({
-        allowlist: ['webpack/hot/poll?100'],
+        allowlist: ['webpack/hot/poll?1000'],
       }),
     ],
     watchOptions: {
-      poll: 100, // Poll every 100ms
+      poll: 1000,
       aggregateTimeout: 300,
-      ignored: /node_modules/,
+      ignored: /node_modules|\.git|dist/,
     },
     plugins: [
       ...options.plugins,

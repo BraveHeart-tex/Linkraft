@@ -7,7 +7,7 @@ import { BookmarkImportProgressService } from 'src/modules/bookmark-import/bookm
 import { BookmarkGateway } from 'src/modules/bookmark/bookmark.gateway';
 import { BookmarkRepository } from 'src/modules/bookmark/bookmark.repository';
 import { FaviconService } from 'src/modules/favicon/favicon.service';
-import { HtmlFetcherService } from 'src/modules/metadata/html-fetcher.service';
+import { HtmlFetcherService } from 'src/modules/htmlFetcher/html-fetcher.service';
 import { truncateBookmarkTitle } from './bookmark.utils';
 
 @Processor(BOOKMARK_METADATA_QUEUE_NAME, {

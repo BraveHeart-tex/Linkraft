@@ -1,18 +1,14 @@
-import { WorkerHost, Processor } from '@nestjs/bullmq';
-import { Job } from 'bullmq';
-import { BOOKMARK_METADATA_QUEUE_NAME } from 'src/common/processors/queueNames';
-import { BookmarkRepository } from 'src/modules/bookmark/bookmark.repository';
-import { FetchBookmarkMetadataJob } from 'src/common/processors/processors.types';
-import { BookmarkGateway } from 'src/modules/bookmark/bookmark.gateway';
+import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger, OnModuleDestroy } from '@nestjs/common';
-import metascraperTitle from 'metascraper-title';
-import metascraperDescription from 'metascraper-description';
-import metascraperLogoFavicon from 'metascraper-logo-favicon';
+import { Job } from 'bullmq';
+import { FetchBookmarkMetadataJob } from 'src/common/processors/processors.types';
+import { BOOKMARK_METADATA_QUEUE_NAME } from 'src/common/processors/queueNames';
+import { BookmarkImportProgressService } from 'src/modules/bookmark-import/bookmark-import-progress.service';
+import { BookmarkGateway } from 'src/modules/bookmark/bookmark.gateway';
+import { BookmarkRepository } from 'src/modules/bookmark/bookmark.repository';
+import { FaviconService } from 'src/modules/favicon/favicon.service';
 import { HtmlFetcherService } from 'src/modules/metadata/html-fetcher.service';
 import { truncateBookmarkTitle } from './bookmark.utils';
-import { MetadataScraperService } from 'src/modules/metadata/metadata-scraper.service';
-import { BookmarkImportProgressService } from 'src/modules/bookmark-import/bookmark-import-progress.service';
-import { FaviconService } from 'src/modules/favicon/favicon.service';
 
 @Processor(BOOKMARK_METADATA_QUEUE_NAME, {
   concurrency: 10,
@@ -27,7 +23,6 @@ export class BookmarkMetadataProcessor
     private readonly bookmarkGateway: BookmarkGateway,
     private readonly bookmarkRepository: BookmarkRepository,
     private readonly htmlFetcherService: HtmlFetcherService,
-    private readonly metadataScraperService: MetadataScraperService,
     private readonly importProgressService: BookmarkImportProgressService,
     private readonly faviconService: FaviconService
   ) {
@@ -42,43 +37,34 @@ export class BookmarkMetadataProcessor
     );
 
     try {
-      const { html } = await this.htmlFetcherService.fetchHtml(job.data.url);
-      this.logger.debug(
-        `[Job ${job.id}] Fetched HTML for URL: ${job.data.url}`
+      const start = Date.now();
+      const metadata = await this.htmlFetcherService.fetchHeadMetadataWithRetry(
+        job.data.url
       );
 
-      const scraperModules = job.data.onlyFavicon
-        ? [metascraperLogoFavicon()]
-        : [
-            metascraperTitle(),
-            metascraperDescription(),
-            metascraperLogoFavicon(),
-          ];
-
-      const metadata = await this.metadataScraperService.scrapeMetadata({
-        html,
-        url: job.data.url,
-        rules: scraperModules,
-      });
-      this.logger.debug(
-        `[Job ${job.id}] Extracted metadata: ${JSON.stringify(metadata)}`
-      );
+      this.logger.debug(`Took ${Date.now() - start}ms`);
 
       const updates = {
         ...(job.data?.onlyFavicon
           ? {
-              faviconUrl: metadata?.logo
-                ? (await this.faviconService.storeFaviconFromUrl(metadata.logo))
-                    .url
+              faviconUrl: metadata?.favicon
+                ? (
+                    await this.faviconService.storeFaviconFromUrl(
+                      metadata.favicon
+                    )
+                  ).url
                 : null,
             }
           : {
               title: metadata.title
                 ? truncateBookmarkTitle(metadata.title)
                 : 'Untitled',
-              faviconUrl: metadata?.logo
-                ? (await this.faviconService.storeFaviconFromUrl(metadata.logo))
-                    .url
+              faviconUrl: metadata?.favicon
+                ? (
+                    await this.faviconService.storeFaviconFromUrl(
+                      metadata.favicon
+                    )
+                  ).url
                 : null,
             }),
         isMetadataPending: false,

@@ -45,7 +45,6 @@
     "@oslojs/encoding": "^1.1.0",
     "@paralleldrive/cuid2": "^2.2.2",
     "bullmq": "^5.49.0",
-    "chalk": "^4.1.2",
     "cheerio": "^1.0.0",
     "cookie-parser": "^1.4.7",
     "drizzle-orm": "^0.41.0",

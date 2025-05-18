@@ -53,12 +53,6 @@ importers:
       '@paralleldrive/cuid2':
         specifier: ^2.2.2
         version: 2.2.2
-      axios:
-        specifier: ^1.8.4
-        version: 1.8.4
-      axios-retry:
-        specifier: ^4.5.0
-        version: 4.5.0(axios@1.8.4)
       bullmq:
         specifier: ^5.49.0
         version: 5.49.0
@@ -1745,14 +1739,6 @@ packages:
     resolution: {integrity: sha512-yj9C819u3ED3/OyRd9mLKMXGy8wsElaf6bkkv6OqZEKrNAT461TjiznS4IfPBy8Mmh6DWaXCQCVYSq3+VHkpjQ==}
     engines: {node: '>=0.10.0'}
 
-  axios-retry@4.5.0:
-    resolution: {integrity: sha512-aR99oXhpEDGo0UuAlYcn2iGRds30k366Zfa05XWScR9QaQD4JYiP3/1Qt1u7YlefUOK+cn0CcwoL1oefavQUlQ==}
-    peerDependencies:
-      axios: 0.x || 1.x
-
-  axios@1.8.4:
-    resolution: {integrity: sha512-eBSYY4Y68NNlHbHBMdeDmKNtDgXWhQsJcGqzO3iLUM0GraQFSS9cVgPX5I9b3lbdFKyYoAEGAZF1DwhTaljNAw==}
-
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
 
@@ -2619,15 +2605,6 @@ packages:
   flatted@3.3.3:
     resolution: {integrity: sha512-GX+ysw4PBCz0PzosHDepZGANEuFCMLrnRTiEy9McGjmkCQYwRq4A/X786G/fjM/+OjsWSU1ZrY5qyARZmO/uwg==}
 
-  follow-redirects@1.15.9:
-    resolution: {integrity: sha512-gew4GsXizNgdoRyqmyfMHyAmXsZDk6mHkSxZFCzW9gwlbtOW44CDtYavM+y+72qD/Vq2l550kMF52DT8fOLJqQ==}
-    engines: {node: '>=4.0'}
-    peerDependencies:
-      debug: '*'
-    peerDependenciesMeta:
-      debug:
-        optional: true
-
   foreground-child@3.3.1:
     resolution: {integrity: sha512-gIXjKqtFuWEgzFRJA9WCQeSJLZDjgJUOMCMzxtvFq/37KojM1BFGufqsCy0r4qSQmYLsZYMeyRqzIWOMup03sw==}
     engines: {node: '>=14'}
@@ -2952,10 +2929,6 @@ packages:
   is-relative-url@3.0.0:
     resolution: {integrity: sha512-U1iSYRlY2GIMGuZx7gezlB5dp1Kheaym7zKzO1PV06mOihiWTXejLwm4poEJysPyXF+HtK/BEd0DVlcCh30pEA==}
     engines: {node: '>=8'}
-
-  is-retry-allowed@2.2.0:
-    resolution: {integrity: sha512-XVm7LOeLpTW4jV19QSH38vkswxoLud8sQ57YwJVTPWdiaI9I8keEhGFpBlslyVsgdQy4Opg8QOLb8YRgsyZiQg==}
-    engines: {node: '>=10'}
 
   is-stream@3.0.0:
     resolution: {integrity: sha512-LnQR4bZ9IADDRSkvpqMGvt/tEJWclzklNgSw48V5EAaAeDd6qGvN8ei6k5p0tvxSR171VmGyHuTiAOfxAbr8kA==}
@@ -3718,9 +3691,6 @@ packages:
   proxy-addr@2.0.7:
     resolution: {integrity: sha512-llQsMLSUDUPT44jdrU/O37qlnifitDP+ZwrmmZcoSKyLKvtZxpyV0n2/bD/N4tBAAZ/gJEdZU7KMraoK1+XYAg==}
     engines: {node: '>= 0.10'}
-
-  proxy-from-env@1.1.0:
-    resolution: {integrity: sha512-D+zkORCbA9f1tdWRK0RaCR3GPv50cMxcrz4X8k5LTSUD1Dkw47mKJEZQNunItRTkWwgtaUSo1RVFRIG9ZXiFYg==}
 
   pump@3.0.2:
     resolution: {integrity: sha512-tUPXtzlGM8FE3P0ZL6DVs/3P58k9nk8/jZeQCurTJylQA8qFYzHFfhBJkuqyE0FifOsQ0uKWekiZ5g8wtr28cw==}
@@ -6496,19 +6466,6 @@ snapshots:
 
   audio-extensions@0.0.0: {}
 
-  axios-retry@4.5.0(axios@1.8.4):
-    dependencies:
-      axios: 1.8.4
-      is-retry-allowed: 2.2.0
-
-  axios@1.8.4:
-    dependencies:
-      follow-redirects: 1.15.9
-      form-data: 4.0.2
-      proxy-from-env: 1.1.0
-    transitivePeerDependencies:
-      - debug
-
   balanced-match@1.0.2: {}
 
   base64-js@1.5.1: {}
@@ -7489,8 +7446,6 @@ snapshots:
 
   flatted@3.3.3: {}
 
-  follow-redirects@1.15.9: {}
-
   foreground-child@3.3.1:
     dependencies:
       cross-spawn: 7.0.6
@@ -7846,8 +7801,6 @@ snapshots:
   is-relative-url@3.0.0:
     dependencies:
       is-absolute-url: 3.0.3
-
-  is-retry-allowed@2.2.0: {}
 
   is-stream@3.0.0: {}
 
@@ -8572,8 +8525,6 @@ snapshots:
     dependencies:
       forwarded: 0.2.0
       ipaddr.js: 1.9.1
-
-  proxy-from-env@1.1.0: {}
 
   pump@3.0.2:
     dependencies:

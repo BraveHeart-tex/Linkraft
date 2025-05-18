@@ -1,29 +1,30 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { getErrorStack } from '@/common/utils/logging.utils';
+import { LoggerService } from '@/modules/logging/logger.service';
+import { Transactional } from '@nestjs-cls/transactional';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Injectable } from '@nestjs/common';
 import { Job, Queue } from 'bullmq';
 import {
   FetchBookmarkMetadataJob,
   ImportBookmarkJob,
 } from 'src/common/processors/processors.types';
-import { CollectionRepository } from '../collection/collection.repository';
+import { BOOKMARK_METADATA_QUEUE_NAME } from 'src/common/processors/queueNames';
+import { BookmarkImportProgressService } from 'src/modules/bookmark-import/bookmark-import-progress.service';
+import { parseNetscapeBookmarks } from 'src/modules/bookmark-import/bookmark-import.utils';
 import { BookmarkRepository } from '../bookmark/bookmark.repository';
 import { truncateBookmarkTitle } from '../bookmark/bookmark.utils';
+import { CollectionRepository } from '../collection/collection.repository';
 import { generateRandomHexColor } from '../collection/collection.utils';
-import { Transactional } from '@nestjs-cls/transactional';
-import { parseNetscapeBookmarks } from 'src/modules/bookmark-import/bookmark-import.utils';
-import { BOOKMARK_METADATA_QUEUE_NAME } from 'src/common/processors/queueNames';
-import { InjectQueue } from '@nestjs/bullmq';
-import { BookmarkImportProgressService } from 'src/modules/bookmark-import/bookmark-import-progress.service';
 
 @Injectable()
 export class BookmarkImportService {
-  private readonly logger = new Logger(BookmarkImportService.name);
-
   constructor(
     private readonly collectionRepository: CollectionRepository,
     private readonly bookmarkRepository: BookmarkRepository,
     @InjectQueue(BOOKMARK_METADATA_QUEUE_NAME)
     private readonly metadataQueue: Queue<FetchBookmarkMetadataJob>,
-    private readonly importProgressService: BookmarkImportProgressService
+    private readonly importProgressService: BookmarkImportProgressService,
+    private readonly logger: LoggerService
   ) {}
 
   @Transactional()
@@ -32,12 +33,18 @@ export class BookmarkImportService {
     userId: number,
     job: Job<ImportBookmarkJob>
   ) {
+    const start = Date.now();
+
     try {
-      this.logger.log(
-        `Parse and save bookmarks for [Job ${job.id}] and [User ${userId}]`
-      );
+      this.log('Starting bookmark import', {
+        meta: { jobId: job.id, userId },
+      });
 
       const bookmarks = parseNetscapeBookmarks(html);
+
+      this.log('Parsed bookmarks', {
+        meta: { count: bookmarks.length },
+      });
 
       const collectionNameToId = new Map<string, number>();
       const uniqueCategories = [
@@ -56,6 +63,10 @@ export class BookmarkImportService {
         }))
       );
 
+      this.log('Inserted collections', {
+        meta: { count: insertedCategories.length },
+      });
+
       for (const category of insertedCategories) {
         collectionNameToId.set(category.name, category.id);
       }
@@ -71,6 +82,10 @@ export class BookmarkImportService {
             : null,
         }))
       );
+
+      this.log('Bookmarks created', {
+        meta: { count: createdIds.length },
+      });
 
       await this.importProgressService.setTotalProgress(
         job.id as string,
@@ -96,11 +111,44 @@ export class BookmarkImportService {
           },
         }))
       );
+
+      this.log('Scheduled metadata jobs', {
+        meta: { totalJobs: bookmarks.length },
+      });
+
+      this.log('Finished import successfully', {
+        meta: { durationMs: Date.now() - start },
+      });
     } catch (error) {
-      this.logger.error(
-        `Bookmark import error ${(error as Error).message}`,
-        (error as Error).stack
-      );
+      this.log('Failed to import bookmarks', {
+        level: 'error',
+        trace: getErrorStack(error),
+        meta: { jobId: job.id, userId },
+      });
+    }
+  }
+
+  private log(
+    message: string,
+    {
+      level = 'log',
+      meta = {},
+      trace,
+    }: {
+      level?: 'log' | 'warn' | 'error' | 'debug';
+      meta?: Record<string, unknown>;
+      trace?: string;
+    }
+  ) {
+    const context = BookmarkImportService.name;
+
+    if (level === 'error') {
+      this.logger.error(message, {
+        trace,
+        context,
+      });
+    } else {
+      this.logger[level](message, { context, meta });
     }
   }
 }

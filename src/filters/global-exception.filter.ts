@@ -1,9 +1,10 @@
+import { getErrorStack } from '@/common/utils/logging.utils';
+import { LoggerService } from '@/modules/logging/logger.service';
 import {
+  ArgumentsHost,
   Catch,
   ExceptionFilter,
-  ArgumentsHost,
   HttpStatus,
-  Logger,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { ResponseDTO } from 'src/common/response.dto';
@@ -11,10 +12,12 @@ import { ApiException } from 'src/exceptions/api.exception';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
-  private readonly logger = new Logger(GlobalExceptionFilter.name);
+  constructor(private readonly logger: LoggerService) {}
+
   catch(exception: unknown, host: ArgumentsHost) {
     const context = host.switchToHttp();
     const response = context.getResponse<Response>();
+    const request = context.getRequest();
 
     let status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal Server Error';
@@ -40,7 +43,18 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       },
     });
 
-    this.logger.error(JSON.stringify(responseDTO));
+    this.logger.error('Unhandled exception occurred', {
+      context: GlobalExceptionFilter.name,
+      meta: {
+        statusCode: status,
+        message,
+        details,
+        path: request.path,
+        method: request.method,
+      },
+      trace: getErrorStack(exception),
+    });
+
     response.status(status).json(responseDTO);
   }
 }

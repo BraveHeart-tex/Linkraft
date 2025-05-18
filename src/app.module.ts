@@ -1,24 +1,26 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { DatabaseModule } from './modules/database/database.module';
-import { DRIZZLE_CONNECTION } from './modules/database/database.tokens';
-import { AuthModule } from './modules/auth/auth.module';
-import { ClsModule } from 'nestjs-cls';
+import { CorrelationIdMiddleware } from '@/modules/logging/logging.middleware';
+import { LoggingModule } from '@/modules/logging/logging.module';
 import { ClsPluginTransactional } from '@nestjs-cls/transactional';
 import { TransactionalAdapterDrizzleOrm } from '@nestjs-cls/transactional-adapter-drizzle-orm';
-import { ExtendCookieMiddleware } from './common/middleware/extend-cookie.middleware';
-import { APP_INTERCEPTOR } from '@nestjs/core';
-import { CurrentUserInterceptor } from './common/interceptors/current-user.interceptor';
-import { CollectionModule } from './modules/collection/collection.module';
-import { BookmarkModule } from 'src/modules/bookmark/bookmark.module';
 import { BullModule } from '@nestjs/bullmq';
-import { TagModule } from './modules/tag/tag.module';
-import { BookmarkImportModule } from './modules/bookmark-import/bookmark-import.module';
-import { StatsModule } from 'src/modules/stats/stats.module';
-import { SearchModule } from 'src/modules/search/search.module';
-import { configSchema } from 'src/config/config.validation.schema';
-import { AppConfigService } from 'src/config/app-config.service';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { ClsModule } from 'nestjs-cls';
 import { AppConfigModule } from 'src/config/app-config.module';
+import { AppConfigService } from 'src/config/app-config.service';
+import { configSchema } from 'src/config/config.validation.schema';
+import { BookmarkModule } from 'src/modules/bookmark/bookmark.module';
+import { SearchModule } from 'src/modules/search/search.module';
+import { StatsModule } from 'src/modules/stats/stats.module';
+import { CurrentUserInterceptor } from './common/interceptors/current-user.interceptor';
+import { ExtendCookieMiddleware } from './common/middleware/extend-cookie.middleware';
+import { AuthModule } from './modules/auth/auth.module';
+import { BookmarkImportModule } from './modules/bookmark-import/bookmark-import.module';
+import { CollectionModule } from './modules/collection/collection.module';
+import { DatabaseModule } from './modules/database/database.module';
+import { DRIZZLE_CONNECTION } from './modules/database/database.tokens';
+import { TagModule } from './modules/tag/tag.module';
 
 @Module({
   imports: [
@@ -60,6 +62,7 @@ import { AppConfigModule } from 'src/config/app-config.module';
       }),
       inject: [AppConfigService],
     }),
+    LoggingModule,
     DatabaseModule,
     AuthModule,
     CollectionModule,
@@ -78,6 +81,8 @@ import { AppConfigModule } from 'src/config/app-config.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(ExtendCookieMiddleware).forRoutes('*');
+    consumer
+      .apply(ExtendCookieMiddleware, CorrelationIdMiddleware)
+      .forRoutes('*');
   }
 }

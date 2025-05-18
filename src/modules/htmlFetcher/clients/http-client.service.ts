@@ -12,6 +12,12 @@ export class HttpClient implements IHttpClient {
     return this.fetchWithRedirect(url, 0);
   }
 
+  async fetchBinary(
+    url: string
+  ): Promise<{ buffer: Buffer; contentType: string }> {
+    return this.fetchBinaryWithRedirect(url, 0);
+  }
+
   private fetchWithRedirect(
     url: string,
     redirectCount: number
@@ -99,6 +105,80 @@ export class HttpClient implements IHttpClient {
               reject(err);
             }
           });
+        }
+      );
+
+      req.on('error', reject);
+      req.setTimeout(this.requestTimeoutMs, () => {
+        req.destroy(new Error('Request timed out'));
+      });
+    });
+  }
+
+  private fetchBinaryWithRedirect(
+    url: string,
+    redirectCount: number
+  ): Promise<{ buffer: Buffer; contentType: string }> {
+    return new Promise((resolve, reject) => {
+      if (redirectCount > this.maxRedirects) {
+        return reject(new Error(`Too many redirects (> ${this.maxRedirects})`));
+      }
+
+      const client = url.startsWith('https') ? https : http;
+
+      const req = client.get(
+        url,
+        { headers: { 'User-Agent': 'LinkraftBot/1.0' } },
+        (res) => {
+          // Handle redirects
+          if (
+            res.statusCode &&
+            [301, 302, 303, 307, 308].includes(res.statusCode)
+          ) {
+            const location = res.headers.location;
+            if (!location) {
+              res.destroy();
+              return reject(
+                new Error(
+                  `Redirect status ${res.statusCode} missing Location header`
+                )
+              );
+            }
+            let redirectUrl: string;
+            try {
+              redirectUrl = new URL(location, url).toString();
+            } catch {
+              res.destroy();
+              return reject(new Error(`Invalid redirect URL: ${location}`));
+            }
+            res.destroy();
+            return resolve(
+              this.fetchBinaryWithRedirect(redirectUrl, redirectCount + 1)
+            );
+          }
+
+          if (
+            res.statusCode &&
+            (res.statusCode < 200 || res.statusCode >= 300)
+          ) {
+            res.destroy();
+            return reject(
+              new Error(`Request failed with status code ${res.statusCode}`)
+            );
+          }
+
+          const contentType = res.headers['content-type'] || '';
+
+          const chunks: Buffer[] = [];
+          res.on('data', (chunk) => chunks.push(chunk));
+          res.on('end', () => {
+            resolve({
+              buffer: Buffer.concat(chunks),
+              contentType,
+            });
+          });
+
+          res.on('error', reject);
         }
       );
 

@@ -1,3 +1,5 @@
+import { HttpClient } from '@/modules/htmlFetcher/clients/http-client.service';
+import { IHttpClientToken } from '@/modules/htmlFetcher/constants/injection-tokens';
 import { Module } from '@nestjs/common';
 import { FaviconFetcherService } from 'src/modules/favicon/favicon-fetcher.service';
 import { FaviconRepository } from 'src/modules/favicon/favicon.repository';
@@ -10,6 +12,7 @@ import { R2Service } from 'src/modules/storage/r2.service';
     FaviconRepository,
     R2Service,
     FaviconFetcherService,
+    { provide: IHttpClientToken, useClass: HttpClient },
   ],
   exports: [FaviconService, FaviconRepository],
 })

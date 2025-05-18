@@ -6,6 +6,7 @@ export interface Metadata {
 
 export interface IHttpClient {
   fetch(url: string): Promise<string>;
+  fetchBinary(url: string): Promise<{ buffer: Buffer; contentType: string }>;
 }
 
 export interface IHtmlParser {

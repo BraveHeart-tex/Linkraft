@@ -1,4 +1,6 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { getErrorStack } from '@/common/utils/logging.utils';
+import { LoggerService } from '@/modules/logging/logger.service';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   IHtmlParserToken,
   IHttpClientToken,
@@ -13,35 +15,56 @@ import {
 
 @Injectable()
 export class HtmlFetcherService {
-  private readonly logger = new Logger(HtmlFetcherService.name);
-
   constructor(
     @Inject(IHttpClientToken) private readonly httpClient: IHttpClient,
     @Inject(IHtmlParserToken) private readonly htmlParser: IHtmlParser,
-    @Inject(IRetryStrategyToken) private readonly retryStrategy: IRetryStrategy
+    @Inject(IRetryStrategyToken) private readonly retryStrategy: IRetryStrategy,
+    private readonly logger: LoggerService
   ) {}
 
   async fetchHeadMetadataWithRetry(url: string): Promise<Metadata> {
     for (let attempt = 1; ; attempt++) {
       try {
-        this.logger.log(`Fetch attempt #${attempt} for ${url}`);
+        this.logger.log('Attempting to fetch URL', {
+          context: HtmlFetcherService.name,
+          meta: { attempt, url },
+        });
+
         const headHtml = await this.httpClient.fetch(url);
         const metadata = this.htmlParser.parseHead(headHtml, url);
-        this.logger.log(`Success on attempt #${attempt} for ${url}`);
+
+        this.logger.log('Successfully fetched metadata', {
+          context: HtmlFetcherService.name,
+          meta: { attempt, url },
+        });
+
         return metadata;
       } catch (error) {
-        if (!this.retryStrategy.shouldRetry(error, attempt)) {
-          this.logger.error(
-            `Non-retryable error on attempt #${attempt}`,
-            error instanceof Error ? error.stack : ''
-          );
-          throw error;
-        }
-        const delay = this.retryStrategy.getDelay(attempt);
-        this.logger.warn(
-          `Retryable error on attempt #${attempt}: ${error instanceof Error ? error.message : error}`
+        const shouldRetry = this.retryStrategy.shouldRetry(error, attempt);
+
+        this.logger[shouldRetry ? 'warn' : 'error'](
+          shouldRetry ? 'Retryable fetch error' : 'Non-retryable fetch error',
+          {
+            trace: getErrorStack(error),
+            context: HtmlFetcherService.name,
+            meta: {
+              attempt,
+              url,
+              retryable: shouldRetry,
+              error: error instanceof Error ? error.message : String(error),
+            },
+          }
         );
-        this.logger.warn(`Waiting ${delay}ms before retrying...`);
+
+        if (!shouldRetry) throw error;
+
+        const delay = this.retryStrategy.getDelay(attempt);
+
+        this.logger.warn('Delaying before next retry', {
+          context: HtmlFetcherService.name,
+          meta: { attempt, url, delay },
+        });
+
         await this.delay(delay);
       }
     }

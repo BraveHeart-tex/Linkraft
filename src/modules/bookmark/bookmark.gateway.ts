@@ -1,9 +1,9 @@
-import { Logger } from '@nestjs/common';
+import { LoggerService } from '@/modules/logging/logger.service';
 import {
-  WebSocketGateway,
-  WebSocketServer,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  WebSocketGateway,
+  WebSocketServer,
 } from '@nestjs/websockets';
 import { Server } from 'socket.io';
 import { AuthenticatedSocket } from 'src/common/types/socket.types';
@@ -26,21 +26,17 @@ import { BookmarkOwnershipParams } from 'src/modules/bookmark/bookmark.types';
 export class BookmarkGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
-  private readonly logger = new Logger(BookmarkGateway.name);
+  constructor(private readonly logger: LoggerService) {}
 
   @WebSocketServer()
   server!: Server;
 
   handleConnection(client: AuthenticatedSocket) {
-    const room = this.getUserRoomName(client.data.user.id);
-    client.join(room);
-    this.logger.log(`Client [${client.id}] connected and joined ${room}`);
+    this.handleClientRoomAction(client, 'join');
   }
 
   handleDisconnect(client: AuthenticatedSocket) {
-    const room = this.getUserRoomName(client.data.user.id);
-    client.leave(room);
-    this.logger.log(`Client [${client.id}] disconnected and left ${room}`);
+    this.handleClientRoomAction(client, 'leave');
   }
 
   notifyBookmarkUpdate({
@@ -51,7 +47,15 @@ export class BookmarkGateway
     metadata: { title?: string; faviconUrl: string | null };
   }) {
     const room = this.getUserRoomName(userId);
-    this.logger.log(`Sending bookmark update to ${room}`);
+
+    this.log('Sending bookmark update', {
+      room,
+      userId,
+      bookmarkId,
+      title: metadata.title,
+      faviconUrl: metadata.faviconUrl,
+    });
+
     this.server.to(room).emit(SOCKET_EVENTS.BOOKMARK.UPDATE, {
       bookmarkId,
       ...metadata,
@@ -62,11 +66,45 @@ export class BookmarkGateway
     userId: User['id'],
     payload: { importJobId: string; progress: number; status: string }
   ) {
-    const roomName = this.getUserRoomName(userId);
-    this.server.to(roomName).emit(SOCKET_EVENTS.IMPORT.PROGRESS, payload);
+    const room = this.getUserRoomName(userId);
+
+    this.log('Emitting import progress update', {
+      room,
+      userId,
+      ...payload,
+    });
+
+    this.server.to(room).emit(SOCKET_EVENTS.IMPORT.PROGRESS, payload);
+  }
+
+  private handleClientRoomAction(
+    client: AuthenticatedSocket,
+    action: 'join' | 'leave'
+  ) {
+    const userId = client.data.user.id;
+    const room = this.getUserRoomName(userId);
+
+    if (action === 'join') {
+      client.join(room);
+    } else {
+      client.leave(room);
+    }
+
+    this.log(`Client ${action === 'leave' ? 'left' : 'joined'} the room`, {
+      clientId: client.id,
+      userId,
+      room,
+    });
   }
 
   private getUserRoomName(userId: User['id']): string {
     return SOCKET_ROOMS.user(userId);
+  }
+
+  private log(message: string, meta: Record<string, unknown>) {
+    this.logger.log(message, {
+      context: BookmarkGateway.name,
+      meta,
+    });
   }
 }

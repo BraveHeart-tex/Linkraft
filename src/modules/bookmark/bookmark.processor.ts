@@ -1,5 +1,7 @@
+import { getErrorStack } from '@/common/utils/logging.utils';
+import { LoggerService } from '@/modules/logging/logger.service';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Logger, OnModuleDestroy } from '@nestjs/common';
+import { OnModuleDestroy } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { FetchBookmarkMetadataJob } from 'src/common/processors/processors.types';
 import { BOOKMARK_METADATA_QUEUE_NAME } from 'src/common/processors/queueNames';
@@ -17,32 +19,28 @@ export class BookmarkMetadataProcessor
   extends WorkerHost
   implements OnModuleDestroy
 {
-  private readonly logger = new Logger(BookmarkMetadataProcessor.name);
-
   constructor(
     private readonly bookmarkGateway: BookmarkGateway,
     private readonly bookmarkRepository: BookmarkRepository,
     private readonly htmlFetcherService: HtmlFetcherService,
     private readonly importProgressService: BookmarkImportProgressService,
-    private readonly faviconService: FaviconService
+    private readonly faviconService: FaviconService,
+    private readonly logger: LoggerService
   ) {
     super();
   }
 
   async process(job: Job<FetchBookmarkMetadataJob>): Promise<void> {
+    this.log('Processing job', {
+      job,
+    });
+
     const start = Date.now();
 
-    this.logger.log(
-      `[Job ${job.id}] Starting FetchBookmarkMetadataJob for bookmarkId=${job.data.bookmarkId}, userId=${job.data.userId}, url=${job.data.url}`
-    );
-
     try {
-      const start = Date.now();
       const metadata = await this.htmlFetcherService.fetchHeadMetadataWithRetry(
         job.data.url
       );
-
-      this.logger.debug(`Took ${Date.now() - start}ms`);
 
       const updates = {
         ...(job.data?.onlyFavicon
@@ -102,13 +100,12 @@ export class BookmarkMetadataProcessor
           );
         }
       }
-
-      this.logger.log(`[Job ${job.id}] Successfully updated bookmark metadata`);
     } catch (error) {
-      this.logger.error(
-        `[Job ${job.id}] Failed to fetch metadata for bookmarkId=${job.data.bookmarkId}, userId=${job.data.userId}, url=${job.data.url}`,
-        (error as Error).stack
-      );
+      this.log('Failed to fetch metadata', {
+        trace: getErrorStack(error),
+        level: 'error',
+        job,
+      });
 
       const updates = {
         isMetadataPending: false,
@@ -128,16 +125,58 @@ export class BookmarkMetadataProcessor
         metadata: updates,
       });
 
-      this.logger.warn(
-        `[Job ${job.id}] Metadata update failed, fallback metadata set`
-      );
+      this.log(`Metadata update failed, fallback metadata set`, {
+        level: 'warn',
+        job,
+      });
     } finally {
       const duration = Date.now() - start;
-      this.logger.log(`[Job ${job.id}] Finished processing in ${duration}ms`);
+      this.log(`Finished processing in ${duration}ms`, {
+        job,
+      });
     }
   }
 
   onModuleDestroy() {
     this.worker.close();
+  }
+
+  private log(
+    message: string,
+    {
+      level = 'log',
+      meta = {},
+      trace,
+      job,
+    }: {
+      level?: 'log' | 'warn' | 'error' | 'debug';
+      meta?: Record<string, unknown>;
+      trace?: string;
+      job: Job<FetchBookmarkMetadataJob>;
+    }
+  ) {
+    const baseMeta = {
+      jobId: job?.id,
+      bookmarkId: job?.data?.bookmarkId,
+      userId: job?.data?.userId,
+      url: job?.data?.url,
+    };
+
+    const context = BookmarkMetadataProcessor.name;
+
+    const mergedMeta = { ...baseMeta, ...meta };
+
+    if (level === 'error') {
+      this.logger.error(message, {
+        context,
+        meta: mergedMeta,
+        trace,
+      });
+    } else {
+      this.logger[level](message, {
+        context,
+        meta: mergedMeta,
+      });
+    }
   }
 }

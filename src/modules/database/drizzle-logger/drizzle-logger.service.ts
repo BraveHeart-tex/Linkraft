@@ -1,25 +1,11 @@
+import { LoggerService } from '@/modules/logging/logger.service';
 import { Injectable, Logger } from '@nestjs/common';
-import { highlightSQL } from './sql-highlighter.util';
 import { performance } from 'perf_hooks';
-import chalk from 'chalk';
 
 @Injectable()
 export class DrizzleLoggerService extends Logger {
-  constructor() {
+  constructor(private readonly logger: LoggerService) {
     super('Drizzle');
-  }
-
-  logQuery(query: string, params: unknown[]) {
-    const start = performance.now();
-
-    const logEnd = () => {
-      const duration = performance.now() - start;
-      const type = this.detectQueryType(query);
-      const formatted = this.formatQuery(type, query, params, duration);
-      this.log(formatted);
-    };
-
-    setImmediate(logEnd);
   }
 
   private detectQueryType(
@@ -29,32 +15,24 @@ export class DrizzleLoggerService extends Logger {
       .trim()
       .toUpperCase()
       .match(/^(SELECT|INSERT|UPDATE|DELETE)/);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (match?.[1] as any) || 'OTHER';
+
+    return (match?.[1] as 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE') || 'OTHER';
   }
 
-  private formatQuery(
-    type: string,
-    query: string,
-    params: unknown[],
-    duration: number
-  ): string {
-    const colorMap = {
-      SELECT: chalk.greenBright,
-      INSERT: chalk.cyanBright,
-      UPDATE: chalk.yellowBright,
-      DELETE: chalk.redBright,
-      OTHER: chalk.whiteBright,
-    };
+  logQuery(query: string, params: unknown[]) {
+    const start = performance.now();
 
-    const tag = colorMap[type as keyof typeof colorMap](`[${type}]`);
-    const time = chalk.gray(`(${duration.toFixed(1)} ms)`);
-    const highlightedQuery = highlightSQL(query);
-    const formattedParams =
-      params && params.length > 0
-        ? `${chalk.magentaBright('↳ Params:')} ${chalk.yellowBright(JSON.stringify(params))}`
-        : '';
+    setImmediate(() => {
+      const duration = performance.now() - start;
+      const type = this.detectQueryType(query);
 
-    return `${tag} ${time}\n${highlightedQuery}\n${formattedParams}\n`;
+      this.logger.debug({
+        context: 'DrizzleSQL',
+        queryType: type,
+        query,
+        params,
+        durationMs: Number(duration.toFixed(2)),
+      });
+    });
   }
 }

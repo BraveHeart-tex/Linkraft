@@ -8,11 +8,13 @@ interface SeedUserOptions {
   count: number;
 }
 
+const DEFAULT_USER_SEED_PASSWORD = '12345678';
+
 export const seedUsers = async (
   db: AppDatabase,
   options: SeedUserOptions
 ): Promise<User['id'][]> => {
-  const defaultPasswordHash = await hashPassword('123456');
+  const defaultPasswordHash = await hashPassword(DEFAULT_USER_SEED_PASSWORD);
   const gen = userGenerator(options.count, defaultPasswordHash);
 
   let insertedIds: User['id'][] = [];

@@ -1,16 +1,10 @@
+import { emailSchema } from '@/common/validation/schemas/shared/email.schema';
+import { passwordSchema } from '@/common/validation/schemas/shared/password.schema';
 import { z } from 'zod';
 
 export const SignInSchema = z.object({
-  email: z
-    .string({
-      required_error: 'Email is required',
-    })
-    .email('Please provide a valid email'),
-  password: z
-    .string({
-      required_error: 'Please provide a password',
-    })
-    .min(8, 'Password must be at least 8 characters long'),
+  email: emailSchema,
+  password: passwordSchema,
 });
 
 export type SignInDto = z.infer<typeof SignInSchema>;

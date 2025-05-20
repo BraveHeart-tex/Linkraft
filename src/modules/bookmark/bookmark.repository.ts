@@ -1,3 +1,4 @@
+import { DEFAULT_PAGE_SIZE } from '@/modules/database/database.constants';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { Injectable } from '@nestjs/common';
 import {
@@ -40,7 +41,7 @@ export class BookmarkRepository {
 
   async findAllByUserId({
     userId,
-    limit = 10,
+    limit = DEFAULT_PAGE_SIZE,
     cursor,
     searchQuery = '',
     trashed = false,

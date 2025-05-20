@@ -1,3 +1,4 @@
+import { DEFAULT_PAGE_SIZE } from '@/modules/database/database.constants';
 import {
   Body,
   Controller,
@@ -12,21 +13,21 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from 'src/guards/auth.guard';
-import { BookmarkService } from './bookmark.service';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
-import { UserSessionContext } from '../auth/session.types';
-import { zodPipe } from 'src/pipes/zod.pipe.factory';
-import {
-  BulkSoftDeleteBookmarkDto,
-  bulkSoftDeleteBookmarkSchema,
-  updateBookmarkSchema,
-  UpdateBookmarkDto,
-  createBookmarkSchema,
-  CreateBookmarkDto,
-} from 'src/common/validation/schemas/bookmark/bookmark.schema';
 import { ResponseMessage } from 'src/common/decorators/response-message.decorator';
 import { ResponseStatus } from 'src/common/decorators/response-status.decorator';
+import {
+  BulkSoftDeleteBookmarkDto,
+  CreateBookmarkDto,
+  UpdateBookmarkDto,
+  bulkSoftDeleteBookmarkSchema,
+  createBookmarkSchema,
+  updateBookmarkSchema,
+} from 'src/common/validation/schemas/bookmark/bookmark.schema';
+import { AuthGuard } from 'src/guards/auth.guard';
+import { zodPipe } from 'src/pipes/zod.pipe.factory';
+import { UserSessionContext } from '../auth/session.types';
+import { BookmarkService } from './bookmark.service';
 
 @Controller('bookmarks')
 @UseGuards(AuthGuard)
@@ -36,7 +37,8 @@ export class BookmarkController {
   @Get()
   getUserBookmarks(
     @Query('cursor', new DefaultValuePipe(0), ParseIntPipe) cursor: number,
-    @Query('pageSize', new DefaultValuePipe(10), ParseIntPipe) pageSize: number,
+    @Query('pageSize', new DefaultValuePipe(DEFAULT_PAGE_SIZE), ParseIntPipe)
+    pageSize: number,
     @Query('search', new DefaultValuePipe('')) searchQuery: string,
     @CurrentUser() userSessionContext: UserSessionContext
   ) {
@@ -51,7 +53,8 @@ export class BookmarkController {
   @Get('trash')
   getTrashedUserBookmarks(
     @Query('cursor', new DefaultValuePipe(0), ParseIntPipe) cursor: number,
-    @Query('pageSize', new DefaultValuePipe(10), ParseIntPipe) pageSize: number,
+    @Query('pageSize', new DefaultValuePipe(DEFAULT_PAGE_SIZE), ParseIntPipe)
+    pageSize: number,
     @Query('search', new DefaultValuePipe('')) searchQuery: string,
     @CurrentUser() userSessionContext: UserSessionContext
   ) {

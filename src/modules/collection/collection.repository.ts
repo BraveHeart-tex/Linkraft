@@ -1,6 +1,7 @@
+import { DEFAULT_PAGE_SIZE } from '@/modules/database/database.constants';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { Injectable } from '@nestjs/common';
-import { and, count, eq, isNull, sql } from 'drizzle-orm';
+import { and, count, desc, eq, isNull, sql } from 'drizzle-orm';
 import { QueryResult } from 'pg';
 import {
   bookmarks,
@@ -62,15 +63,28 @@ export class CollectionRepository {
   }
 
   async getByIdForUser({ collectionId, userId }: CollectionOwnershipParams) {
-    return this.txHost.tx.query.collections.findFirst({
-      where: () =>
-        and(eq(collections.id, collectionId), eq(collections.userId, userId)),
-      with: {
-        bookmarks: {
-          where: () => isNull(bookmarks.deletedAt),
+    const collectionWithBookmarks =
+      await this.txHost.tx.query.collections.findFirst({
+        where: () =>
+          and(eq(collections.id, collectionId), eq(collections.userId, userId)),
+        with: {
+          bookmarks: {
+            where: () => isNull(bookmarks.deletedAt),
+            limit: DEFAULT_PAGE_SIZE,
+            orderBy: () => desc(collections.id),
+          },
         },
-      },
-    });
+      });
+
+    if (!collectionWithBookmarks) return null;
+
+    return {
+      ...collectionWithBookmarks,
+      nextBookmarkCursor:
+        collectionWithBookmarks.bookmarks.length === DEFAULT_PAGE_SIZE
+          ? collectionWithBookmarks.bookmarks[DEFAULT_PAGE_SIZE - 1]?.id
+          : null,
+    };
   }
 
   async deleteUserCollection({

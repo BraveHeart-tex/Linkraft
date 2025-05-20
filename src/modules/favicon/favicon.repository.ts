@@ -2,11 +2,13 @@ import { TransactionHost } from '@nestjs-cls/transactional';
 import { Injectable } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { Favicon, FaviconInsertDto, favicons } from 'src/db/schema';
-import { DbTransactionAdapter } from 'src/modules/database/database.types';
+import { TransactionalDbAdapter } from 'src/modules/database/database.types';
 
 @Injectable()
 export class FaviconRepository {
-  constructor(private readonly txHost: TransactionHost<DbTransactionAdapter>) {}
+  constructor(
+    private readonly txHost: TransactionHost<TransactionalDbAdapter>
+  ) {}
 
   async findByHash(hash: string): Promise<Favicon | undefined> {
     return this.txHost.tx

@@ -1,12 +1,14 @@
+import { TransactionHost } from '@nestjs-cls/transactional';
 import { Injectable } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { SessionInsertDto, sessions, users } from 'src/db/schema';
-import { DbTransactionAdapter } from '../database/database.types';
-import { TransactionHost } from '@nestjs-cls/transactional';
+import { TransactionalDbAdapter } from '../database/database.types';
 
 @Injectable()
 export class SessionRepository {
-  constructor(private readonly txHost: TransactionHost<DbTransactionAdapter>) {}
+  constructor(
+    private readonly txHost: TransactionHost<TransactionalDbAdapter>
+  ) {}
   insertSession(session: SessionInsertDto) {
     return this.txHost.tx.insert(sessions).values(session);
   }

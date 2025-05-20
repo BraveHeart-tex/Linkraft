@@ -1,8 +1,13 @@
 import { TransactionalAdapterDrizzleOrm } from '@nestjs-cls/transactional-adapter-drizzle-orm';
-import * as schema from 'src/db/schema';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
+import * as schema from 'src/db/schema';
 
-export type BaseDatabase = NodePgDatabase<typeof schema> & { $client: Pool };
+export type AppDatabase = NodePgDatabase<typeof schema>;
 
-export type DbTransactionAdapter = TransactionalAdapterDrizzleOrm<BaseDatabase>;
+export type DrizzleDatabaseWithPool = NodePgDatabase<typeof schema> & {
+  $client: Pool;
+};
+
+export type TransactionalDbAdapter =
+  TransactionalAdapterDrizzleOrm<DrizzleDatabaseWithPool>;

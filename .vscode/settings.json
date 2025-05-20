@@ -7,7 +7,7 @@
     "**/.pnpm-store": true
   },
   "typescript.tsdk": "node_modules/typescript/lib",
-  "workbench.colorTheme": "Gruvbox Dark Hard",
+  "workbench.colorTheme": "Default Light Modern",
   "typescript.preferences.importModuleSpecifier": "non-relative",
   "javascript.preferences.importModuleSpecifier": "non-relative"
 }

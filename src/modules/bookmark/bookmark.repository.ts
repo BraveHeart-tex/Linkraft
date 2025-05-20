@@ -1,22 +1,5 @@
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { Injectable } from '@nestjs/common';
-import { DbTransactionAdapter } from '../database/database.types';
-import {
-  BookmarkInsertDto,
-  bookmarks,
-  bookmarkTags,
-  collections,
-  Tag,
-  tags,
-  User,
-} from 'src/db/schema';
-import {
-  Bookmark,
-  BookmarkOwnershipParams,
-  BookmarkWithTagsAndCollection,
-  FindUserBookmarksParams,
-  UpdateBookmarkParams,
-} from './bookmark.types';
 import {
   and,
   desc,
@@ -31,10 +14,29 @@ import {
   SQL,
   sql,
 } from 'drizzle-orm';
+import {
+  BookmarkInsertDto,
+  bookmarks,
+  bookmarkTags,
+  collections,
+  Tag,
+  tags,
+  User,
+} from 'src/db/schema';
+import { TransactionalDbAdapter } from '../database/database.types';
+import {
+  Bookmark,
+  BookmarkOwnershipParams,
+  BookmarkWithTagsAndCollection,
+  FindUserBookmarksParams,
+  UpdateBookmarkParams,
+} from './bookmark.types';
 
 @Injectable()
 export class BookmarkRepository {
-  constructor(private readonly txHost: TransactionHost<DbTransactionAdapter>) {}
+  constructor(
+    private readonly txHost: TransactionHost<TransactionalDbAdapter>
+  ) {}
 
   async findAllByUserId({
     userId,

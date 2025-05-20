@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
-import { DbTransactionAdapter } from '../database/database.types';
 import { TransactionHost } from '@nestjs-cls/transactional';
+import { Injectable } from '@nestjs/common';
+import { and, count, eq, isNull, sql } from 'drizzle-orm';
+import { QueryResult } from 'pg';
 import {
   bookmarks,
   Collection,
@@ -8,13 +9,14 @@ import {
   collections,
   User,
 } from 'src/db/schema';
-import { and, count, eq, isNull, sql } from 'drizzle-orm';
+import { TransactionalDbAdapter } from '../database/database.types';
 import { CollectionOwnershipParams } from './collection.types';
-import { QueryResult } from 'pg';
 
 @Injectable()
 export class CollectionRepository {
-  constructor(private readonly txHost: TransactionHost<DbTransactionAdapter>) {}
+  constructor(
+    private readonly txHost: TransactionHost<TransactionalDbAdapter>
+  ) {}
   async create(data: CollectionInsertDto) {
     const insertedCollection = await this.txHost.tx
       .insert(collections)

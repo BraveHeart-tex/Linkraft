@@ -1,13 +1,15 @@
-import { Injectable } from '@nestjs/common';
-import { User, UserInsertDto, users } from 'src/db/schema';
-import { lower } from 'src/db/drizzle.utils';
-import { DbTransactionAdapter } from '../database/database.types';
 import { TransactionHost } from '@nestjs-cls/transactional';
+import { Injectable } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
+import { lower } from 'src/db/drizzle.utils';
+import { User, UserInsertDto, users } from 'src/db/schema';
+import { TransactionalDbAdapter } from '../database/database.types';
 
 @Injectable()
 export class UserRepository {
-  constructor(private readonly txHost: TransactionHost<DbTransactionAdapter>) {}
+  constructor(
+    private readonly txHost: TransactionHost<TransactionalDbAdapter>
+  ) {}
   async create(userDto: UserInsertDto): Promise<User> {
     const created = await this.txHost.tx
       .insert(users)

@@ -1,32 +1,50 @@
-import { Module } from '@nestjs/common';
+import { createDb, createPgPool } from '@/modules/database/bootstrap';
+import { LoggerService } from '@/modules/logging/logger.service';
+import { Inject, Module, OnApplicationShutdown } from '@nestjs/common';
+import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
-import { drizzle } from 'drizzle-orm/node-postgres';
+import { AppConfigService } from 'src/config/app-config.service';
+import {
+  DRIZZLE_CONNECTION,
+  PG_POOL,
+} from 'src/modules/database/database.tokens';
 import * as schema from '../../db/schema';
 import { DrizzleLoggerModule } from './drizzle-logger/drizzle-logger.module';
 import { DrizzleLoggerService } from './drizzle-logger/drizzle-logger.service';
-import { DRIZZLE_CONNECTION } from 'src/modules/database/database.tokens';
-import { AppConfigService } from 'src/config/app-config.service';
 
 @Module({
   imports: [DrizzleLoggerModule],
   providers: [
     {
+      provide: PG_POOL,
+      useFactory: (config: AppConfigService): Pool =>
+        createPgPool({ connectionString: config.get('DATABASE_URL') }),
+      inject: [AppConfigService],
+    },
+    {
       provide: DRIZZLE_CONNECTION,
       useFactory: (
-        appConfigService: AppConfigService,
+        pool: Pool,
         drizzleLogger: DrizzleLoggerService
-      ) => {
-        const pool = new Pool({
-          connectionString: appConfigService.get('DATABASE_URL'),
-        });
-        return drizzle(pool, {
-          schema,
-          logger: drizzleLogger,
-        });
-      },
-      inject: [AppConfigService, DrizzleLoggerService],
+      ): NodePgDatabase<typeof schema> =>
+        createDb(pool, { logger: drizzleLogger }),
+      inject: [PG_POOL, DrizzleLoggerService],
     },
   ],
   exports: [DRIZZLE_CONNECTION],
 })
-export class DatabaseModule {}
+export class DatabaseModule implements OnApplicationShutdown {
+  constructor(
+    private readonly logger: LoggerService,
+    @Inject(PG_POOL) private readonly pool: Pool
+  ) {}
+  async onApplicationShutdown(signal?: string) {
+    await this.pool.end();
+    this.logger.log('PG pool disconnected on shutdown', {
+      context: DatabaseModule.name,
+      meta: {
+        signal,
+      },
+    });
+  }
+}

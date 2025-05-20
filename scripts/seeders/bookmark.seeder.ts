@@ -12,19 +12,33 @@ export const seedBookmarks = async (
   collectionAndUserIds: Pick<Collection, 'id' | 'userId'>[],
   options: SeedBookmarksOptions
 ) => {
+  const total = options.count * collectionAndUserIds.length;
+
   console.log(
     `Seeding ${options.count} bookmarks for ${collectionAndUserIds.length} collections...`
   );
+
   let batch: BookmarkInsertDto[] = [];
+  let processed = 0;
+
   const gen = generateUserBookmarksForCollections(
     collectionAndUserIds,
     options.count
   );
 
+  const logEvery = 1000;
+
   while (true) {
     const next = gen.next();
     if (next.done) break;
     batch.push(next.value);
+    processed++;
+
+    if (processed % logEvery === 0) {
+      console.log(
+        `Progress: ${processed}/${total} (${((processed / total) * 100).toFixed(2)}%)`
+      );
+    }
 
     if (batch.length === SEED_CONFIG.maxItemsPerBatch) {
       await db.insert(bookmarks).values(batch);

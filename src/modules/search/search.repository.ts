@@ -1,12 +1,14 @@
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { Injectable } from '@nestjs/common';
 import { sql } from 'drizzle-orm';
-import { DbTransactionAdapter } from 'src/modules/database/database.types';
+import { TransactionalDbAdapter } from 'src/modules/database/database.types';
 import { SearchAllParams } from 'src/modules/search/search.types';
 
 @Injectable()
 export class SearchRepository {
-  constructor(private readonly txHost: TransactionHost<DbTransactionAdapter>) {}
+  constructor(
+    private readonly txHost: TransactionHost<TransactionalDbAdapter>
+  ) {}
 
   async searchAll({
     query = '',

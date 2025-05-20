@@ -2,12 +2,14 @@ import { TransactionHost } from '@nestjs-cls/transactional';
 import { Injectable } from '@nestjs/common';
 import { sql } from 'drizzle-orm';
 import { bookmarks, collections, tags, User } from 'src/db/schema';
-import { DbTransactionAdapter } from 'src/modules/database/database.types';
+import { TransactionalDbAdapter } from 'src/modules/database/database.types';
 import { GeneralStats } from 'src/modules/stats/stats.types';
 
 @Injectable()
 export class StatsRepository {
-  constructor(private readonly txHost: TransactionHost<DbTransactionAdapter>) {}
+  constructor(
+    private readonly txHost: TransactionHost<TransactionalDbAdapter>
+  ) {}
 
   async getGeneralStatsForUser(userId: User['id']): Promise<GeneralStats> {
     const result = await this.txHost.tx.execute<{

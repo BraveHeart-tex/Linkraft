@@ -1,12 +1,14 @@
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { Injectable } from '@nestjs/common';
-import { DbTransactionAdapter } from '../database/database.types';
-import { bookmarkTags, Tag, tags, User } from 'src/db/schema';
 import { and, count, eq, inArray } from 'drizzle-orm';
+import { bookmarkTags, Tag, tags, User } from 'src/db/schema';
+import { TransactionalDbAdapter } from '../database/database.types';
 
 @Injectable()
 export class TagRepository {
-  constructor(private readonly txHost: TransactionHost<DbTransactionAdapter>) {}
+  constructor(
+    private readonly txHost: TransactionHost<TransactionalDbAdapter>
+  ) {}
 
   async bulkCreate(
     tagNames: string[],

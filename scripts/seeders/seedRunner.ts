@@ -23,11 +23,15 @@ const runSeed = async () => {
     await seedAll(tx);
   });
 
-  console.log(`Seeding completed in ${performance.now() - start}ms`);
-  process.exit(0);
+  return start;
 };
 
-runSeed().catch((error) => {
-  console.error('Seeding failed:', error);
-  process.exit(1);
-});
+runSeed()
+  .then((start) => {
+    console.log(`Seeding completed in ${performance.now() - start}ms`);
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error('Seeding failed:', error);
+    process.exit(1);
+  });

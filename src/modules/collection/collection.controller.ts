@@ -1,6 +1,8 @@
+import { DEFAULT_PAGE_SIZE } from '@/modules/database/database.constants';
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Delete,
   Get,
   HttpStatus,
@@ -8,22 +10,23 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { ResponseMessage } from 'src/common/decorators/response-message.decorator';
 import { ResponseStatus } from 'src/common/decorators/response-status.decorator';
-import { AuthGuard } from 'src/guards/auth.guard';
-import { CollectionService } from './collection.service';
-import { zodPipe } from 'src/pipes/zod.pipe.factory';
 import {
   CreateCollectionDto,
   CreateCollectionSchema,
   UpdateCollectionSchema,
 } from 'src/common/validation/schemas/collection/collection.schema';
-import { CurrentUser } from 'src/common/decorators/current-user.decorator';
-import { UserSessionContext } from '../auth/session.types';
-import { ApiException } from 'src/exceptions/api.exception';
 import { Collection, CollectionInsertDto } from 'src/db/schema';
+import { ApiException } from 'src/exceptions/api.exception';
+import { AuthGuard } from 'src/guards/auth.guard';
+import { zodPipe } from 'src/pipes/zod.pipe.factory';
+import { UserSessionContext } from '../auth/session.types';
+import { CollectionService } from './collection.service';
 
 @Controller('collections')
 @UseGuards(AuthGuard)
@@ -46,10 +49,19 @@ export class CollectionController {
 
   @Get('/')
   @ResponseStatus(HttpStatus.OK)
-  getCollectionsForUser(@CurrentUser() userSessionInfo: UserSessionContext) {
-    return this.collectionService.getCollectionsForUser(
-      userSessionInfo.user.id
-    );
+  getCollectionsForUser(
+    @Query('cursor', new DefaultValuePipe(0), ParseIntPipe) cursor: number,
+    @Query('pageSize', new DefaultValuePipe(DEFAULT_PAGE_SIZE), ParseIntPipe)
+    pageSize: number,
+    @Query('search', new DefaultValuePipe('')) searchQuery: string,
+    @CurrentUser() userSessionInfo: UserSessionContext
+  ) {
+    return this.collectionService.getCollectionsForUser({
+      userId: userSessionInfo.user.id,
+      cursor,
+      limit: pageSize,
+      searchQuery,
+    });
   }
 
   @Get('/:id')

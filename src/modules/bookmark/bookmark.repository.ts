@@ -27,7 +27,10 @@ import {
   tags,
   User,
 } from 'src/db/schema';
-import { TransactionalDbAdapter } from '../database/database.types';
+import {
+  PaginatedResult,
+  TransactionalDbAdapter,
+} from '../database/database.types';
 import {
   Bookmark,
   BookmarkOwnershipParams,
@@ -50,10 +53,9 @@ export class BookmarkRepository {
     searchQuery = '',
     trashed = false,
     collectionId,
-  }: FindUserBookmarksParams): Promise<{
-    items: BookmarkWithTagsAndCollection[];
-    nextCursor: number | null;
-  }> {
+  }: FindUserBookmarksParams): Promise<
+    PaginatedResult<BookmarkWithTagsAndCollection>
+  > {
     limit = Math.min(limit, MAX_PAGE_SIZE);
 
     const conditions = [

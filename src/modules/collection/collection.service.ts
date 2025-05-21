@@ -1,8 +1,11 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { Collection, CollectionInsertDto, User } from 'src/db/schema';
-import { CollectionRepository } from './collection.repository';
-import { CollectionOwnershipParams } from './collection.types';
 import { ApiException } from 'src/exceptions/api.exception';
+import { CollectionRepository } from './collection.repository';
+import {
+  CollectionOwnershipParams,
+  FindUserCollectionsParams,
+} from './collection.types';
 
 @Injectable()
 export class CollectionService {
@@ -17,8 +20,8 @@ export class CollectionService {
   ) {
     return this.collectionRepository.update(updatedData, userId);
   }
-  getCollectionsForUser(userId: User['id']) {
-    return this.collectionRepository.getCollectionsForUser(userId);
+  getCollectionsForUser(params: FindUserCollectionsParams) {
+    return this.collectionRepository.getCollectionsForUser(params);
   }
 
   deleteUserCollection(params: CollectionOwnershipParams) {

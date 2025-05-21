@@ -11,3 +11,13 @@ export type DrizzleDatabaseWithPool = NodePgDatabase<typeof schema> & {
 
 export type TransactionalDbAdapter =
   TransactionalAdapterDrizzleOrm<DrizzleDatabaseWithPool>;
+
+export interface PaginationSearchParams {
+  limit: number;
+  searchQuery?: string;
+}
+
+export interface PaginatedResult<T> {
+  items: T[];
+  nextCursor: number | string | null | undefined;
+}

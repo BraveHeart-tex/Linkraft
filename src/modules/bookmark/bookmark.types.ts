@@ -1,3 +1,4 @@
+import { PaginationSearchParams } from '@/modules/database/database.types';
 import { UpdateBookmarkDto } from 'src/common/validation/schemas/bookmark/bookmark.schema';
 import { bookmarks, Collection, Tag, User } from 'src/db/schema';
 
@@ -10,18 +11,11 @@ export type UpdateBookmarkParams = BookmarkOwnershipParams & {
   updates: UpdateBookmarkDto;
 };
 
-export interface FindUserBookmarksParams
-  extends Omit<PaginateSearchParams, 'offset'> {
+export interface FindUserBookmarksParams extends PaginationSearchParams {
   userId: User['id'];
   cursor: number | null;
   trashed?: boolean;
   collectionId?: Collection['id'];
-}
-
-export interface PaginateSearchParams {
-  limit: number;
-  offset: number;
-  searchQuery?: string;
 }
 
 export type Bookmark = typeof bookmarks.$inferSelect;

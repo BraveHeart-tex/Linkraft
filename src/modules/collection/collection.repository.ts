@@ -1,7 +1,7 @@
 import { DEFAULT_PAGE_SIZE } from '@/modules/database/database.constants';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { Injectable } from '@nestjs/common';
-import { and, count, desc, eq, isNull, sql } from 'drizzle-orm';
+import { and, count, desc, eq, isNull, lt, sql } from 'drizzle-orm';
 import { QueryResult } from 'pg';
 import {
   bookmarks,
@@ -10,8 +10,15 @@ import {
   collections,
   User,
 } from 'src/db/schema';
-import { TransactionalDbAdapter } from '../database/database.types';
-import { CollectionOwnershipParams } from './collection.types';
+import {
+  PaginatedResult,
+  TransactionalDbAdapter,
+} from '../database/database.types';
+import {
+  CollectionOwnershipParams,
+  CollectionWithBookmarkCount,
+  FindUserCollectionsParams,
+} from './collection.types';
 
 @Injectable()
 export class CollectionRepository {
@@ -43,8 +50,16 @@ export class CollectionRepository {
       );
   }
 
-  async getCollectionsForUser(userId: User['id']) {
-    return this.txHost.tx
+  async getCollectionsForUser({
+    userId,
+    cursor,
+    limit = DEFAULT_PAGE_SIZE,
+  }: FindUserCollectionsParams): Promise<
+    PaginatedResult<CollectionWithBookmarkCount>
+  > {
+    limit = Math.min(limit, DEFAULT_PAGE_SIZE);
+
+    const items = await this.txHost.tx
       .select({
         id: collections.id,
         userId: collections.userId,
@@ -59,7 +74,19 @@ export class CollectionRepository {
       .from(collections)
       .leftJoin(bookmarks, eq(bookmarks.collectionId, collections.id))
       .groupBy(collections.id)
-      .where(and(eq(collections.userId, userId)));
+      .orderBy(desc(collections.id))
+      .where(
+        and(
+          eq(collections.userId, userId),
+          cursor ? lt(collections.id, cursor) : undefined
+        )
+      )
+      .limit(limit);
+
+    return {
+      items,
+      nextCursor: items.length === limit ? items[items.length - 1]?.id : null,
+    };
   }
 
   async getByIdForUser({ collectionId, userId }: CollectionOwnershipParams) {

@@ -1,6 +1,18 @@
+import { Transactional } from '@nestjs-cls/transactional';
+import { InjectQueue } from '@nestjs/bullmq';
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { BookmarkRepository } from './bookmark.repository';
+import { Queue } from 'bullmq';
+import { FETCH_BOOKMARK_METADATA_JOB_NAME } from 'src/common/processors/jobNames';
+import { FetchBookmarkMetadataJob } from 'src/common/processors/processors.types';
+import { BOOKMARK_METADATA_QUEUE_NAME } from 'src/common/processors/queueNames';
+import { CreateBookmarkDto } from 'src/common/validation/schemas/bookmark/bookmark.schema';
 import { BookmarkInsertDto, User } from 'src/db/schema';
+import { ApiException } from 'src/exceptions/api.exception';
+import { BookmarkTagRepository } from '../bookmark-tag/bookmark-tag.repository';
+import { CollectionService } from '../collection/collection.service';
+import { TagRepository } from '../tag/tag.repository';
+import { TagService } from '../tag/tag.service';
+import { BookmarkRepository } from './bookmark.repository';
 import {
   Bookmark,
   BookmarkOwnershipParams,
@@ -8,22 +20,10 @@ import {
   UpdateBookmarkParams,
   UpdateBookmarkReturn,
 } from './bookmark.types';
-import { ApiException } from 'src/exceptions/api.exception';
-import { InjectQueue } from '@nestjs/bullmq';
-import { BOOKMARK_METADATA_QUEUE_NAME } from 'src/common/processors/queueNames';
-import { FETCH_BOOKMARK_METADATA_JOB_NAME } from 'src/common/processors/jobNames';
-import { Queue } from 'bullmq';
-import { FetchBookmarkMetadataJob } from 'src/common/processors/processors.types';
-import { CreateBookmarkDto } from 'src/common/validation/schemas/bookmark/bookmark.schema';
-import { BookmarkTagRepository } from '../bookmark-tag/bookmark-tag.repository';
-import { CollectionService } from '../collection/collection.service';
-import { TagRepository } from '../tag/tag.repository';
-import { TagService } from '../tag/tag.service';
 import {
   buildBookmarkUpdateDto,
   truncateBookmarkTitle,
 } from './bookmark.utils';
-import { Transactional } from '@nestjs-cls/transactional';
 
 @Injectable()
 export class BookmarkService {

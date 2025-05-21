@@ -15,6 +15,7 @@ export interface FindUserBookmarksParams
   userId: User['id'];
   cursor: number | null;
   trashed?: boolean;
+  collectionId?: Collection['id'];
 }
 
 export interface PaginateSearchParams {

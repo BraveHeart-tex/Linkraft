@@ -1,4 +1,7 @@
-import { DEFAULT_PAGE_SIZE } from '@/modules/database/database.constants';
+import {
+  DEFAULT_PAGE_SIZE,
+  MAX_PAGE_SIZE,
+} from '@/modules/database/database.constants';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { Injectable } from '@nestjs/common';
 import {
@@ -39,19 +42,24 @@ export class BookmarkRepository {
     private readonly txHost: TransactionHost<TransactionalDbAdapter>
   ) {}
 
+  // TODO: Test narrow first, join second method
   async findAllByUserId({
     userId,
     limit = DEFAULT_PAGE_SIZE,
     cursor,
     searchQuery = '',
     trashed = false,
+    collectionId,
   }: FindUserBookmarksParams): Promise<{
     items: BookmarkWithTagsAndCollection[];
     nextCursor: number | null;
   }> {
+    limit = Math.min(limit, MAX_PAGE_SIZE);
+
     const conditions = [
       eq(bookmarks.userId, userId),
       trashed ? isNotNull(bookmarks.deletedAt) : isNull(bookmarks.deletedAt),
+      collectionId ? eq(bookmarks.collectionId, collectionId) : undefined,
       searchQuery
         ? or(
             ilike(bookmarks.title, `%${searchQuery}%`),

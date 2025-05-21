@@ -1,3 +1,4 @@
+import { Collection } from '@/db/schema';
 import { DEFAULT_PAGE_SIZE } from '@/modules/database/database.constants';
 import {
   Body,
@@ -40,6 +41,8 @@ export class BookmarkController {
     @Query('pageSize', new DefaultValuePipe(DEFAULT_PAGE_SIZE), ParseIntPipe)
     pageSize: number,
     @Query('search', new DefaultValuePipe('')) searchQuery: string,
+    @Query('collectionId', new DefaultValuePipe(0), ParseIntPipe)
+    collectionId: Collection['id'],
     @CurrentUser() userSessionContext: UserSessionContext
   ) {
     return this.bookmarkService.getUserBookmarks({
@@ -47,6 +50,7 @@ export class BookmarkController {
       limit: pageSize,
       cursor,
       searchQuery,
+      collectionId,
     });
   }
 

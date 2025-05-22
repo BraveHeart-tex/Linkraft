@@ -1,7 +1,7 @@
 import { DEFAULT_PAGE_SIZE } from '@/modules/database/database.constants';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { Injectable } from '@nestjs/common';
-import { and, count, desc, eq, isNull, lt, sql } from 'drizzle-orm';
+import { and, count, desc, eq, isNull, like, lt, sql } from 'drizzle-orm';
 import { QueryResult } from 'pg';
 import {
   bookmarks,
@@ -51,6 +51,7 @@ export class CollectionRepository {
   }
 
   async getCollectionsForUser({
+    searchQuery,
     userId,
     cursor,
     limit = DEFAULT_PAGE_SIZE,
@@ -78,7 +79,8 @@ export class CollectionRepository {
       .where(
         and(
           eq(collections.userId, userId),
-          cursor ? lt(collections.id, cursor) : undefined
+          cursor ? lt(collections.id, cursor) : undefined,
+          searchQuery ? like(collections.name, `%${searchQuery}%`) : undefined
         )
       )
       .limit(limit);

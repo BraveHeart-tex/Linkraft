@@ -51,6 +51,7 @@ export class BookmarkController {
       cursor,
       searchQuery,
       collectionId,
+      trashed: false,
     });
   }
 

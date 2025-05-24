@@ -1,3 +1,5 @@
+import { Bookmark } from '@/modules/bookmark/bookmark.types';
+import { mapCollectionBookmark } from '@/modules/collection/collection.utils';
 import { DEFAULT_PAGE_SIZE } from '@/modules/database/database.constants';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { Injectable } from '@nestjs/common';
@@ -17,6 +19,7 @@ import {
 import {
   CollectionOwnershipParams,
   CollectionWithBookmarkCount,
+  CollectionWithBookmarkDetails,
   FindUserCollectionsParams,
 } from './collection.types';
 
@@ -91,13 +94,34 @@ export class CollectionRepository {
     };
   }
 
-  async getByIdForUser({ collectionId, userId }: CollectionOwnershipParams) {
+  async getByIdForUser({
+    collectionId,
+    userId,
+  }: CollectionOwnershipParams): Promise<CollectionWithBookmarkDetails | null> {
     const collectionWithBookmarks =
       await this.txHost.tx.query.collections.findFirst({
         where: () =>
           and(eq(collections.id, collectionId), eq(collections.userId, userId)),
         with: {
           bookmarks: {
+            with: {
+              collection: {
+                columns: {
+                  id: true,
+                  name: true,
+                },
+              },
+              bookmarkTags: {
+                with: {
+                  tag: {
+                    columns: {
+                      id: true,
+                      name: true,
+                    },
+                  },
+                },
+              },
+            },
             where: () => isNull(bookmarks.deletedAt),
             limit: DEFAULT_PAGE_SIZE,
             orderBy: () => desc(collections.id),
@@ -109,9 +133,11 @@ export class CollectionRepository {
 
     return {
       ...collectionWithBookmarks,
+      bookmarks: collectionWithBookmarks.bookmarks.map(mapCollectionBookmark),
       nextBookmarkCursor:
         collectionWithBookmarks.bookmarks.length === DEFAULT_PAGE_SIZE
-          ? collectionWithBookmarks.bookmarks[DEFAULT_PAGE_SIZE - 1]?.id
+          ? (collectionWithBookmarks.bookmarks[DEFAULT_PAGE_SIZE - 1]
+              ?.id as Bookmark['id'])
           : null,
     };
   }

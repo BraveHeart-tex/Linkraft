@@ -1,6 +1,6 @@
 import { PaginationSearchParams } from '@/modules/database/database.types';
 import { UpdateBookmarkDto } from 'src/common/validation/schemas/bookmark/bookmark.schema';
-import { bookmarks, Collection, Tag, User } from 'src/db/schema';
+import { bookmarks, Collection, SlimTag, User } from 'src/db/schema';
 
 export interface BookmarkOwnershipParams {
   bookmarkId: Bookmark['id'];
@@ -22,11 +22,11 @@ export type Bookmark = typeof bookmarks.$inferSelect;
 
 export interface BookmarkWithTagsAndCollection extends Bookmark {
   collection: Pick<Collection, 'id' | 'name'> | null;
-  tags: Pick<Tag, 'id' | 'name'>[];
+  tags: SlimTag[];
 }
 
 export interface UpdateBookmarkReturn {
   success: boolean;
   updatedBookmark: BookmarkWithTagsAndCollection;
-  createdTags: Pick<Tag, 'id' | 'name'>[];
+  createdTags: SlimTag[];
 }

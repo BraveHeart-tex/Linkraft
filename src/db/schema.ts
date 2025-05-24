@@ -91,11 +91,12 @@ export const bookmarks = pgTable(
   ]
 );
 
-export const bookmarkRelations = relations(bookmarks, ({ one }) => ({
+export const bookmarkRelations = relations(bookmarks, ({ one, many }) => ({
   collection: one(collections, {
     fields: [bookmarks.collectionId],
     references: [collections.id],
   }),
+  bookmarkTags: many(bookmarkTags),
 }));
 
 export const bookmarkTags = pgTable(
@@ -110,6 +111,17 @@ export const bookmarkTags = pgTable(
   },
   (table) => [primaryKey({ columns: [table.bookmarkId, table.tagId] })]
 );
+
+export const bookmarkTagRelations = relations(bookmarkTags, ({ one }) => ({
+  tag: one(tags, {
+    fields: [bookmarkTags.tagId],
+    references: [tags.id],
+  }),
+  bookmark: one(bookmarks, {
+    fields: [bookmarkTags.bookmarkId],
+    references: [bookmarks.id],
+  }),
+}));
 
 export const collections = pgTable(
   'collections',
@@ -165,6 +177,8 @@ export type Collection = typeof collections.$inferSelect;
 export type BookmarkInsertDto = typeof bookmarks.$inferInsert;
 
 export type Tag = typeof tags.$inferSelect;
+export type SlimTag = Pick<Tag, 'id' | 'name'>;
+export type BookmarkTag = typeof bookmarkTags.$inferSelect;
 
 export type Favicon = typeof favicons.$inferSelect;
 export type FaviconInsertDto = typeof favicons.$inferInsert;

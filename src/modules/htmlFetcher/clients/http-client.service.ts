@@ -18,11 +18,23 @@ export class HttpClient implements IHttpClient {
     return this.fetchBinaryWithRedirect(url, 0);
   }
 
+  private normalizeUrl(rawUrl: string): string {
+    try {
+      const url = new URL(rawUrl);
+      // Ensures pathname, search, etc. are properly encoded
+      return url.toString();
+    } catch {
+      // Try to escape manually as a fallback
+      return encodeURI(rawUrl);
+    }
+  }
+
   private fetchWithRedirect(
     url: string,
     redirectCount: number
   ): Promise<string> {
     return new Promise((resolve, reject) => {
+      url = this.normalizeUrl(url);
       if (redirectCount > this.maxRedirects) {
         return reject(new Error(`Too many redirects (> ${this.maxRedirects})`));
       }
@@ -119,6 +131,7 @@ export class HttpClient implements IHttpClient {
     url: string,
     redirectCount: number
   ): Promise<{ buffer: Buffer; contentType: string }> {
+    url = this.normalizeUrl(url);
     return new Promise((resolve, reject) => {
       if (redirectCount > this.maxRedirects) {
         return reject(new Error(`Too many redirects (> ${this.maxRedirects})`));

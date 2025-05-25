@@ -80,26 +80,7 @@ export class BookmarkMetadataProcessor
         metadata: updates,
       });
 
-      if (job.data.type === 'bulk' && job.data.parentJobId) {
-        await this.importProgressService.incrementProgress(
-          job.data.parentJobId
-        );
-        const progress = await this.importProgressService.getProgress(
-          job.data.parentJobId
-        );
-
-        this.bookmarkGateway.emitImportProgress(job.data.userId, {
-          importJobId: job.data.parentJobId,
-          progress,
-          status: progress === 100 ? 'completed' : 'processing',
-        });
-
-        if (progress === 100) {
-          await this.importProgressService.cleanupProgress(
-            job.data.parentJobId
-          );
-        }
-      }
+      await this.emitProgressIfBulkJob(job);
     } catch (error) {
       this.log('Failed to fetch metadata', {
         trace: getErrorStack(error),
@@ -125,6 +106,8 @@ export class BookmarkMetadataProcessor
         metadata: updates,
       });
 
+      await this.emitProgressIfBulkJob(job);
+
       this.log(`Metadata update failed, fallback metadata set`, {
         level: 'warn',
         job,
@@ -137,8 +120,25 @@ export class BookmarkMetadataProcessor
     }
   }
 
-  onModuleDestroy() {
-    this.worker.close();
+  private async emitProgressIfBulkJob(
+    job: Job<FetchBookmarkMetadataJob>
+  ): Promise<void> {
+    if (job.data.type === 'bulk' && job.data.parentJobId) {
+      await this.importProgressService.incrementProgress(job.data.parentJobId);
+      const progress = await this.importProgressService.getProgress(
+        job.data.parentJobId
+      );
+
+      this.bookmarkGateway.emitImportProgress(job.data.userId, {
+        importJobId: job.data.parentJobId,
+        progress,
+        status: progress === 100 ? 'completed' : 'processing',
+      });
+
+      if (progress === 100) {
+        await this.importProgressService.cleanupProgress(job.data.parentJobId);
+      }
+    }
   }
 
   private log(
@@ -178,5 +178,9 @@ export class BookmarkMetadataProcessor
         meta: mergedMeta,
       });
     }
+  }
+
+  onModuleDestroy() {
+    this.worker.close();
   }
 }

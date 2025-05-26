@@ -8,7 +8,7 @@ export interface CollectionOwnershipParams {
 }
 
 export interface FindUserCollectionsParams extends PaginationSearchParams {
-  cursor: number | null;
+  cursor: string | null;
   userId: User['id'];
 }
 
@@ -18,5 +18,5 @@ export interface CollectionWithBookmarkCount extends Omit<Collection, 'tsv'> {
 
 export interface CollectionWithBookmarkDetails extends Collection {
   bookmarks: BookmarkWithTagsAndCollection[];
-  nextBookmarkCursor: number | null;
+  nextBookmarkCursor: string | null;
 }

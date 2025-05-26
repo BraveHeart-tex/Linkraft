@@ -1,10 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { Favicon } from 'src/db/schema';
+import { FaviconFetcherService } from 'src/modules/favicon/favicon-fetcher.service';
 import { FaviconRepository } from 'src/modules/favicon/favicon.repository';
 import { R2Service } from 'src/modules/storage/r2.service';
-import { createId } from '@paralleldrive/cuid2';
-import { FaviconFetcherService } from 'src/modules/favicon/favicon-fetcher.service';
 
 @Injectable()
 export class FaviconService {
@@ -47,7 +46,6 @@ export class FaviconService {
     );
 
     const newFavicon = this.faviconRepository.create({
-      id: createId(),
       hash: faviconHash,
       url: r2Result.url,
       r2Key: r2Result.r2Key,

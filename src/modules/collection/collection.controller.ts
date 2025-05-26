@@ -50,7 +50,7 @@ export class CollectionController {
   @Get('/')
   @ResponseStatus(HttpStatus.OK)
   getCollectionsForUser(
-    @Query('cursor', new DefaultValuePipe(0), ParseIntPipe) cursor: number,
+    @Query('cursor', new DefaultValuePipe(null)) cursor: string,
     @Query('pageSize', new DefaultValuePipe(DEFAULT_PAGE_SIZE), ParseIntPipe)
     pageSize: number,
     @Query('search', new DefaultValuePipe('')) searchQuery: string,
@@ -95,7 +95,7 @@ export class CollectionController {
     @Body(zodPipe(UpdateCollectionSchema))
     updateCollectionDto: Partial<CollectionInsertDto>,
     @CurrentUser() userSessionInfo: UserSessionContext,
-    @Param('id', ParseIntPipe) collectionId: number
+    @Param('id') collectionId: Collection['id']
   ) {
     if (Object.keys(updateCollectionDto).length === 0) {
       throw new ApiException(

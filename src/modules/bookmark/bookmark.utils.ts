@@ -1,4 +1,4 @@
-import { MAX_BOOKMARK_TITLE_LENGTH } from 'src/db/schema';
+import { MAX_BOOKMARK_TITLE_LENGTH } from './bookmark.constants';
 import { Bookmark } from './bookmark.types';
 
 export const buildBookmarkUpdateDto = (

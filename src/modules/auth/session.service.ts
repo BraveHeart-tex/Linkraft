@@ -1,14 +1,15 @@
+import type { Session, User } from '@/db/schema';
 import { Injectable } from '@nestjs/common';
+import { SESSION_HALF_LIFE_MS, SESSION_LIFETIME_MS } from './auth.constants';
 import { SessionRepository } from './session.repository';
 import { SessionValidationResult } from './session.types';
 import { getSessionId } from './utils/token.utils';
-import { SESSION_HALF_LIFE_MS, SESSION_LIFETIME_MS } from './auth.constants';
 
 @Injectable()
 export class SessionService {
   constructor(private readonly repo: SessionRepository) {}
 
-  async createUserSession(token: string, userId: number) {
+  async createUserSession(token: string, userId: User['id']) {
     const sessionId = getSessionId(token);
     const session = {
       id: sessionId,
@@ -56,11 +57,11 @@ export class SessionService {
     return this.validateSessionCommon(token, true);
   }
 
-  async invalidateSession(sessionId: string) {
+  async invalidateSession(sessionId: Session['id']) {
     await this.repo.deleteSession(sessionId);
   }
 
-  async invalidateAllSessions(userId: number) {
+  async invalidateAllSessions(userId: User['id']) {
     await this.repo.deleteAllSessionsForUser(userId);
   }
 }

@@ -1,7 +1,13 @@
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { Injectable } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
-import { SessionInsertDto, sessions, users } from 'src/db/schema';
+import {
+  type Session,
+  type SessionInsertDto,
+  sessions,
+  User,
+  users,
+} from 'src/db/schema';
 import { TransactionalDbAdapter } from '../database/database.types';
 
 @Injectable()
@@ -13,7 +19,7 @@ export class SessionRepository {
     return this.txHost.tx.insert(sessions).values(session);
   }
 
-  async getSessionWithUser(sessionId: string) {
+  async getSessionWithUser(sessionId: Session['id']) {
     const [row] = await this.txHost.tx
       .select({
         session: sessions,
@@ -26,15 +32,15 @@ export class SessionRepository {
     return row || null;
   }
 
-  deleteSession(sessionId: string) {
+  deleteSession(sessionId: Session['id']) {
     return this.txHost.tx.delete(sessions).where(eq(sessions.id, sessionId));
   }
 
-  deleteAllSessionsForUser(userId: number) {
+  deleteAllSessionsForUser(userId: User['id']) {
     return this.txHost.tx.delete(sessions).where(eq(sessions.userId, userId));
   }
 
-  updateSessionExpiry(sessionId: string, newExpiry: Date) {
+  updateSessionExpiry(sessionId: Session['id'], newExpiry: Date) {
     return this.txHost.tx
       .update(sessions)
       .set({ expiresAt: newExpiry })

@@ -15,7 +15,7 @@ export class CollectionService {
   }
 
   updateUserCollection(
-    updatedData: Partial<CollectionInsertDto> & { id: number },
+    updatedData: Partial<CollectionInsertDto> & { id: Collection['id'] },
     userId: User['id']
   ) {
     return this.collectionRepository.update(updatedData, userId);

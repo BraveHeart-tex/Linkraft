@@ -4,7 +4,6 @@ import {
   collections,
   User,
 } from '@/db/schema';
-import { generateRandomHexColor } from '@/modules/collection/collection.utils';
 import { AppDatabase } from '@/modules/database/database.types';
 import { faker } from '@faker-js/faker';
 import { SEED_CONFIG } from 'scripts/seeders/seedConfig';
@@ -62,7 +61,6 @@ function* generateCollectionsForUsers(
       yield {
         userId,
         name: faker.lorem.word(),
-        color: generateRandomHexColor(),
       };
     }
   }

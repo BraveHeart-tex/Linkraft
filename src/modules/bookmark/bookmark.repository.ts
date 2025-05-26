@@ -104,7 +104,7 @@ export class BookmarkRepository {
     }));
 
     const nextCursor =
-      items.length === limit ? (items[items.length - 1]?.id as number) : null;
+      items.length === limit ? (items[items.length - 1]?.id as string) : null;
 
     return { items, nextCursor };
   }
@@ -264,9 +264,9 @@ export class BookmarkRepository {
     url,
     excludeBookmarkId,
   }: {
-    userId: number;
+    userId: User['id'];
     url: string;
-    excludeBookmarkId: number;
+    excludeBookmarkId: Bookmark['id'];
   }) {
     return this.txHost.tx.query.bookmarks.findFirst({
       where: and(

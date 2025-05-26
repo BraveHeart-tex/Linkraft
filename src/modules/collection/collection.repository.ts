@@ -38,14 +38,14 @@ export class CollectionRepository {
   }
 
   async bulkCreate(data: CollectionInsertDto[]) {
-    return await this.txHost.tx.insert(collections).values(data).returning();
+    return this.txHost.tx.insert(collections).values(data).returning();
   }
 
   async update(
-    updatedData: Partial<CollectionInsertDto> & { id: number },
+    updatedData: Partial<CollectionInsertDto> & { id: Collection['id'] },
     userId: User['id']
   ) {
-    return await this.txHost.tx
+    return this.txHost.tx
       .update(collections)
       .set(updatedData)
       .where(
@@ -68,9 +68,8 @@ export class CollectionRepository {
         id: collections.id,
         userId: collections.userId,
         name: collections.name,
-        description: collections.description,
+        parentId: collections.parentId,
         createdAt: collections.createdAt,
-        color: collections.color,
         bookmarkCount: count(
           sql`CASE WHEN ${bookmarks.deletedAt} is null THEN ${bookmarks.id} ELSE NULL END`
         ),

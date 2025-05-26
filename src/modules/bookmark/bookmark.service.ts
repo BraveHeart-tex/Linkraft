@@ -89,7 +89,7 @@ export class BookmarkService {
       isMetadataPending: true,
     });
 
-    const bookmarkTagIds: number[] = [...(dto?.existingTagIds || [])];
+    const bookmarkTagIds = [...(dto?.existingTagIds || [])];
     if (dto.newTags?.length) {
       const createdTagIds = await this.tagRepository.bulkCreate(
         dto.newTags,

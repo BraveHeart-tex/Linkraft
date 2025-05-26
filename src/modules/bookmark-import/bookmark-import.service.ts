@@ -1,4 +1,5 @@
 import { getErrorStack } from '@/common/utils/logging.utils';
+import { Collection, User } from '@/db/schema';
 import { LoggerService } from '@/modules/logging/logger.service';
 import { Transactional } from '@nestjs-cls/transactional';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -28,11 +29,15 @@ export class BookmarkImportService {
   ) {}
 
   @Transactional()
-  async parseAndSaveBookmarks(
-    html: string,
-    userId: number,
-    job: Job<ImportBookmarkJob>
-  ) {
+  async parseAndSaveBookmarks({
+    html,
+    userId,
+    job,
+  }: {
+    html: string;
+    userId: User['id'];
+    job: Job<ImportBookmarkJob>;
+  }) {
     const start = Date.now();
 
     try {
@@ -46,7 +51,7 @@ export class BookmarkImportService {
         meta: { count: bookmarks.length },
       });
 
-      const collectionNameToId = new Map<string, number>();
+      const collectionNameToId = new Map<string, Collection['id']>();
       const uniqueCategories = [
         ...new Set(
           bookmarks
@@ -92,12 +97,13 @@ export class BookmarkImportService {
         bookmarks.length
       );
 
+      // FIXME: Clean up as assertions
       this.metadataQueue.addBulk(
         bookmarks.map((bookmark, index) => ({
           name: BOOKMARK_METADATA_QUEUE_NAME,
           data: {
             type: 'bulk',
-            bookmarkId: createdIds[index]?.id as number,
+            bookmarkId: createdIds[index]?.id as string,
             userId,
             url: bookmark.url,
             onlyFavicon: true,

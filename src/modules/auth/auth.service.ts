@@ -1,20 +1,20 @@
+import { Transactional } from '@nestjs-cls/transactional';
 import { HttpStatus, Injectable } from '@nestjs/common';
+import { Response } from 'express';
 import { SignInDto } from 'src/common/validation/schemas/auth/sign-in.schema';
 import { SignUpDto } from 'src/common/validation/schemas/auth/sign-up.schema';
-import { SessionService } from './session.service';
-import {
-  generateSessionToken,
-  generateAuthTokenExpiryDate,
-} from './utils/token.utils';
-import { UserService } from '../user/user.service';
-import { hashPassword, verifyPassword } from './utils/password.utils';
-import { Transactional } from '@nestjs-cls/transactional';
-import { CookieService } from './cookie.service';
-import { Response } from 'express';
-import { SESSION_TOKEN_COOKIE_NAME } from './auth.constants';
+import { Session, UserWithoutPasswordHash } from 'src/db/schema';
 import { ApiException } from 'src/exceptions/api.exception';
-import { UserWithoutPasswordHash } from 'src/db/schema';
 import { toUserWithoutPassword } from '../user/mappers/user.mapper';
+import { UserService } from '../user/user.service';
+import { SESSION_TOKEN_COOKIE_NAME } from './auth.constants';
+import { CookieService } from './cookie.service';
+import { SessionService } from './session.service';
+import { hashPassword, verifyPassword } from './utils/password.utils';
+import {
+  generateAuthTokenExpiryDate,
+  generateSessionToken,
+} from './utils/token.utils';
 
 @Injectable()
 export class AuthService {
@@ -93,7 +93,7 @@ export class AuthService {
     };
   }
 
-  async logoutUser(res: Response, sessionId: string) {
+  async logoutUser(res: Response, sessionId: Session['id']) {
     await this.sessionService.invalidateSession(sessionId);
     this.deleteSessionCookie(res);
   }

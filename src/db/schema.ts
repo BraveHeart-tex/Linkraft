@@ -1,23 +1,25 @@
+import { MAX_BOOKMARK_TITLE_LENGTH } from '@/modules/bookmark/bookmark.constants';
 import { relations, sql } from 'drizzle-orm';
 import {
+  AnyPgColumn,
   boolean,
   index,
-  integer,
   pgTable,
   primaryKey,
-  serial,
   text,
   timestamp,
   uniqueIndex,
+  uuid,
   varchar,
 } from 'drizzle-orm/pg-core';
 import { tsvector } from 'src/db/drizzle.utils';
 
-export const MAX_BOOKMARK_TITLE_LENGTH = 255;
 export const users = pgTable(
   'users',
   {
-    id: serial('id').primaryKey(),
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     visibleName: varchar('visibleName', { length: 255 }).notNull(),
     email: varchar('email', { length: 255 }).unique().notNull(),
     passwordHash: varchar('password_hash', { length: 255 }).notNull(),
@@ -32,7 +34,7 @@ export const sessions = pgTable(
   'sessions',
   {
     id: text('id').primaryKey(),
-    userId: integer('user_id')
+    userId: uuid('user_id')
       .notNull()
       .references(() => users.id),
     expiresAt: timestamp('expires_at', {
@@ -46,9 +48,11 @@ export const sessions = pgTable(
 export const tags = pgTable(
   'tags',
   {
-    id: serial('id').primaryKey(),
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     name: varchar('name', { length: 64 }).notNull(),
-    userId: integer('user_id')
+    userId: uuid('user_id')
       .references(() => users.id)
       .notNull(),
     tsv: tsvector('tsv'),
@@ -62,8 +66,10 @@ export const tags = pgTable(
 export const bookmarks = pgTable(
   'bookmarks',
   {
-    id: serial('id').primaryKey(),
-    userId: integer('user_id')
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid('user_id')
       .notNull()
       .references(() => users.id, {
         onDelete: 'cascade',
@@ -73,7 +79,7 @@ export const bookmarks = pgTable(
     description: text('description'),
     faviconUrl: varchar('faviconUrl', { length: 255 }).default(sql`null`),
     createdAt: timestamp('created_at').defaultNow(),
-    collectionId: integer('collection_id').references(() => collections.id, {
+    collectionId: uuid('collection_id').references(() => collections.id, {
       onDelete: 'cascade',
     }),
     deletedAt: timestamp('deleted_at', {
@@ -91,48 +97,32 @@ export const bookmarks = pgTable(
   ]
 );
 
-export const bookmarkRelations = relations(bookmarks, ({ one, many }) => ({
-  collection: one(collections, {
-    fields: [bookmarks.collectionId],
-    references: [collections.id],
-  }),
-  bookmarkTags: many(bookmarkTags),
-}));
-
 export const bookmarkTags = pgTable(
   'bookmark_tags',
   {
-    bookmarkId: integer('bookmark_id')
+    bookmarkId: uuid('bookmark_id')
       .notNull()
       .references(() => bookmarks.id, { onDelete: 'cascade' }),
-    tagId: integer('tag_id')
+    tagId: uuid('tag_id')
       .notNull()
       .references(() => tags.id, { onDelete: 'cascade' }),
   },
   (table) => [primaryKey({ columns: [table.bookmarkId, table.tagId] })]
 );
 
-export const bookmarkTagRelations = relations(bookmarkTags, ({ one }) => ({
-  tag: one(tags, {
-    fields: [bookmarkTags.tagId],
-    references: [tags.id],
-  }),
-  bookmark: one(bookmarks, {
-    fields: [bookmarkTags.bookmarkId],
-    references: [bookmarks.id],
-  }),
-}));
-
 export const collections = pgTable(
   'collections',
   {
-    id: serial('id').primaryKey(),
-    userId: integer('user_id')
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid('user_id')
       .notNull()
       .references(() => users.id),
     name: varchar('name', { length: 255 }).notNull(),
-    description: text('description'),
-    color: varchar('color', { length: 16 }),
+    parentId: uuid('parent_id').references((): AnyPgColumn => collections.id, {
+      onDelete: 'set null',
+    }),
     createdAt: timestamp('created_at').defaultNow(),
     tsv: tsvector('tsv'),
   },
@@ -145,7 +135,9 @@ export const collections = pgTable(
 export const favicons = pgTable(
   'favicons',
   {
-    id: varchar('id', { length: 36 }).primaryKey(),
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     url: text('url').notNull(),
     hash: varchar('hash', { length: 64 }).notNull().unique(),
     r2Key: text('r2_key').notNull(),
@@ -160,8 +152,27 @@ export const favicons = pgTable(
   ]
 );
 
+export const bookmarkRelations = relations(bookmarks, ({ one, many }) => ({
+  collection: one(collections, {
+    fields: [bookmarks.collectionId],
+    references: [collections.id],
+  }),
+  bookmarkTags: many(bookmarkTags),
+}));
+
 export const collectionRelations = relations(collections, ({ many }) => ({
   bookmarks: many(bookmarks),
+}));
+
+export const bookmarkTagRelations = relations(bookmarkTags, ({ one }) => ({
+  tag: one(tags, {
+    fields: [bookmarkTags.tagId],
+    references: [tags.id],
+  }),
+  bookmark: one(bookmarks, {
+    fields: [bookmarkTags.bookmarkId],
+    references: [bookmarks.id],
+  }),
 }));
 
 export type User = typeof users.$inferSelect;

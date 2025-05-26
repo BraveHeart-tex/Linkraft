@@ -31,7 +31,11 @@ export class BookmarkImportQueueProcessor
       },
     });
 
-    return this.bookmarkImportService.parseAndSaveBookmarks(html, userId, job);
+    return this.bookmarkImportService.parseAndSaveBookmarks({
+      html,
+      userId,
+      job,
+    });
   }
 
   onModuleDestroy() {

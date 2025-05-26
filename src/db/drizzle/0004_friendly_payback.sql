@@ -1,1 +1,0 @@
-ALTER TABLE "collections" ADD COLUMN "color" varchar(16);

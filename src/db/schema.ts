@@ -20,7 +20,7 @@ export const users = pgTable(
     id: uuid('id')
       .primaryKey()
       .default(sql`gen_random_uuid()`),
-    visibleName: varchar('visibleName', { length: 255 }).notNull(),
+    visibleName: varchar('visible_name', { length: 255 }).notNull(),
     email: varchar('email', { length: 255 }).unique().notNull(),
     passwordHash: varchar('password_hash', { length: 255 }).notNull(),
     createdAt: timestamp('created_at').defaultNow(),
@@ -77,7 +77,7 @@ export const bookmarks = pgTable(
     url: text('url').notNull(),
     title: varchar('title', { length: MAX_BOOKMARK_TITLE_LENGTH }).notNull(),
     description: text('description'),
-    faviconUrl: varchar('faviconUrl', { length: 255 }).default(sql`null`),
+    faviconUrl: varchar('favicon_url', { length: 255 }).default(sql`null`),
     createdAt: timestamp('created_at').defaultNow(),
     collectionId: uuid('collection_id').references(() => collections.id, {
       onDelete: 'cascade',

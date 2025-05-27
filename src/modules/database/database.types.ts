@@ -19,5 +19,10 @@ export interface PaginationSearchParams {
 
 export interface PaginatedResult<T> {
   items: T[];
-  nextCursor: number | string | null | undefined;
+  nextCursor: string;
+}
+
+export interface CursorPayload {
+  createdAt: string;
+  id: string;
 }

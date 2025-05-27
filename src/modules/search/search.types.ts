@@ -1,6 +1,6 @@
 import { User } from 'src/db/schema';
 
-export interface Cursor {
+export interface SearchResultCursor {
   rank: number | null;
   id: string;
 }

@@ -1,3 +1,4 @@
+import { getCurrentTimestamp } from '@/common/utils/date.utils';
 import { MAX_BOOKMARK_TITLE_LENGTH } from '@/modules/bookmark/bookmark.constants';
 import { relations, sql } from 'drizzle-orm';
 import {
@@ -7,12 +8,11 @@ import {
   pgTable,
   primaryKey,
   text,
-  timestamp,
   uniqueIndex,
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core';
-import { tsvector } from 'src/db/drizzle.utils';
+import { customTimestamp, tsvector } from 'src/db/drizzle.utils';
 
 export const users = pgTable(
   'users',
@@ -23,7 +23,7 @@ export const users = pgTable(
     visibleName: varchar('visible_name', { length: 255 }).notNull(),
     email: varchar('email', { length: 255 }).unique().notNull(),
     passwordHash: varchar('password_hash', { length: 255 }).notNull(),
-    createdAt: timestamp('created_at').defaultNow(),
+    createdAt: customTimestamp('created_at').$defaultFn(getCurrentTimestamp),
     isActive: boolean('is_active').default(true),
     profilePicture: varchar('profile_picture', { length: 255 }),
   },
@@ -37,10 +37,7 @@ export const sessions = pgTable(
     userId: uuid('user_id')
       .notNull()
       .references(() => users.id),
-    expiresAt: timestamp('expires_at', {
-      withTimezone: true,
-      mode: 'date',
-    }).notNull(),
+    expiresAt: customTimestamp('expires_at').notNull(),
   },
   (table) => [index('session_user_id_index').on(table.userId)]
 );
@@ -78,14 +75,13 @@ export const bookmarks = pgTable(
     title: varchar('title', { length: MAX_BOOKMARK_TITLE_LENGTH }).notNull(),
     description: text('description'),
     faviconUrl: varchar('favicon_url', { length: 255 }).default(sql`null`),
-    createdAt: timestamp('created_at').defaultNow(),
+    createdAt: customTimestamp('created_at')
+      .$defaultFn(getCurrentTimestamp)
+      .notNull(),
     collectionId: uuid('collection_id').references(() => collections.id, {
       onDelete: 'cascade',
     }),
-    deletedAt: timestamp('deleted_at', {
-      withTimezone: true,
-      mode: 'date',
-    }).default(sql`null`),
+    deletedAt: customTimestamp('deleted_at').default(sql`null`),
     isMetadataPending: boolean('is_metadata_pending').notNull(),
     tsv: tsvector('tsv'),
   },
@@ -123,7 +119,7 @@ export const collections = pgTable(
     parentId: uuid('parent_id').references((): AnyPgColumn => collections.id, {
       onDelete: 'set null',
     }),
-    createdAt: timestamp('created_at').defaultNow(),
+    createdAt: customTimestamp('created_at').$defaultFn(getCurrentTimestamp),
     tsv: tsvector('tsv'),
   },
   (table) => [
@@ -142,7 +138,7 @@ export const favicons = pgTable(
     hash: varchar('hash', { length: 64 }).notNull().unique(),
     r2Key: text('r2_key').notNull(),
     domain: varchar('domain', { length: 253 }).notNull().unique(),
-    createdAt: timestamp('created_at', { mode: 'date' })
+    createdAt: customTimestamp('created_at')
       .notNull()
       .default(sql`now()`),
   },

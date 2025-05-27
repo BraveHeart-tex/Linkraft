@@ -40,7 +40,7 @@ export class SessionRepository {
     return this.txHost.tx.delete(sessions).where(eq(sessions.userId, userId));
   }
 
-  updateSessionExpiry(sessionId: Session['id'], newExpiry: Date) {
+  updateSessionExpiry(sessionId: Session['id'], newExpiry: string) {
     return this.txHost.tx
       .update(sessions)
       .set({ expiresAt: newExpiry })

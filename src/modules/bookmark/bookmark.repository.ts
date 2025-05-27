@@ -15,7 +15,6 @@ import {
   lt,
   ne,
   or,
-  SQL,
   sql,
 } from 'drizzle-orm';
 import {
@@ -58,19 +57,6 @@ export class BookmarkRepository {
   > {
     limit = Math.min(limit, MAX_PAGE_SIZE);
 
-    const conditions = [
-      eq(bookmarks.userId, userId),
-      trashed ? isNotNull(bookmarks.deletedAt) : isNull(bookmarks.deletedAt),
-      collectionId ? eq(bookmarks.collectionId, collectionId) : undefined,
-      searchQuery
-        ? or(
-            ilike(bookmarks.title, `%${searchQuery}%`),
-            ilike(bookmarks.description, `%${searchQuery}%`)
-          )
-        : undefined,
-      cursor ? lt(bookmarks.id, cursor) : undefined,
-    ].filter((cond): cond is SQL => Boolean(cond));
-
     const query = this.txHost.tx
       .select({
         bookmark: bookmarks,
@@ -85,12 +71,35 @@ export class BookmarkRepository {
         },
       })
       .from(bookmarks)
-      .where(and(...conditions))
+      .where(
+        and(
+          eq(bookmarks.userId, userId),
+          trashed
+            ? isNotNull(bookmarks.deletedAt)
+            : isNull(bookmarks.deletedAt),
+          collectionId ? eq(bookmarks.collectionId, collectionId) : undefined,
+          searchQuery
+            ? or(
+                ilike(bookmarks.title, `%${searchQuery}%`),
+                ilike(bookmarks.description, `%${searchQuery}%`)
+              )
+            : undefined,
+          cursor
+            ? or(
+                lt(bookmarks.createdAt, cursor.createdAt),
+                and(
+                  eq(bookmarks.createdAt, cursor.createdAt),
+                  lt(bookmarks.id, cursor.id)
+                )
+              )
+            : undefined
+        )
+      )
       .leftJoin(bookmarkTags, eq(bookmarkTags.bookmarkId, bookmarks.id))
       .leftJoin(tags, eq(bookmarkTags.tagId, tags.id))
       .leftJoin(collections, eq(bookmarks.collectionId, collections.id))
       .groupBy(bookmarks.id, collections.id)
-      .orderBy(desc(bookmarks.id))
+      .orderBy(desc(bookmarks.createdAt))
       .$dynamic();
 
     query.limit(limit);
@@ -103,10 +112,21 @@ export class BookmarkRepository {
       collection: row.collection,
     }));
 
-    const nextCursor =
-      items.length === limit ? (items[items.length - 1]?.id as string) : null;
+    const lastItem = items.length === limit ? items[items.length - 1] : null;
 
-    return { items, nextCursor };
+    return {
+      items,
+      nextCursor: Buffer.from(
+        JSON.stringify(
+          lastItem
+            ? {
+                createdAt: lastItem.createdAt,
+                id: lastItem.id,
+              }
+            : null
+        )
+      ).toString('base64'),
+    };
   }
 
   findByIdAndUserId({ bookmarkId, userId }: BookmarkOwnershipParams) {

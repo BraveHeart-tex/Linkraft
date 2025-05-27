@@ -1,5 +1,8 @@
+import { Cursor } from '@/common/validation/schemas/shared/cursor.schema';
 import { Collection } from '@/db/schema';
+import { Bookmark } from '@/modules/bookmark/bookmark.types';
 import { DEFAULT_PAGE_SIZE } from '@/modules/database/database.constants';
+import { CursorPipe } from '@/pipes/cursor.pipe';
 import {
   Body,
   Controller,
@@ -29,7 +32,6 @@ import { AuthGuard } from 'src/guards/auth.guard';
 import { zodPipe } from 'src/pipes/zod.pipe.factory';
 import { UserSessionContext } from '../auth/session.types';
 import { BookmarkService } from './bookmark.service';
-import { Bookmark } from '@/modules/bookmark/bookmark.types';
 
 @Controller('bookmarks')
 @UseGuards(AuthGuard)
@@ -38,7 +40,7 @@ export class BookmarkController {
 
   @Get()
   getUserBookmarks(
-    @Query('cursor', new DefaultValuePipe(null)) cursor: string,
+    @Query('cursor', new CursorPipe()) cursor: Cursor,
     @Query('pageSize', new DefaultValuePipe(DEFAULT_PAGE_SIZE), ParseIntPipe)
     pageSize: number,
     @Query('search', new DefaultValuePipe('')) searchQuery: string,
@@ -58,7 +60,7 @@ export class BookmarkController {
 
   @Get('trash')
   getTrashedUserBookmarks(
-    @Query('cursor', new DefaultValuePipe(null)) cursor: string,
+    @Query('cursor', new CursorPipe()) cursor: Cursor,
     @Query('pageSize', new DefaultValuePipe(DEFAULT_PAGE_SIZE), ParseIntPipe)
     pageSize: number,
     @Query('search', new DefaultValuePipe('')) searchQuery: string,

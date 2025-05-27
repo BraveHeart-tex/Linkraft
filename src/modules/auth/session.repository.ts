@@ -1,3 +1,4 @@
+import { UserSessionContext } from '@/modules/auth/session.types';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { Injectable } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
@@ -15,15 +16,23 @@ export class SessionRepository {
   constructor(
     private readonly txHost: TransactionHost<TransactionalDbAdapter>
   ) {}
-  insertSession(session: SessionInsertDto) {
+  async insertSession(session: SessionInsertDto) {
     return this.txHost.tx.insert(sessions).values(session);
   }
 
-  async getSessionWithUser(sessionId: Session['id']) {
+  async getSessionWithUser(
+    sessionId: Session['id']
+  ): Promise<UserSessionContext | null> {
     const [row] = await this.txHost.tx
       .select({
         session: sessions,
-        user: users,
+        user: {
+          id: users.id,
+          visibleName: users.visibleName,
+          email: users.email,
+          profilePicture: users.profilePicture,
+          createdAt: users.createdAt,
+        },
       })
       .from(sessions)
       .innerJoin(users, eq(users.id, sessions.userId))

@@ -13,7 +13,7 @@ export class SessionService {
     private readonly sessionRepository: SessionRepository
   ) {}
 
-  async createUserSession(token: string, userId: User['id']) {
+  async createUserSession(token: string, userId: User['id']): Promise<Session> {
     const sessionId = getSessionId(token);
     const session = {
       id: sessionId,
@@ -49,11 +49,11 @@ export class SessionService {
     return { session, user };
   }
 
-  async invalidateSession(sessionId: Session['id']) {
+  async invalidateSession(sessionId: Session['id']): Promise<void> {
     await this.sessionRepository.deleteSession(sessionId);
   }
 
-  async invalidateAllSessions(userId: User['id']) {
+  async invalidateAllSessions(userId: User['id']): Promise<void> {
     await this.sessionRepository.deleteAllSessionsForUser(userId);
   }
 }

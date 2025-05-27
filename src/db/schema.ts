@@ -24,7 +24,6 @@ export const users = pgTable(
     email: varchar('email', { length: 255 }).unique().notNull(),
     passwordHash: varchar('password_hash', { length: 255 }).notNull(),
     createdAt: customTimestamp('created_at').$defaultFn(getCurrentTimestamp),
-    isActive: boolean('is_active').default(true),
     profilePicture: varchar('profile_picture', { length: 255 }),
   },
   (table) => [uniqueIndex('emailUniqueIndex').on(table.email)]

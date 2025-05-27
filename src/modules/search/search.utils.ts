@@ -1,12 +1,12 @@
 import { SearchResultCursor } from 'src/modules/search/search.types';
 
-export const encodeCursor = (rank: number | null, id: string): string => {
+export const encodeSearchCursor = (rank: number | null, id: string): string => {
   const cursorObj = { rank, id };
   const json = JSON.stringify(cursorObj);
   return Buffer.from(json).toString('base64');
 };
 
-export const decodeCursor = (
+export const decodeSearchCursor = (
   encodedCursor: string
 ): SearchResultCursor | null => {
   try {

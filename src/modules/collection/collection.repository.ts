@@ -1,4 +1,4 @@
-import { Bookmark } from '@/modules/bookmark/bookmark.types';
+import { encodeCursor } from '@/common/utils/cursor.utils';
 import { mapCollectionBookmark } from '@/modules/collection/collection.utils';
 import { DEFAULT_PAGE_SIZE } from '@/modules/database/database.constants';
 import { TransactionHost } from '@nestjs-cls/transactional';
@@ -87,9 +87,13 @@ export class CollectionRepository {
       )
       .limit(limit);
 
+    const lastItem = items.length === limit ? items[items.length - 1] : null;
+
     return {
       items,
-      nextCursor: items.length === limit ? items[items.length - 1]?.id : null,
+      nextCursor: encodeCursor(
+        lastItem ? { id: lastItem.id, createdAt: lastItem.createdAt } : null
+      ),
     };
   }
 
@@ -130,14 +134,19 @@ export class CollectionRepository {
 
     if (!collectionWithBookmarks) return null;
 
+    const lastBookmark =
+      collectionWithBookmarks.bookmarks.length === DEFAULT_PAGE_SIZE
+        ? collectionWithBookmarks.bookmarks[DEFAULT_PAGE_SIZE - 1]
+        : null;
+
     return {
       ...collectionWithBookmarks,
       bookmarks: collectionWithBookmarks.bookmarks.map(mapCollectionBookmark),
-      nextBookmarkCursor:
-        collectionWithBookmarks.bookmarks.length === DEFAULT_PAGE_SIZE
-          ? (collectionWithBookmarks.bookmarks[DEFAULT_PAGE_SIZE - 1]
-              ?.id as Bookmark['id'])
-          : null,
+      nextBookmarkCursor: encodeCursor(
+        lastBookmark
+          ? { id: lastBookmark.id, createdAt: lastBookmark.createdAt }
+          : null
+      ),
     };
   }
 

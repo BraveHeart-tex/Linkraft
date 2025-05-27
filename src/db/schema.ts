@@ -118,7 +118,9 @@ export const collections = pgTable(
     parentId: uuid('parent_id').references((): AnyPgColumn => collections.id, {
       onDelete: 'set null',
     }),
-    createdAt: customTimestamp('created_at').$defaultFn(getCurrentTimestamp),
+    createdAt: customTimestamp('created_at')
+      .$defaultFn(getCurrentTimestamp)
+      .notNull(),
     tsv: tsvector('tsv'),
   },
   (table) => [

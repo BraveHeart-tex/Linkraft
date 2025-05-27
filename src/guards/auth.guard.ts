@@ -25,8 +25,7 @@ export class AuthGuard implements CanActivate {
       );
     }
 
-    const { user, session } =
-      await this.sessionService.validateAndRefreshSession(token);
+    const { user, session } = await this.sessionService.validateSession(token);
 
     if (!user || !session) {
       response.cookie(SESSION_TOKEN_COOKIE_NAME, '', { maxAge: 0 });

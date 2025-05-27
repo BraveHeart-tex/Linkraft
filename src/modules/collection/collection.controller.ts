@@ -1,4 +1,6 @@
+import { Cursor } from '@/common/validation/schemas/shared/cursor.schema';
 import { DEFAULT_PAGE_SIZE } from '@/modules/database/database.constants';
+import { CursorPipe } from '@/pipes/cursor.pipe';
 import {
   Body,
   Controller,
@@ -47,7 +49,7 @@ export class CollectionController {
   @Get('/')
   @ResponseStatus(HttpStatus.OK)
   getCollectionsForUser(
-    @Query('cursor', new DefaultValuePipe(null)) cursor: string,
+    @Query('cursor', new CursorPipe()) cursor: Cursor,
     @Query('pageSize', new DefaultValuePipe(DEFAULT_PAGE_SIZE), ParseIntPipe)
     pageSize: number,
     @Query('search', new DefaultValuePipe('')) searchQuery: string,
@@ -64,7 +66,7 @@ export class CollectionController {
   @Get('/:id')
   @ResponseStatus(HttpStatus.OK)
   getAccessibleCollectionById(
-    @Param('id', ParseIntPipe) collectionId: Collection['id'],
+    @Param('id') collectionId: Collection['id'],
     @CurrentUser() userSessionInfo: UserSessionContext
   ) {
     return this.collectionService.getAccessibleCollectionById({
@@ -77,7 +79,7 @@ export class CollectionController {
   @ResponseStatus(HttpStatus.OK)
   deleteUserCollection(
     @CurrentUser() userSessionInfo: UserSessionContext,
-    @Param('id', ParseIntPipe) collectionId: Collection['id']
+    @Param('id') collectionId: Collection['id']
   ) {
     return this.collectionService.deleteUserCollection({
       userId: userSessionInfo.user.id,

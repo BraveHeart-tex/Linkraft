@@ -62,7 +62,6 @@ export class CollectionRepository {
     PaginatedResult<CollectionWithBookmarkCount>
   > {
     limit = Math.min(limit, DEFAULT_PAGE_SIZE);
-
     const items = await this.txHost.tx
       .select({
         id: collections.id,
@@ -77,11 +76,11 @@ export class CollectionRepository {
       .from(collections)
       .leftJoin(bookmarks, eq(bookmarks.collectionId, collections.id))
       .groupBy(collections.id)
-      .orderBy(desc(collections.id))
+      .orderBy(desc(collections.id), desc(collections.createdAt))
       .where(
         and(
           eq(collections.userId, userId),
-          cursor ? lt(collections.id, cursor) : undefined,
+          cursor ? lt(collections.createdAt, cursor.createdAt) : undefined,
           searchQuery ? like(collections.name, `%${searchQuery}%`) : undefined
         )
       )

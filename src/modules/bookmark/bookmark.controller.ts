@@ -41,7 +41,7 @@ export class BookmarkController {
     @Query('pageSize', new DefaultValuePipe(DEFAULT_PAGE_SIZE), ParseIntPipe)
     pageSize: number,
     @Query('search', new DefaultValuePipe('')) searchQuery: string,
-    @Query('collectionId', new DefaultValuePipe(0), ParseIntPipe)
+    @Query('collectionId')
     collectionId: Collection['id'],
     @CurrentUser() userSessionContext: UserSessionContext
   ) {

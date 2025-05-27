@@ -15,7 +15,6 @@ import {
   Post,
   Put,
   Query,
-  UseGuards,
 } from '@nestjs/common';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { ResponseMessage } from 'src/common/decorators/response-message.decorator';
@@ -28,13 +27,11 @@ import {
   createBookmarkSchema,
   updateBookmarkSchema,
 } from 'src/common/validation/schemas/bookmark/bookmark.schema';
-import { AuthGuard } from 'src/guards/auth.guard';
 import { zodPipe } from 'src/pipes/zod.pipe.factory';
 import { UserSessionContext } from '../auth/session.types';
 import { BookmarkService } from './bookmark.service';
 
 @Controller('bookmarks')
-@UseGuards(AuthGuard)
 export class BookmarkController {
   constructor(private readonly bookmarkService: BookmarkService) {}
 

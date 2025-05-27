@@ -11,7 +11,6 @@ import {
   Post,
   Put,
   Query,
-  UseGuards,
 } from '@nestjs/common';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { ResponseMessage } from 'src/common/decorators/response-message.decorator';
@@ -23,13 +22,11 @@ import {
 } from 'src/common/validation/schemas/collection/collection.schema';
 import { Collection, CollectionInsertDto } from 'src/db/schema';
 import { ApiException } from 'src/exceptions/api.exception';
-import { AuthGuard } from 'src/guards/auth.guard';
 import { zodPipe } from 'src/pipes/zod.pipe.factory';
 import { UserSessionContext } from '../auth/session.types';
 import { CollectionService } from './collection.service';
 
 @Controller('collections')
-@UseGuards(AuthGuard)
 export class CollectionController {
   constructor(private readonly collectionService: CollectionService) {}
 

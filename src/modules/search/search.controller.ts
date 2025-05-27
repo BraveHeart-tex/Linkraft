@@ -1,6 +1,5 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
-import { AuthGuard } from 'src/guards/auth.guard';
 import { UserSessionContext } from 'src/modules/auth/session.types';
 import { SearchService } from 'src/modules/search/search.service';
 import {
@@ -9,7 +8,6 @@ import {
 } from 'src/modules/search/search.utils';
 
 @Controller('search')
-@UseGuards(AuthGuard)
 export class SearchController {
   constructor(private readonly searchService: SearchService) {}
 

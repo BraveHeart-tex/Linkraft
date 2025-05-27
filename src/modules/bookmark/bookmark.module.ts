@@ -1,7 +1,6 @@
 import { BullModule } from '@nestjs/bullmq';
 import { forwardRef, Module } from '@nestjs/common';
 import { BOOKMARK_METADATA_QUEUE_NAME } from 'src/common/processors/queueNames';
-import { AuthModule } from 'src/modules/auth/auth.module';
 import { BookmarkImportModule } from 'src/modules/bookmark-import/bookmark-import.module';
 import { BookmarkGateway } from 'src/modules/bookmark/bookmark.gateway';
 import { BookmarkMetadataProcessor } from 'src/modules/bookmark/bookmark.processor';
@@ -17,7 +16,6 @@ import { BookmarkService } from './bookmark.service';
 
 @Module({
   imports: [
-    AuthModule,
     BullModule.registerQueue({
       name: BOOKMARK_METADATA_QUEUE_NAME,
     }),

@@ -1,5 +1,6 @@
 import { CorrelationIdMiddleware } from '@/modules/logging/logging.middleware';
 import { LoggingModule } from '@/modules/logging/logging.module';
+import { SessionModule } from '@/modules/session/session.module';
 import { ClsPluginTransactional } from '@nestjs-cls/transactional';
 import { TransactionalAdapterDrizzleOrm } from '@nestjs-cls/transactional-adapter-drizzle-orm';
 import { BullModule } from '@nestjs/bullmq';
@@ -71,6 +72,7 @@ import { TagModule } from './modules/tag/tag.module';
     BookmarkImportModule,
     StatsModule,
     SearchModule,
+    SessionModule,
   ],
   providers: [
     {

@@ -1,8 +1,11 @@
 import { Cursor } from '@/common/validation/schemas/shared/cursor.schema';
 
-export const encodeCursor = (cursor: Cursor | null | undefined): string => {
+export const encodeCursor = (
+  cursor: Cursor | null | undefined
+): string | null => {
   if (!cursor) {
-    return Buffer.from(JSON.stringify(null)).toString('base64');
+    console.log('no cursor value return null!!!');
+    return null;
   }
 
   const jsonString = JSON.stringify({

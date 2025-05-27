@@ -1,3 +1,4 @@
+import { encodeCursor } from '@/common/utils/cursor.utils';
 import {
   DEFAULT_PAGE_SIZE,
   MAX_PAGE_SIZE,
@@ -99,7 +100,7 @@ export class BookmarkRepository {
       .leftJoin(tags, eq(bookmarkTags.tagId, tags.id))
       .leftJoin(collections, eq(bookmarks.collectionId, collections.id))
       .groupBy(bookmarks.id, collections.id)
-      .orderBy(desc(bookmarks.createdAt))
+      .orderBy(desc(bookmarks.createdAt), desc(bookmarks.id))
       .$dynamic();
 
     query.limit(limit);
@@ -116,16 +117,14 @@ export class BookmarkRepository {
 
     return {
       items,
-      nextCursor: Buffer.from(
-        JSON.stringify(
-          lastItem
-            ? {
-                createdAt: lastItem.createdAt,
-                id: lastItem.id,
-              }
-            : null
-        )
-      ).toString('base64'),
+      nextCursor: encodeCursor(
+        lastItem
+          ? {
+              createdAt: lastItem.createdAt,
+              id: lastItem.id,
+            }
+          : null
+      ),
     };
   }
 

@@ -18,5 +18,5 @@ export interface CollectionWithBookmarkCount extends Omit<Collection, 'tsv'> {
 
 export interface CollectionWithBookmarkDetails extends Collection {
   bookmarks: BookmarkWithTagsAndCollection[];
-  nextBookmarkCursor: string;
+  nextBookmarkCursor: string | null;
 }

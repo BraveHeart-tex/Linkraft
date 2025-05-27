@@ -15,6 +15,8 @@ export class CursorPipe implements PipeTransform {
       throw new BadRequestException('Invalid base64-encoded cursor');
     }
 
+    if (decoded === null) return null;
+
     return cursorSchema.parse(decoded);
   }
 }

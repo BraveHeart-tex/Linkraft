@@ -50,6 +50,7 @@ export class BookmarkImportService {
       });
 
       const parsedResults = sanitizeAndParseNetscapeBookmarks(html);
+
       const collections = parsedResults.filter(
         (node) => node.type === 'collection'
       );

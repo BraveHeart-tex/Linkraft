@@ -1,5 +1,6 @@
 import { getErrorStack } from '@/common/utils/logging.utils';
-import { Collection, User } from '@/db/schema';
+import { isValidHttpUrl } from '@/common/utils/url.utils';
+import { BookmarkInsertDto, Collection, User } from '@/db/schema';
 import { BookmarkImportProgressService } from '@/modules/bookmark-import-progress/bookmark-import-progress.service';
 import { ensureBookmarkTitleLength } from '@/modules/bookmark/bookmark.utils';
 import { LoggerService } from '@/modules/logging/logger.service';
@@ -104,8 +105,11 @@ export class BookmarkImportService {
         });
       }
 
-      const createdBookmarks = await this.bookmarkRepository.bulkCreate(
-        bookmarks.map((bookmark) => ({
+      const validBookmarks: BookmarkInsertDto[] = [];
+      for (const bookmark of bookmarks) {
+        if (!isValidHttpUrl(bookmark.url)) continue;
+
+        validBookmarks.push({
           isMetadataPending: false,
           title: ensureBookmarkTitleLength(bookmark.title),
           userId,
@@ -113,8 +117,11 @@ export class BookmarkImportService {
           collectionId: bookmark.parentId
             ? collectionTempIdToInsertId.get(bookmark.parentId) || null
             : null,
-        }))
-      );
+        });
+      }
+
+      const createdBookmarks =
+        await this.bookmarkRepository.bulkCreate(validBookmarks);
 
       if (createdBookmarks.length !== bookmarks.length) {
         throw new Error('Mismatch between parsed and created bookmarks');

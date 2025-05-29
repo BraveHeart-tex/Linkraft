@@ -1,5 +1,6 @@
 import { getErrorStack } from '@/common/utils/logging.utils';
 import { Collection, User } from '@/db/schema';
+import { BookmarkImportProgressService } from '@/modules/bookmark-import-progress/bookmark-import-progress.service';
 import { LoggerService } from '@/modules/logging/logger.service';
 import { Transactional } from '@nestjs-cls/transactional';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -10,7 +11,6 @@ import {
   ImportBookmarkJob,
 } from 'src/common/processors/processors.types';
 import { BOOKMARK_METADATA_QUEUE_NAME } from 'src/common/processors/queueNames';
-import { BookmarkImportProgressService } from 'src/modules/bookmark-import/bookmark-import-progress.service';
 import { parseNetscapeBookmarks } from 'src/modules/bookmark-import/bookmark-import.utils';
 import { BookmarkRepository } from '../bookmark/bookmark.repository';
 import { truncateBookmarkTitle } from '../bookmark/bookmark.utils';

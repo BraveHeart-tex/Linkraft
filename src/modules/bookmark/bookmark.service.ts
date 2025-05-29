@@ -22,7 +22,7 @@ import {
 } from './bookmark.types';
 import {
   buildBookmarkUpdateDto,
-  truncateBookmarkTitle,
+  ensureBookmarkTitleLength,
 } from './bookmark.utils';
 
 @Injectable()
@@ -84,7 +84,7 @@ export class BookmarkService {
     const bookmark = await this.bookmarkRepository.create({
       ...dto,
       title: dto?.title
-        ? truncateBookmarkTitle(dto?.title)
+        ? ensureBookmarkTitleLength(dto?.title)
         : 'Fetching title...',
       isMetadataPending: true,
     });

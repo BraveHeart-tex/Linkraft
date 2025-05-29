@@ -10,7 +10,7 @@ import { BookmarkGateway } from 'src/modules/bookmark/bookmark.gateway';
 import { BookmarkRepository } from 'src/modules/bookmark/bookmark.repository';
 import { FaviconService } from 'src/modules/favicon/favicon.service';
 import { HtmlFetcherService } from 'src/modules/htmlFetcher/html-fetcher.service';
-import { truncateBookmarkTitle } from './bookmark.utils';
+import { ensureBookmarkTitleLength } from './bookmark.utils';
 
 @Processor(BOOKMARK_METADATA_QUEUE_NAME, {
   concurrency: 10,
@@ -55,7 +55,7 @@ export class BookmarkMetadataProcessor
             }
           : {
               title: metadata.title
-                ? truncateBookmarkTitle(metadata.title)
+                ? ensureBookmarkTitleLength(metadata.title)
                 : 'Untitled',
               faviconUrl: metadata?.favicon
                 ? (

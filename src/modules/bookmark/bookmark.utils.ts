@@ -23,7 +23,7 @@ export const buildBookmarkUpdateDto = (
   return changedFields;
 };
 
-export const truncateBookmarkTitle = (title: string): string =>
+export const ensureBookmarkTitleLength = (title: string): string =>
   title.length > MAX_BOOKMARK_TITLE_LENGTH
     ? title.slice(0, MAX_BOOKMARK_TITLE_LENGTH)
     : title;

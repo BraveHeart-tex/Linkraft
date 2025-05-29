@@ -1,44 +1,105 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as cheerio from 'cheerio';
-import { Bookmark } from 'src/modules/bookmark/bookmark.types';
 
-type ParsedBookmark = Pick<Bookmark, 'title' | 'url'> & {
-  category: string | null;
-};
+export type BookmarkNode =
+  | {
+      tempId: string;
+      parentId: string | null;
+      type: 'collection';
+      title: string;
+      url?: never;
+    }
+  | {
+      tempId: string;
+      parentId: string | null;
+      type: 'bookmark';
+      title: string;
+      url: string;
+    };
 
-/**
- * Parses Netscape bookmarks HTML format and returns a flat array of bookmarks
- * @param html The HTML content of the bookmarks file
- * @returns Array of bookmarks in flat structure {title, url, category}
- */
-export const parseNetscapeBookmarks = (html: string): ParsedBookmark[] => {
+export const parseNetscapeBookmarks = (html: string): BookmarkNode[] => {
   const $ = cheerio.load(html);
-  const bookmarks: ParsedBookmark[] = [];
+  const body = $('body');
+  const flatList: BookmarkNode[] = [];
+  extractBookmarks($, body.children('dt, dl'), null, flatList);
 
-  $('a').each((_index, a) => {
-    const $a = $(a);
-    const title = $a.text().trim();
-    const url = $a.attr('href') || '';
-    const categories = getCategories($a);
-    const category = categories.length > 0 ? (categories[0] as string) : null;
-
-    bookmarks.push({ title, url, category });
-  });
-
-  return bookmarks;
+  return flatList;
 };
 
-/**
- * Recursively retrieves the folder hierarchy for a given anchor element
- * @param $a Cheerio anchor element
- * @returns Array of folder names from outermost to innermost
- */
-function getCategories($a: cheerio.Cheerio<any>): string[] {
-  const $node = $a.closest('DL').prev();
-  const title = $node.text();
-  if ($node.length > 0 && title.length > 0) {
-    return [title].concat(getCategories($node));
-  } else {
-    return [];
+function extractBookmarks(
+  $: cheerio.CheerioAPI,
+  elements: ReturnType<cheerio.CheerioAPI>,
+  parentId: string | null,
+  flatList: BookmarkNode[]
+): void {
+  elements.each((_, element) => {
+    const el = $(element);
+    if (el.is('dt')) {
+      const firstChild = el.children().first();
+      if (firstChild.is('h3')) {
+        // Collection (Folder)
+        const title = firstChild.text().trim() || 'Untitled Folder';
+        const id = crypto.randomUUID();
+
+        flatList.push({
+          tempId: id,
+          parentId,
+          type: 'collection',
+          title,
+        });
+
+        const dlNode = el.children('dl').first();
+        if (dlNode.length) {
+          extractBookmarks($, dlNode.children('dt, dl'), id, flatList);
+        }
+      } else if (firstChild.is('a')) {
+        // Bookmark
+        const title = firstChild.text().trim() || 'Untitled Bookmark';
+        const url = firstChild.attr('href') || '';
+        const id = crypto.randomUUID();
+
+        flatList.push({
+          tempId: id,
+          parentId,
+          type: 'bookmark',
+          title,
+          url,
+        });
+      }
+    } else if (el.is('dl')) {
+      // Process nested <dl> elements
+      extractBookmarks($, el.children('dt, dl'), parentId, flatList);
+    }
+  });
+}
+
+export function topologicalSortCollections(
+  collections: BookmarkNode[]
+): BookmarkNode[] {
+  const sorted: BookmarkNode[] = [];
+  const visited = new Set<string>();
+  const tempMark = new Set<string>();
+  const collectionMap = new Map(collections.map((c) => [c.tempId, c]));
+
+  function visit(node: BookmarkNode) {
+    if (visited.has(node.tempId)) return;
+    if (tempMark.has(node.tempId)) {
+      throw new Error(
+        `Cycle detected in collection hierarchy at ${node.title}`
+      );
+    }
+    tempMark.add(node.tempId);
+    if (node.parentId) {
+      const parent = collectionMap.get(node.parentId);
+      if (parent) visit(parent);
+    }
+    tempMark.delete(node.tempId);
+    visited.add(node.tempId);
+    sorted.push(node);
   }
+
+  for (const node of collections) {
+    visit(node);
+  }
+
+  return sorted;
 }

@@ -1,8 +1,10 @@
 import { LoggerService } from '@/modules/logging/logger.service';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { OnModuleDestroy } from '@nestjs/common';
-import { Job } from 'bullmq';
-import { ImportBookmarkJob } from 'src/common/processors/processors.types';
+import {
+  ImportBookmarkJob,
+  JobWithId,
+} from 'src/common/processors/processors.types';
 import { BOOKMARK_IMPORT_QUEUE_NAME } from 'src/common/processors/queueNames';
 import { BookmarkImportService } from './bookmark-import.service';
 
@@ -18,7 +20,7 @@ export class BookmarkImportQueueProcessor
     super();
   }
 
-  async process(job: Job<ImportBookmarkJob>): Promise<void> {
+  async process(job: JobWithId<ImportBookmarkJob>): Promise<void> {
     const { userId, html } = job.data;
     const jobId = job.id;
     this.logger.log('Starting ImportBookmarkJob', {

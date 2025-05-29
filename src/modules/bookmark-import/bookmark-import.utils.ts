@@ -16,8 +16,15 @@ export type BookmarkNode =
       url: string;
     };
 
-export const parseNetscapeBookmarks = (html: string): BookmarkNode[] => {
+export const sanitizeAndParseNetscapeBookmarks = (
+  html: string
+): BookmarkNode[] => {
   const $ = cheerio.load(html);
+
+  $('script, style, iframe, object, embed').remove();
+  $('[onerror],[onload],[onclick],[style]').remove();
+  $('a[href^="javascript:"]').remove();
+
   const body = $('body');
   const flatList: BookmarkNode[] = [];
   extractBookmarks($, body.children('dt, dl'), null, flatList);

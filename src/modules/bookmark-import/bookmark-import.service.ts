@@ -14,7 +14,7 @@ import {
 } from 'src/common/processors/processors.types';
 import { BOOKMARK_METADATA_QUEUE_NAME } from 'src/common/processors/queueNames';
 import {
-  parseNetscapeBookmarks,
+  sanitizeAndParseNetscapeBookmarks,
   topologicalSortCollections,
 } from 'src/modules/bookmark-import/bookmark-import.utils';
 import { BookmarkRepository } from '../bookmark/bookmark.repository';
@@ -48,7 +48,7 @@ export class BookmarkImportService {
         meta: { jobId: job.id, userId },
       });
 
-      const parsedResults = parseNetscapeBookmarks(html);
+      const parsedResults = sanitizeAndParseNetscapeBookmarks(html);
       const collections = parsedResults.filter(
         (node) => node.type === 'collection'
       );

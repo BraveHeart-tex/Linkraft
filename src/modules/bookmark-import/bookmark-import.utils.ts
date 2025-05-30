@@ -1,5 +1,6 @@
 import { isValidHttpUrl } from '@/common/utils/url.utils';
-import * as cheerio from 'cheerio';
+import { decode } from 'html-entities';
+import { Parser } from 'htmlparser2';
 
 export type BookmarkNode =
   | {
@@ -16,122 +17,6 @@ export type BookmarkNode =
       title: string;
       url: string;
     };
-
-export const sanitizeAndParseNetscapeBookmarks = (
-  html: string
-): BookmarkNode[] => {
-  const $ = cheerio.load(html);
-
-  const forbiddenTags = ['script', 'style', 'iframe', 'object', 'embed'];
-  for (const tag of forbiddenTags) {
-    if ($(tag).length > 0) {
-      throw new Error(`File contains disallowed tag <${tag}>`);
-    }
-  }
-
-  // Step 2: Whitelist tags & attributes for relevant parsing targets
-  const allowedTags = new Set([
-    'html',
-    'head',
-    'meta',
-    'title',
-    'body',
-    'dl',
-    'dt',
-    'h3',
-    'a',
-    'p',
-  ]);
-  const allowedAttributes: Record<string, Set<string>> = {
-    a: new Set(['href', 'add_date']),
-  };
-
-  $('body *').each((_, el) => {
-    if (el.type === 'tag') {
-      if (!allowedTags.has(el.tagName.toLowerCase())) {
-        console.log(`remove element ${el.tagName}`);
-        $(el).remove();
-        return;
-      }
-
-      const attribs = el.attribs;
-      const tag = el.tagName.toLowerCase();
-
-      if (attribs && allowedAttributes[tag]) {
-        for (const attr in attribs) {
-          if (!allowedAttributes[tag].has(attr.toLowerCase())) {
-            $(el).removeAttr(attr);
-          }
-        }
-      } else {
-        // If no attrs are allowed on this tag, strip all attributes
-        for (const attr in attribs) {
-          $(el).removeAttr(attr);
-        }
-      }
-    }
-  });
-
-  $('a').each((_, el) => {
-    const href = $(el).attr('href') || '';
-    if (!isValidHttpUrl(href)) {
-      $(el).removeAttr('href');
-    }
-  });
-
-  const body = $('body');
-  const flatList: BookmarkNode[] = [];
-  extractBookmarks($, body.children('dt, dl'), null, flatList);
-
-  return flatList;
-};
-
-function extractBookmarks(
-  $: cheerio.CheerioAPI,
-  elements: ReturnType<cheerio.CheerioAPI>,
-  parentId: string | null,
-  flatList: BookmarkNode[]
-): void {
-  elements.each((_, element) => {
-    const el = $(element);
-    if (el.is('dt')) {
-      const firstChild = el.children().first();
-      if (firstChild.is('h3')) {
-        // Collection (Folder)
-        const title = firstChild.text().trim() || 'Untitled Folder';
-        const id = crypto.randomUUID();
-
-        flatList.push({
-          tempId: id,
-          parentId,
-          type: 'collection',
-          title,
-        });
-
-        const dlNode = el.children('dl').first();
-        if (dlNode.length) {
-          extractBookmarks($, dlNode.children('dt, dl'), id, flatList);
-        }
-      } else if (firstChild.is('a')) {
-        // Bookmark
-        const title = firstChild.text().trim() || 'Untitled Bookmark';
-        const url = firstChild.attr('href') || '';
-        const id = crypto.randomUUID();
-
-        flatList.push({
-          tempId: id,
-          parentId,
-          type: 'bookmark',
-          title,
-          url,
-        });
-      }
-    } else if (el.is('dl')) {
-      // Process nested <dl> elements
-      extractBookmarks($, el.children('dt, dl'), parentId, flatList);
-    }
-  });
-}
 
 export function topologicalSortCollections(
   collections: BookmarkNode[]
@@ -163,4 +48,108 @@ export function topologicalSortCollections(
   }
 
   return sorted;
+}
+
+const FORBIDDEN_TAGS = new Set([
+  'script',
+  'style',
+  'iframe',
+  'object',
+  'embed',
+]);
+
+export function parseNetscapeBookmarksStreaming(html: string): BookmarkNode[] {
+  const stack: string[] = [];
+  const flatList: BookmarkNode[] = [];
+
+  let currentTag: string | null = null;
+  let currentFolderTitle: string | null = null;
+  let currentBookmarkHref: string | null = null;
+  let currentBookmarkTitle: string | null = null;
+  let disallowedTagDetected = false;
+
+  const parser = new Parser(
+    {
+      onopentag(name, attribs) {
+        const tag = name.toLowerCase();
+        currentTag = tag;
+
+        if (FORBIDDEN_TAGS.has(tag)) {
+          disallowedTagDetected = true;
+          parser.pause(); // soft-abort
+        }
+
+        if (tag === 'a') {
+          currentBookmarkHref = attribs.href || null;
+          currentBookmarkTitle = '';
+        }
+
+        if (tag === 'h3') {
+          currentFolderTitle = '';
+        }
+      },
+
+      ontext(text) {
+        if (!currentTag) return;
+
+        const cleanText = decode(text);
+
+        if (currentTag === 'h3') {
+          currentFolderTitle += cleanText;
+        } else if (currentTag === 'a') {
+          currentBookmarkTitle += cleanText;
+        }
+      },
+
+      onclosetag(tag) {
+        const lower = tag.toLowerCase();
+
+        if (lower === 'h3') {
+          const id = crypto.randomUUID();
+          flatList.push({
+            tempId: id,
+            parentId: stack.at(-1) || null,
+            type: 'collection',
+            title: currentFolderTitle?.trim() || 'Untitled Folder',
+          });
+          stack.push(id); // expect a <DL> to follow
+          currentFolderTitle = null;
+        }
+
+        if (lower === 'a') {
+          if (currentBookmarkHref && isValidHttpUrl(currentBookmarkHref)) {
+            const id = crypto.randomUUID();
+            flatList.push({
+              tempId: id,
+              parentId: stack.at(-1) || null,
+              type: 'bookmark',
+              title: currentBookmarkTitle?.trim() || 'Untitled Bookmark',
+              url: currentBookmarkHref,
+            });
+          }
+          currentBookmarkTitle = null;
+          currentBookmarkHref = null;
+        }
+
+        if (lower === 'dl') {
+          // Pop current folder scope
+          stack.pop();
+        }
+
+        currentTag = null;
+      },
+    },
+    { decodeEntities: true }
+  );
+
+  parser.write(html);
+  parser.end();
+
+  if (disallowedTagDetected) {
+    throw new Error(
+      'Bookmark file contains forbidden elements (script/style/etc.)'
+    );
+  }
+
+  return flatList;
 }

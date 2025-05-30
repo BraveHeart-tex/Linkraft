@@ -7,7 +7,7 @@
     "**/.pnpm-store": true
   },
   "typescript.tsdk": "node_modules/typescript/lib",
-  "workbench.colorTheme": "Catppuccin Frappé",
+  "workbench.colorTheme": "Solarized Light",
   "typescript.preferences.importModuleSpecifier": "non-relative",
   "javascript.preferences.importModuleSpecifier": "non-relative"
 }

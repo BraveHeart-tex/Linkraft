@@ -1,0 +1,6 @@
+export const HTTP_CLIENT_DEFAULTS = {
+  USER_AGENT: 'LinkraftBot/1.0',
+  MAX_REDIRECTS: 5,
+  TIMEOUT_MS: 10_000,
+  MAX_CONTENT_LENGTH: 10 * 1024 * 1024, // 10MB
+} as const;

@@ -1,12 +1,41 @@
+import { HTTP_CLIENT_DEFAULTS } from '@/common/constants/http.constants';
+import { AppConfigService } from '@/config/app-config.service';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import * as http from 'http';
 import * as https from 'https';
 import { IHttpClient } from 'src/modules/htmlFetcher/html-fetcher.types';
 
+interface HttpClientConfig {
+  maxRedirects: number;
+  requestTimeoutMs: number;
+  userAgent: string;
+  maxContentLength: number;
+}
+
 @Injectable()
 export class HttpClient implements IHttpClient {
-  private readonly maxRedirects = 5;
-  private readonly requestTimeoutMs = 10_000;
+  private readonly config: HttpClientConfig;
+
+  constructor(private readonly configService: AppConfigService) {
+    this.config = {
+      maxRedirects: this.configService.get(
+        'HTTP_MAX_REDIRECTS',
+        HTTP_CLIENT_DEFAULTS.MAX_REDIRECTS
+      ),
+      requestTimeoutMs: this.configService.get(
+        'HTTP_TIMEOUT_MS',
+        HTTP_CLIENT_DEFAULTS.TIMEOUT_MS
+      ),
+      userAgent: this.configService.get(
+        'HTTP_USER_AGENT',
+        HTTP_CLIENT_DEFAULTS.USER_AGENT
+      ),
+      maxContentLength: this.configService.get(
+        'HTTP_MAX_CONTENT_LENGTH',
+        HTTP_CLIENT_DEFAULTS.MAX_CONTENT_LENGTH
+      ),
+    };
+  }
 
   async fetch(url: string): Promise<string> {
     return this.fetchWithRedirect(url, 0);
@@ -35,8 +64,10 @@ export class HttpClient implements IHttpClient {
   ): Promise<string> {
     return new Promise((resolve, reject) => {
       url = this.normalizeUrl(url);
-      if (redirectCount > this.maxRedirects) {
-        return reject(new Error(`Too many redirects (> ${this.maxRedirects})`));
+      if (redirectCount > this.config.maxRedirects) {
+        return reject(
+          new Error(`Too many redirects (> ${this.config.maxRedirects})`)
+        );
       }
 
       const client = url.startsWith('https') ? https : http;
@@ -121,7 +152,7 @@ export class HttpClient implements IHttpClient {
       );
 
       req.on('error', reject);
-      req.setTimeout(this.requestTimeoutMs, () => {
+      req.setTimeout(this.config.requestTimeoutMs, () => {
         req.destroy(new Error('Request timed out'));
       });
     });
@@ -133,8 +164,10 @@ export class HttpClient implements IHttpClient {
   ): Promise<{ buffer: Buffer; contentType: string }> {
     url = this.normalizeUrl(url);
     return new Promise((resolve, reject) => {
-      if (redirectCount > this.maxRedirects) {
-        return reject(new Error(`Too many redirects (> ${this.maxRedirects})`));
+      if (redirectCount > this.config.maxRedirects) {
+        return reject(
+          new Error(`Too many redirects (> ${this.config.maxRedirects})`)
+        );
       }
 
       const client = url.startsWith('https') ? https : http;
@@ -196,7 +229,7 @@ export class HttpClient implements IHttpClient {
       );
 
       req.on('error', reject);
-      req.setTimeout(this.requestTimeoutMs, () => {
+      req.setTimeout(this.config.requestTimeoutMs, () => {
         req.destroy(new Error('Request timed out'));
       });
     });

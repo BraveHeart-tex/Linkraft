@@ -15,6 +15,7 @@ import {
 } from 'src/common/processors/processors.types';
 import { BOOKMARK_METADATA_QUEUE_NAME } from 'src/common/processors/queueNames';
 import {
+  BookmarkNode,
   parseNetscapeBookmarksStreaming,
   topologicalSortCollections,
 } from 'src/modules/bookmark-import/bookmark-import.utils';
@@ -60,69 +61,63 @@ export class BookmarkImportService {
         (node) => node.type === 'bookmark'
       );
 
-      const collectionTempIdToInsertId = new Map<string, Collection['id']>();
+      const collectionMap = new Map<string, Collection['id']>();
+      const pendingCollections = new Set(sortedCollections);
 
-      // Collections left to insert:
-      let collectionsToInsert = [...sortedCollections];
+      while (pendingCollections.size > 0) {
+        const batch: BookmarkNode[] = [];
 
-      while (collectionsToInsert.length > 0) {
-        // Find collections ready for insert: parentId null or parent inserted
-        const readyToInsert = collectionsToInsert.filter(
-          (c) => !c.parentId || collectionTempIdToInsertId.has(c.parentId)
-        );
-
-        if (readyToInsert.length === 0) {
-          throw new Error('Circular or missing parent references detected');
+        for (const collection of pendingCollections) {
+          if (!collection.parentId || collectionMap.has(collection.parentId)) {
+            batch.push(collection);
+          }
         }
 
-        // Insert batch
-        const insertedBatch = await this.collectionRepository.bulkCreate(
-          readyToInsert.map((c) => ({
-            name: c.title,
+        if (batch.length === 0) {
+          throw new Error(
+            'Circular or orphaned collection references detected'
+          );
+        }
+
+        const inserted = await this.collectionRepository.bulkCreate(
+          batch.map((collection) => ({
+            name: collection.title,
             userId,
-            parentId: c.parentId
-              ? collectionTempIdToInsertId.get(c.parentId)
+            parentId: collection.parentId
+              ? collectionMap.get(collection.parentId)
               : null,
           }))
         );
 
-        // Update map with inserted IDs
-        insertedBatch.forEach((inserted, index) => {
-          if (readyToInsert[index]) {
-            collectionTempIdToInsertId.set(
-              readyToInsert[index].tempId,
-              inserted.id
-            );
+        batch.forEach((collection, index) => {
+          if (inserted[index]?.id) {
+            collectionMap.set(collection.tempId, inserted[index].id);
+            pendingCollections.delete(collection);
           }
         });
 
-        // Remove inserted collections from collectionsToInsert
-        collectionsToInsert = collectionsToInsert.filter(
-          (c) => !collectionTempIdToInsertId.has(c.tempId)
-        );
-
         this.log('Inserted collection batch', {
-          meta: { count: readyToInsert.length },
+          meta: { count: batch.length },
         });
       }
 
-      const validBookmarks: BookmarkInsertDto[] = [];
+      const bookmarkInsertDtos: BookmarkInsertDto[] = [];
       for (const bookmark of bookmarks) {
         if (!isValidHttpUrl(bookmark.url)) continue;
 
-        validBookmarks.push({
+        bookmarkInsertDtos.push({
           isMetadataPending: false,
           title: ensureBookmarkTitleLength(bookmark.title),
           userId,
           url: bookmark.url,
           collectionId: bookmark.parentId
-            ? collectionTempIdToInsertId.get(bookmark.parentId) || null
+            ? collectionMap.get(bookmark.parentId) || null
             : null,
         });
       }
 
       const createdBookmarks =
-        await this.bookmarkRepository.bulkCreate(validBookmarks);
+        await this.bookmarkRepository.bulkCreate(bookmarkInsertDtos);
 
       if (createdBookmarks.length !== bookmarks.length) {
         throw new Error('Mismatch between parsed and created bookmarks');

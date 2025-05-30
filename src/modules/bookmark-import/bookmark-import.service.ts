@@ -1,6 +1,6 @@
 import { getErrorStack } from '@/common/utils/logging.utils';
 import { isValidHttpUrl } from '@/common/utils/url.utils';
-import { BookmarkInsertDto, Collection, User } from '@/db/schema';
+import { Collection, User } from '@/db/schema';
 import { BookmarkImportProgressService } from '@/modules/bookmark-import-progress/bookmark-import-progress.service';
 import { ensureBookmarkTitleLength } from '@/modules/bookmark/bookmark.utils';
 import { LoggerService } from '@/modules/logging/logger.service';
@@ -15,7 +15,8 @@ import {
 } from 'src/common/processors/processors.types';
 import { BOOKMARK_METADATA_QUEUE_NAME } from 'src/common/processors/queueNames';
 import {
-  BookmarkNode,
+  BookmarkItemNode,
+  BookmarkTreeNode,
   parseNetscapeBookmarksStreaming,
   topologicalSortCollections,
 } from 'src/modules/bookmark-import/bookmark-import.utils';
@@ -53,7 +54,7 @@ export class BookmarkImportService {
       const parsedResults = parseNetscapeBookmarksStreaming(html);
 
       const collections = parsedResults.filter(
-        (node) => node.type === 'collection'
+        (node) => node.type === 'folder'
       );
       const sortedCollections = topologicalSortCollections(collections);
 
@@ -62,25 +63,33 @@ export class BookmarkImportService {
       );
 
       const collectionMap = new Map<string, Collection['id']>();
+
+      const BATCH_SIZE = 100;
       const pendingCollections = new Set(sortedCollections);
 
+      const readyQueue: BookmarkTreeNode[] = [];
+
+      const canInsert = (collection: BookmarkTreeNode) =>
+        !collection.parentId || collectionMap.has(collection.parentId);
+
       while (pendingCollections.size > 0) {
-        const batch: BookmarkNode[] = [];
+        readyQueue.length = 0;
 
         for (const collection of pendingCollections) {
-          if (!collection.parentId || collectionMap.has(collection.parentId)) {
-            batch.push(collection);
+          if (canInsert(collection)) {
+            readyQueue.push(collection);
+            if (readyQueue.length >= BATCH_SIZE) break;
           }
         }
 
-        if (batch.length === 0) {
+        if (readyQueue.length === 0) {
           throw new Error(
             'Circular or orphaned collection references detected'
           );
         }
 
         const inserted = await this.collectionRepository.bulkCreate(
-          batch.map((collection) => ({
+          readyQueue.map((collection) => ({
             name: collection.title,
             userId,
             parentId: collection.parentId
@@ -89,7 +98,7 @@ export class BookmarkImportService {
           }))
         );
 
-        batch.forEach((collection, index) => {
+        readyQueue.forEach((collection, index) => {
           if (inserted[index]?.id) {
             collectionMap.set(collection.tempId, inserted[index].id);
             pendingCollections.delete(collection);
@@ -97,15 +106,29 @@ export class BookmarkImportService {
         });
 
         this.log('Inserted collection batch', {
-          meta: { count: batch.length },
+          meta: { count: readyQueue.length },
         });
       }
 
-      const bookmarkInsertDtos: BookmarkInsertDto[] = [];
-      for (const bookmark of bookmarks) {
-        if (!isValidHttpUrl(bookmark.url)) continue;
+      const BOOKMARK_CHUNK_SIZE = 1000;
+      const validBookmarks: BookmarkItemNode[] = [];
+      for (let i = 0; i < bookmarks.length; i += BOOKMARK_CHUNK_SIZE) {
+        const chunk = bookmarks.slice(i, i + BOOKMARK_CHUNK_SIZE);
+        for (const bookmark of chunk) {
+          if (!isValidHttpUrl(bookmark.url)) continue;
+          validBookmarks.push(bookmark);
+        }
 
-        bookmarkInsertDtos.push({
+        // Optional: yield control (in real async env) or do small pause here if needed
+      }
+
+      const createdBookmarks: Awaited<
+        ReturnType<typeof this.bookmarkRepository.bulkCreate>
+      > = [];
+
+      for (let i = 0; i < validBookmarks.length; i += BATCH_SIZE) {
+        const chunk = validBookmarks.slice(i, i + BATCH_SIZE);
+        const bookmarkDtos = chunk.map((bookmark) => ({
           isMetadataPending: false,
           title: ensureBookmarkTitleLength(bookmark.title),
           userId,
@@ -113,15 +136,25 @@ export class BookmarkImportService {
           collectionId: bookmark.parentId
             ? collectionMap.get(bookmark.parentId) || null
             : null,
+        }));
+
+        const insertedChunk =
+          await this.bookmarkRepository.bulkCreate(bookmarkDtos);
+        createdBookmarks.push(...insertedChunk);
+
+        this.log('Inserted bookmark batch', {
+          meta: { count: insertedChunk.length },
         });
       }
 
-      const createdBookmarks =
-        await this.bookmarkRepository.bulkCreate(bookmarkInsertDtos);
-
-      if (createdBookmarks.length !== bookmarks.length) {
+      if (createdBookmarks.length !== validBookmarks.length) {
         throw new Error('Mismatch between parsed and created bookmarks');
       }
+
+      await this.importProgressService.setTotalProgress(
+        job.id,
+        validBookmarks.length
+      );
 
       this.log('Bookmarks created', {
         meta: { count: createdBookmarks.length },
@@ -132,34 +165,39 @@ export class BookmarkImportService {
         bookmarks.length
       );
 
-      this.metadataQueue.addBulk(
-        bookmarks.map((bookmark, index) => {
-          const created = createdBookmarks[index];
-          if (!created?.id) {
-            throw new Error(
-              `Missing ID for created bookmark at index ${index}`
-            );
-          }
+      for (let i = 0; i < validBookmarks.length; i += BATCH_SIZE) {
+        const chunk = validBookmarks.slice(i, i + BATCH_SIZE);
+        const chunkCreated = createdBookmarks.slice(i, i + BATCH_SIZE);
 
-          return {
-            name: BOOKMARK_METADATA_QUEUE_NAME,
-            data: {
-              type: 'bulk',
-              bookmarkId: created.id,
-              userId,
-              url: bookmark.url,
-              onlyFavicon: true,
-              currentIndex: index,
-              totalCount: bookmarks.length,
-              parentJobId: job.id,
-            },
-            opts: {
-              removeOnComplete: true,
-              removeOnFail: true,
-            },
-          };
-        })
-      );
+        await this.metadataQueue.addBulk(
+          chunk.map((bookmark, index) => {
+            const created = chunkCreated[index];
+            if (!created?.id) {
+              throw new Error(
+                `Missing ID for created bookmark at index ${i + index}`
+              );
+            }
+
+            return {
+              name: BOOKMARK_METADATA_QUEUE_NAME,
+              data: {
+                type: 'bulk',
+                bookmarkId: created.id,
+                userId,
+                url: bookmark.url,
+                onlyFavicon: true,
+                currentIndex: i + index,
+                totalCount: validBookmarks.length,
+                parentJobId: job.id,
+              },
+              opts: {
+                removeOnComplete: true,
+                removeOnFail: true,
+              },
+            };
+          })
+        );
+      }
 
       this.log('Finished import successfully', {
         meta: { durationMs: Date.now() - start },

@@ -2,11 +2,11 @@ import { isValidHttpUrl } from '@/common/utils/url.utils';
 import { decode } from 'html-entities';
 import { Parser } from 'htmlparser2';
 
-export type BookmarkNode =
+export type BookmarkTreeNode =
   | {
       tempId: string;
       parentId: string | null;
-      type: 'collection';
+      type: 'folder';
       title: string;
       url?: never;
     }
@@ -18,15 +18,18 @@ export type BookmarkNode =
       url: string;
     };
 
+export type BookmarkFolderNode = Extract<BookmarkTreeNode, { type: 'folder' }>;
+export type BookmarkItemNode = Extract<BookmarkTreeNode, { type: 'bookmark' }>;
+
 export function topologicalSortCollections(
-  collections: BookmarkNode[]
-): BookmarkNode[] {
-  const sorted: BookmarkNode[] = [];
+  collections: BookmarkTreeNode[]
+): BookmarkTreeNode[] {
+  const sorted: BookmarkTreeNode[] = [];
   const visited = new Set<string>();
   const tempMark = new Set<string>();
   const collectionMap = new Map(collections.map((c) => [c.tempId, c]));
 
-  function visit(node: BookmarkNode) {
+  function visit(node: BookmarkTreeNode) {
     if (visited.has(node.tempId)) return;
     if (tempMark.has(node.tempId)) {
       throw new Error(
@@ -58,9 +61,11 @@ const FORBIDDEN_TAGS = new Set([
   'embed',
 ]);
 
-export function parseNetscapeBookmarksStreaming(html: string): BookmarkNode[] {
+export function parseNetscapeBookmarksStreaming(
+  html: string
+): BookmarkTreeNode[] {
   const stack: string[] = [];
-  const flatList: BookmarkNode[] = [];
+  const flatList: BookmarkTreeNode[] = [];
 
   let currentTag: string | null = null;
   let currentFolderTitle: string | null = null;
@@ -109,7 +114,7 @@ export function parseNetscapeBookmarksStreaming(html: string): BookmarkNode[] {
           flatList.push({
             tempId: id,
             parentId: stack.at(-1) || null,
-            type: 'collection',
+            type: 'folder',
             title: currentFolderTitle?.trim() || 'Untitled Folder',
           });
           stack.push(id); // expect a <DL> to follow

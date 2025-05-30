@@ -1,3 +1,4 @@
+import { buildUpdateDto } from '@/common/utils/object.utils';
 import { Transactional } from '@nestjs-cls/transactional';
 import { InjectQueue } from '@nestjs/bullmq';
 import { HttpStatus, Injectable } from '@nestjs/common';
@@ -20,10 +21,7 @@ import {
   UpdateBookmarkParams,
   UpdateBookmarkReturn,
 } from './bookmark.types';
-import {
-  buildBookmarkUpdateDto,
-  ensureBookmarkTitleLength,
-} from './bookmark.utils';
+import { ensureBookmarkTitleLength } from './bookmark.utils';
 
 @Injectable()
 export class BookmarkService {
@@ -119,7 +117,7 @@ export class BookmarkService {
     const titleChanged = updates.title && updates.title !== bookmark.title;
 
     const bookmarkUpdates = {
-      ...buildBookmarkUpdateDto(bookmark, updates),
+      ...buildUpdateDto(bookmark, updates),
       ...(urlChanged && titleChanged
         ? {
             isMetadataPending: true,

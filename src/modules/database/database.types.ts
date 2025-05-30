@@ -26,3 +26,5 @@ export interface CursorPayload {
   createdAt: string;
   id: string;
 }
+
+export type Update<T> = Partial<T>;

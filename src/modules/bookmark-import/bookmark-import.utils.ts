@@ -1,25 +1,7 @@
 import { isValidHttpUrl } from '@/common/utils/url.utils';
+import { BookmarkTreeNode } from '@/modules/bookmark-import/bookmark-import.types';
 import { decode } from 'html-entities';
 import { Parser } from 'htmlparser2';
-
-export type BookmarkTreeNode =
-  | {
-      tempId: string;
-      parentId: string | null;
-      type: 'folder';
-      title: string;
-      url?: never;
-    }
-  | {
-      tempId: string;
-      parentId: string | null;
-      type: 'bookmark';
-      title: string;
-      url: string;
-    };
-
-export type BookmarkFolderNode = Extract<BookmarkTreeNode, { type: 'folder' }>;
-export type BookmarkItemNode = Extract<BookmarkTreeNode, { type: 'bookmark' }>;
 
 export function topologicalSortCollections(
   collections: BookmarkTreeNode[]

@@ -14,7 +14,6 @@ import {
   isNotNull,
   isNull,
   lt,
-  ne,
   or,
   sql,
 } from 'drizzle-orm';
@@ -208,21 +207,6 @@ export class BookmarkRepository {
     };
   }
 
-  async userHasBookmarkWithUrl({
-    url,
-    userId,
-  }: {
-    url: string;
-    userId: User['id'];
-  }) {
-    const result = await this.txHost.tx
-      .select()
-      .from(bookmarks)
-      .where(and(eq(bookmarks.userId, userId), eq(bookmarks.url, url)));
-
-    return result[0];
-  }
-
   async create(data: BookmarkInsertDto) {
     const result = await this.txHost.tx
       .insert(bookmarks)
@@ -276,24 +260,6 @@ export class BookmarkRepository {
       .returning({
         deleteId: bookmarks.id,
       });
-  }
-
-  async findByUserIdAndUrlExcludingBookmark({
-    userId,
-    url,
-    excludeBookmarkId,
-  }: {
-    userId: User['id'];
-    url: string;
-    excludeBookmarkId: Bookmark['id'];
-  }) {
-    return this.txHost.tx.query.bookmarks.findFirst({
-      where: and(
-        eq(bookmarks.userId, userId),
-        eq(bookmarks.url, url),
-        ne(bookmarks.id, excludeBookmarkId)
-      ),
-    });
   }
 
   async bulkDeleteTrashedUserBookmarks(userId: User['id']) {

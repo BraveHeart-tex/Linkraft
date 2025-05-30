@@ -5,8 +5,7 @@ export const buildBookmarkUpdateDto = (
   initialBookmarkValue: Bookmark,
   updates: Partial<Bookmark>
 ): Partial<Bookmark> => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const changedFields = {} as Partial<Record<keyof Bookmark, any>>;
+  const changedFields = {} as Partial<Bookmark>;
 
   Object.entries(updates).forEach(([key, newValue]) => {
     const k = key as keyof Bookmark;

@@ -31,20 +31,22 @@ export class BookmarkImportController {
     )
     file: Express.Multer.File,
     @CurrentUser() userSessionContext: UserSessionContext
-  ) {
+  ): Promise<{ jobId: string }> {
     const html = file.buffer.toString('utf-8');
 
-    const job = await this.bookmarkImportQueue.add(
+    const jobId = crypto.randomUUID();
+
+    await this.bookmarkImportQueue.add(
       PARSE_BOOKMARKS_JOB_NAME,
       {
         html,
         userId: userSessionContext.user.id,
       },
       {
-        jobId: crypto.randomUUID(),
+        jobId,
       }
     );
 
-    return { jobId: job.id };
+    return { jobId };
   }
 }

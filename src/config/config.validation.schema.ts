@@ -17,6 +17,11 @@ export const configSchema = z.object({
       invalid_type_error: 'R2_CDN_URL must be a string',
     })
     .url('R2_CDN_URL must be a valid URL'),
+
+  BOOKMARK_IMPORT_BATCH_SIZE: z.number().optional().default(100),
+  BOOKMARK_CHUCK_SIZE: z.number().optional().default(1000),
+  BOOKMARK_IMPORT_MAX_RETRIES: z.number().optional().default(3),
+  BOOKMARK_IMPORT_TIMEOUT_MS: z.number().optional().default(300000),
 });
 
 export type ConfigSchema = z.infer<typeof configSchema>;

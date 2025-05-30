@@ -50,22 +50,6 @@ export class BookmarkService {
 
   @Transactional()
   async createBookmarkForUser(dto: BookmarkInsertDto & CreateBookmarkDto) {
-    const bookmarkWithSameUrl =
-      await this.bookmarkRepository.userHasBookmarkWithUrl({
-        url: dto.url,
-        userId: dto.userId,
-      });
-
-    if (bookmarkWithSameUrl) {
-      throw new ApiException(
-        'A bookmark with the same URL already exists',
-        HttpStatus.CONFLICT,
-        {
-          bookmarkWithSameUrl,
-        }
-      );
-    }
-
     if (dto.collectionId) {
       const userHasAccessToCollection =
         await this.collectionService.userHasAccessToCollection({
@@ -129,25 +113,6 @@ export class BookmarkService {
 
     if (!bookmark) {
       throw new ApiException('Bookmark not found', HttpStatus.NOT_FOUND);
-    }
-
-    if (updates?.url) {
-      const bookmarkWithSameUrl =
-        await this.bookmarkRepository.findByUserIdAndUrlExcludingBookmark({
-          excludeBookmarkId: bookmarkId,
-          url: updates.url,
-          userId,
-        });
-
-      if (bookmarkWithSameUrl) {
-        throw new ApiException(
-          'A bookmark with the same URL already exists',
-          HttpStatus.CONFLICT,
-          {
-            bookmarkWithSameUrl,
-          }
-        );
-      }
     }
 
     const urlChanged = updates.url && updates.url !== bookmark.url;

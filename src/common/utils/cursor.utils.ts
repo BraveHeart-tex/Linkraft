@@ -4,7 +4,6 @@ export const encodeCursor = (
   cursor: Cursor | null | undefined
 ): string | null => {
   if (!cursor) {
-    console.log('no cursor value return null!!!');
     return null;
   }
 

@@ -58,8 +58,8 @@ import { TagModule } from './modules/tag/tag.module';
       imports: [AppConfigModule],
       useFactory: async (appConfigService: AppConfigService) => ({
         connection: {
-          host: appConfigService.get('REDIS_HOST'),
-          port: appConfigService.get('REDIS_PORT'),
+          host: appConfigService.getOrThrow('REDIS_HOST'),
+          port: appConfigService.getOrThrow('REDIS_PORT'),
         },
       }),
       inject: [AppConfigService],

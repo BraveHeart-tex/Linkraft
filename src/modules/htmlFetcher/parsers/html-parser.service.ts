@@ -17,16 +17,34 @@ export class HtmlParser implements IHtmlParser {
       $('meta[property="og:description"]').attr('content') ||
       '';
 
-    let favicon =
-      $('link[rel="icon"]').attr('href') ||
-      $('link[rel="shortcut icon"]').attr('href') ||
-      $('link[rel="apple-touch-icon"]').attr('href') ||
-      '';
+    const relPriority = [
+      'icon',
+      'shortcut icon',
+      'apple-touch-icon',
+      'mask-icon',
+    ];
 
-    if (favicon && !favicon.startsWith('http')) {
+    let favicon = '';
+    for (const rel of relPriority) {
+      const href = $(`link[rel="${rel}"]`).attr('href');
+      if (href) {
+        favicon = href;
+        break;
+      }
+    }
+
+    const baseHref = $('base').attr('href');
+    const effectiveBase = baseHref
+      ? new URL(baseHref, baseUrl).toString()
+      : baseUrl;
+
+    if (
+      favicon &&
+      !favicon.startsWith('http') &&
+      !favicon.startsWith('data:')
+    ) {
       try {
-        const base = new URL(baseUrl);
-        favicon = new URL(favicon, base).toString();
+        favicon = new URL(favicon, effectiveBase).toString();
       } catch {
         // ignore
       }

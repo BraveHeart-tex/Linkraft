@@ -1,4 +1,3 @@
-import { isUniqueConstraintViolation } from '@/common/type-guards/isUniqueConstraintViolation';
 import { isValidFaviconUrl } from '@/common/utils/url.utils';
 import { ApiException } from '@/exceptions/api.exception';
 import { LoggerService } from '@/modules/logging/logger.service';
@@ -42,74 +41,38 @@ export class FaviconService {
       );
     }
 
-    let faviconHash;
-    try {
-      const faviconBuffer =
-        await this.faviconFetcherService.downloadImage(faviconUrl);
+    const faviconBuffer =
+      await this.faviconFetcherService.downloadImage(faviconUrl);
 
-      faviconHash = this.hashFaviconImage(faviconBuffer);
+    const faviconHash = this.hashFaviconImage(faviconBuffer);
 
-      let existingFavicon =
-        await this.faviconRepository.findByHash(faviconHash);
+    let existingFavicon = await this.faviconRepository.findByHash(faviconHash);
 
-      if (existingFavicon) {
-        return existingFavicon;
-      }
-
-      existingFavicon = await this.faviconRepository.findByDomain(hostname);
-
-      if (existingFavicon) {
-        const updatedFavicon = await this.updateFavicon({
-          existingFavicon,
-          faviconBuffer,
-          faviconHash,
-        });
-        return updatedFavicon;
-      }
-
-      const r2Result = await this.r2Service.uploadImage(
-        faviconBuffer,
-        hostname
-      );
-
-      const newFavicon = this.faviconRepository.create({
-        hash: faviconHash,
-        url: r2Result.url,
-        r2Key: r2Result.r2Key,
-        domain: hostname,
-      });
-
-      return newFavicon;
-    } catch (error) {
-      if (
-        hostname &&
-        isUniqueConstraintViolation(error, 'favicons_domain_unique')
-      ) {
-        this.logger.warn('isUniqueConstraintViolation', {
-          meta: {
-            type: 'favicons_domain_unique',
-          },
-        });
-        const existingFavicon =
-          await this.faviconRepository.findByDomain(hostname);
-        if (existingFavicon) return existingFavicon;
-      }
-      if (
-        faviconHash &&
-        isUniqueConstraintViolation(error, 'favicons_hash_unique')
-      ) {
-        this.logger.warn('isUniqueConstraintViolation', {
-          meta: {
-            type: 'favicons_hash_unique',
-          },
-        });
-        const existingFavicon =
-          await this.faviconRepository.findByHash(faviconHash);
-        if (existingFavicon) return existingFavicon;
-      }
-
-      throw error;
+    if (existingFavicon) {
+      return existingFavicon;
     }
+
+    existingFavicon = await this.faviconRepository.findByDomain(hostname);
+
+    if (existingFavicon) {
+      const updatedFavicon = await this.updateFavicon({
+        existingFavicon,
+        faviconBuffer,
+        faviconHash,
+      });
+      return updatedFavicon;
+    }
+
+    const r2Result = await this.r2Service.uploadImage(faviconBuffer, hostname);
+
+    const newFavicon = this.faviconRepository.create({
+      hash: faviconHash,
+      url: r2Result.url,
+      r2Key: r2Result.r2Key,
+      domain: hostname,
+    });
+
+    return newFavicon;
   }
 
   private async updateFavicon({

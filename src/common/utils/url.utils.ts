@@ -28,11 +28,20 @@ export const isRelativePath = (url: string): boolean => {
   return /^\/[^/]/.test(url); // starts with single "/"
 };
 
+const IMAGE_MIME_TYPES = ['png', 'svg+xml', 'jpeg', 'gif', 'x-icon', 'webp'];
+
 export const isDataImageUrl = (url: string): boolean => {
-  return (
-    /^data:image\/(png|svg\+xml|jpeg|gif|x-icon|webp);base64,/.test(url) ||
-    /^data:image\/(svg\+xml);utf8,/.test(url)
+  const mimePattern = IMAGE_MIME_TYPES.map((type) =>
+    type.replace('+', '\\+')
+  ).join('|');
+
+  // data:image/{mimeType}[;base64 or ;utf8 or nothing],data
+  const regex = new RegExp(
+    `^data:image\\/(${mimePattern})(;base64|;utf8)?[,].+`,
+    'i'
   );
+
+  return regex.test(url);
 };
 
 export const isValidImageMimeType = (mimeType: string): boolean => {

@@ -32,6 +32,10 @@ export class FaviconRepository {
     return this.txHost.tx
       .insert(favicons)
       .values(data)
+      .onConflictDoUpdate({
+        target: favicons.hash,
+        set: { url: data.url, r2Key: data.r2Key, domain: data.domain },
+      })
       .returning()
       .then((result) => result[0] as Favicon);
   }

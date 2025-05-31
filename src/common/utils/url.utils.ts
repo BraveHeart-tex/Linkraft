@@ -13,8 +13,8 @@ export const isValidFaviconUrl = (url: string): boolean => {
 
 export const isAbsoluteHttpUrl = (url: string): boolean => {
   try {
-    const u = new URL(url);
-    return u.protocol === 'http:' || u.protocol === 'https:';
+    const parsedUrl = new URL(url);
+    return parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
   } catch {
     return false;
   }
@@ -35,8 +35,14 @@ export const isDataImageUrl = (url: string): boolean => {
   );
 };
 
-export const isImageContentType = (contentType: string): boolean => {
-  return /^image\/(png|jpeg|svg\+xml|gif|webp|x-icon|vnd.microsoft.icon)$/.test(
-    contentType
-  );
+export const isValidImageMimeType = (mimeType: string): boolean => {
+  return new Set([
+    'image/png',
+    'image/jpeg',
+    'image/svg+xml',
+    'image/webp',
+    'image/gif',
+    'image/x-icon',
+    'image/vnd.microsoft.icon',
+  ]).has(mimeType.toLowerCase());
 };

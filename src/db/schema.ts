@@ -73,7 +73,9 @@ export const bookmarks = pgTable(
     url: text('url').notNull(),
     title: varchar('title', { length: MAX_BOOKMARK_TITLE_LENGTH }).notNull(),
     description: text('description'),
-    faviconUrl: varchar('favicon_url', { length: 255 }).default(sql`null`),
+    faviconId: uuid('favicon_id').references(() => favicons.id, {
+      onDelete: 'set null',
+    }),
     createdAt: customTimestamp('created_at')
       .$defaultFn(getCurrentTimestamp)
       .notNull(),
@@ -89,6 +91,7 @@ export const bookmarks = pgTable(
     index('bookmark_user_id_index').on(table.userId),
     index('bookmark_collection_id_index').on(table.collectionId),
     index('bookmark_deleted_at_index').on(table.deletedAt),
+    index('bookmark_favicon_id_index').on(table.faviconId),
   ]
 );
 
@@ -154,6 +157,10 @@ export const bookmarkRelations = relations(bookmarks, ({ one, many }) => ({
     fields: [bookmarks.collectionId],
     references: [collections.id],
   }),
+  favicon: one(favicons, {
+    fields: [bookmarks.faviconId],
+    references: [favicons.id],
+  }),
   bookmarkTags: many(bookmarkTags),
 }));
 
@@ -170,6 +177,10 @@ export const bookmarkTagRelations = relations(bookmarkTags, ({ one }) => ({
     fields: [bookmarkTags.bookmarkId],
     references: [bookmarks.id],
   }),
+}));
+
+export const faviconRelations = relations(favicons, ({ many }) => ({
+  bookmarks: many(bookmarks),
 }));
 
 export type User = typeof users.$inferSelect;

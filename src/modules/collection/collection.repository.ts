@@ -107,6 +107,11 @@ export class CollectionRepository {
         with: {
           bookmarks: {
             with: {
+              favicon: {
+                columns: {
+                  url: true,
+                },
+              },
               collection: {
                 columns: {
                   id: true,

@@ -45,26 +45,26 @@ export class BookmarkMetadataProcessor
       const updates = {
         ...(job.data?.onlyFavicon
           ? {
-              faviconUrl: metadata?.favicon
+              faviconId: metadata?.favicon
                 ? (
                     await this.faviconService.storeFaviconFromUrl({
                       hostname: new URL(job.data.url).hostname,
                       faviconUrl: metadata.favicon,
                     })
-                  ).url
+                  ).id
                 : null,
             }
           : {
               title: metadata.title
                 ? ensureBookmarkTitleLength(metadata.title)
                 : 'Untitled',
-              faviconUrl: metadata?.favicon
+              faviconId: metadata?.favicon
                 ? (
                     await this.faviconService.storeFaviconFromUrl({
                       hostname: new URL(job.data.url).hostname,
                       faviconUrl: metadata.favicon,
                     })
-                  ).url
+                  ).id
                 : null,
             }),
         isMetadataPending: false,
@@ -93,7 +93,7 @@ export class BookmarkMetadataProcessor
       const updates = {
         isMetadataPending: false,
         title: 'Metadata fetch failed',
-        faviconUrl: null,
+        faviconId: null,
       };
 
       await this.bookmarkRepository.updateByIdAndUserId({

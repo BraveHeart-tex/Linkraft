@@ -20,8 +20,10 @@ export interface FindUserBookmarksParams extends PaginationSearchParams {
 }
 
 export type Bookmark = typeof bookmarks.$inferSelect;
+export type BookmarkWithFaviconUrl = Bookmark & { faviconUrl: string | null };
 
-export interface BookmarkWithTagsAndCollection extends Bookmark {
+export interface BookmarkWithTagsAndCollection
+  extends Omit<BookmarkWithFaviconUrl, 'faviconId' | 'tsv'> {
   collection: Pick<Collection, 'id' | 'name'> | null;
   tags: SlimTag[];
 }

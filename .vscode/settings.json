@@ -7,7 +7,7 @@
     "**/.pnpm-store": true
   },
   "typescript.tsdk": "node_modules/typescript/lib",
-  "workbench.colorTheme": "Default Light Modern",
+  "workbench.colorTheme": "Bearded Theme feat. Melle Julie",
   "typescript.preferences.importModuleSpecifier": "non-relative",
   "javascript.preferences.importModuleSpecifier": "non-relative"
 }

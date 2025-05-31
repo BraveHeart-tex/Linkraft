@@ -22,6 +22,7 @@ import {
   bookmarks,
   bookmarkTags,
   collections,
+  favicons,
   Tag,
   tags,
   User,
@@ -59,7 +60,18 @@ export class BookmarkRepository {
 
     const query = this.txHost.tx
       .select({
-        bookmark: bookmarks,
+        bookmark: {
+          id: bookmarks.id,
+          userId: bookmarks.userId,
+          url: bookmarks.url,
+          title: bookmarks.title,
+          description: bookmarks.description,
+          faviconUrl: favicons.url,
+          createdAt: bookmarks.createdAt,
+          deletedAt: bookmarks.deletedAt,
+          collectionId: bookmarks.collectionId,
+          isMetadataPending: bookmarks.isMetadataPending,
+        },
         tags: sql<Pick<Tag, 'id' | 'name'>[]>`COALESCE(
         json_agg(json_build_object('id', ${tags.id}, 'name', ${tags.name}))
         FILTER (WHERE ${tags.id} IS NOT NULL),
@@ -98,7 +110,8 @@ export class BookmarkRepository {
       .leftJoin(bookmarkTags, eq(bookmarkTags.bookmarkId, bookmarks.id))
       .leftJoin(tags, eq(bookmarkTags.tagId, tags.id))
       .leftJoin(collections, eq(bookmarks.collectionId, collections.id))
-      .groupBy(bookmarks.id, collections.id)
+      .leftJoin(favicons, eq(bookmarks.faviconId, favicons.id))
+      .groupBy(bookmarks.id, collections.id, favicons.id)
       .orderBy(desc(bookmarks.createdAt), desc(bookmarks.id))
       .$dynamic();
 
@@ -140,7 +153,18 @@ export class BookmarkRepository {
   }: BookmarkOwnershipParams): Promise<BookmarkWithTagsAndCollection | null> {
     const query = this.txHost.tx
       .select({
-        bookmark: bookmarks,
+        bookmark: {
+          id: bookmarks.id,
+          userId: bookmarks.userId,
+          url: bookmarks.url,
+          title: bookmarks.title,
+          description: bookmarks.description,
+          faviconUrl: favicons.url,
+          createdAt: bookmarks.createdAt,
+          deletedAt: bookmarks.deletedAt,
+          collectionId: bookmarks.collectionId,
+          isMetadataPending: bookmarks.isMetadataPending,
+        },
         tags: sql<Pick<Tag, 'id' | 'name'>[]>`COALESCE(
           json_agg(json_build_object('id', ${tags.id}, 'name', ${tags.name}))
           FILTER (WHERE ${tags.id} IS NOT NULL),
@@ -156,7 +180,8 @@ export class BookmarkRepository {
       .leftJoin(bookmarkTags, eq(bookmarkTags.bookmarkId, bookmarks.id))
       .leftJoin(tags, eq(bookmarkTags.tagId, tags.id))
       .leftJoin(collections, eq(bookmarks.collectionId, collections.id))
-      .groupBy(bookmarks.id, collections.id)
+      .leftJoin(favicons, eq(bookmarks.faviconId, favicons.id))
+      .groupBy(bookmarks.id, collections.id, favicons.id)
       .limit(1)
       .$dynamic();
 
@@ -179,7 +204,18 @@ export class BookmarkRepository {
   > {
     const result = await this.txHost.tx
       .select({
-        bookmark: bookmarks,
+        bookmark: {
+          id: bookmarks.id,
+          userId: bookmarks.userId,
+          url: bookmarks.url,
+          title: bookmarks.title,
+          description: bookmarks.description,
+          faviconUrl: favicons.url,
+          createdAt: bookmarks.createdAt,
+          deletedAt: bookmarks.deletedAt,
+          collectionId: bookmarks.collectionId,
+          isMetadataPending: bookmarks.isMetadataPending,
+        },
         tags: sql<Pick<Tag, 'id' | 'name'>[]>`COALESCE(
           json_agg(json_build_object('id', ${tags.id}, 'name', ${tags.name}))
           FILTER (WHERE ${tags.id} IS NOT NULL),
@@ -194,9 +230,10 @@ export class BookmarkRepository {
       .where(and(eq(bookmarks.id, bookmarkId), eq(bookmarks.userId, userId)))
       .leftJoin(bookmarkTags, eq(bookmarkTags.bookmarkId, bookmarks.id))
       .leftJoin(tags, eq(bookmarkTags.tagId, tags.id))
+      .leftJoin(favicons, eq(favicons.id, bookmarks.faviconId))
       .leftJoin(collections, eq(bookmarks.collectionId, collections.id))
       .limit(1)
-      .groupBy(bookmarks.id, collections.id);
+      .groupBy(bookmarks.id, collections.id, favicons.id);
 
     if (!result[0]) return;
 

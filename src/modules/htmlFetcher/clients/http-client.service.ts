@@ -1,6 +1,8 @@
-import { isDataImageUrl, isImageContentType } from '@/common/utils/url.utils';
+import { isDataImageUrl, isValidImageMimeType } from '@/common/utils/url.utils';
 import { Injectable } from '@nestjs/common';
 import { fetch } from 'undici';
+
+const MAX_DATA_URL_SIZE_BYTES = 100 * 1024; // 100 KB max for favicon data
 
 @Injectable()
 export class HttpClient {
@@ -125,7 +127,7 @@ export class HttpClient {
       const buffer = Buffer.from(arrayBuffer);
       const contentType = response.headers.get('content-type') || '';
 
-      if (!isImageContentType(contentType)) {
+      if (!isValidImageMimeType(contentType)) {
         throw new Error(`Invalid content-type for favicon: ${contentType}`);
       }
 
@@ -151,12 +153,19 @@ export class HttpClient {
       throw new Error(`Missing image type in data URL`);
     }
 
-    if (!isImageContentType(mimeType)) {
+    if (!isValidImageMimeType(mimeType)) {
       throw new Error(`Unsupported image type in data URL: ${mimeType}`);
     }
 
     if (!data) {
       throw new Error('Missing image data in data URL');
+    }
+
+    // Check size roughly before decoding (base64 expands ~33%)
+    const approximateSize =
+      encoding === 'base64' ? (data.length * 3) / 4 : data.length;
+    if (approximateSize > MAX_DATA_URL_SIZE_BYTES) {
+      throw new Error('Data URL image exceeds maximum allowed size');
     }
 
     let buffer: Buffer;
@@ -170,6 +179,15 @@ export class HttpClient {
       throw new Error(
         `Failed to decode image data from data URL: ${error instanceof Error ? error.message : 'unknown error occurred'}`
       );
+    }
+
+    if (buffer.length > MAX_DATA_URL_SIZE_BYTES) {
+      throw new Error('Decoded image exceeds maximum allowed size');
+    }
+
+    // TODO: Sanitize SVG if mimeType === 'image/svg+xml'
+    if (mimeType === 'image/svg+xml') {
+      // e.g., buffer = sanitizeSvg(buffer.toString('utf8'))
     }
 
     return { buffer, contentType: mimeType };

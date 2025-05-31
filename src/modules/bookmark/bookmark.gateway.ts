@@ -13,7 +13,10 @@ import {
   SOCKET_NAMESPACES,
   SOCKET_ROOMS,
 } from 'src/modules/bookmark/bookmark.constants';
-import { BookmarkOwnershipParams } from 'src/modules/bookmark/bookmark.types';
+import {
+  Bookmark,
+  BookmarkOwnershipParams,
+} from 'src/modules/bookmark/bookmark.types';
 
 @WebSocketGateway({
   namespace: SOCKET_NAMESPACES.BOOKMARKS,
@@ -44,7 +47,7 @@ export class BookmarkGateway
     bookmarkId,
     metadata,
   }: BookmarkOwnershipParams & {
-    metadata: { title?: string; faviconUrl: string | null };
+    metadata: { title?: string; faviconId: Bookmark['faviconId'] };
   }) {
     const room = this.getUserRoomName(userId);
 
@@ -53,7 +56,7 @@ export class BookmarkGateway
       userId,
       bookmarkId,
       title: metadata.title,
-      faviconUrl: metadata.faviconUrl,
+      faviconId: metadata.faviconId,
     });
 
     this.server.to(room).emit(SOCKET_EVENTS.BOOKMARK.UPDATE, {

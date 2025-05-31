@@ -36,6 +36,20 @@
       "when": 1748354920625,
       "tag": "0004_married_adam_warlock",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1748719329251,
+      "tag": "0005_sharp_mauler",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1748719396218,
+      "tag": "0006_equal_wendell_rand",
+      "breakpoints": true
     }
   ]
 }

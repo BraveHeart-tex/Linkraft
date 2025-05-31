@@ -1,3 +1,4 @@
+import { isDataImageUrl, isImageContentType } from '@/common/utils/url.utils';
 import { Injectable } from '@nestjs/common';
 import { fetch } from 'undici';
 
@@ -11,8 +12,16 @@ export class HttpClient {
   }
 
   async fetchBinary(
-    url: string
+    rawUrl: string
   ): Promise<{ buffer: Buffer; contentType: string }> {
+    if (isDataImageUrl(rawUrl)) {
+      return this.handleDataUrl(rawUrl);
+    }
+    let url = rawUrl;
+    if (url.startsWith('//')) {
+      url = 'https:' + url;
+    }
+
     return this.fetchBinaryWithRedirect(url, 0);
   }
 
@@ -116,9 +125,53 @@ export class HttpClient {
       const buffer = Buffer.from(arrayBuffer);
       const contentType = response.headers.get('content-type') || '';
 
+      if (!isImageContentType(contentType)) {
+        throw new Error(`Invalid content-type for favicon: ${contentType}`);
+      }
+
       return { buffer, contentType };
     } finally {
       clearTimeout(timeout);
     }
+  }
+
+  private async handleDataUrl(
+    dataUrl: string
+  ): Promise<{ buffer: Buffer; contentType: string }> {
+    const match = /^data:(image\/[a-zA-Z0-9.+-]+);(base64|utf8),(.*)$/.exec(
+      dataUrl
+    );
+    if (!match) {
+      throw new Error('Invalid data URL format');
+    }
+
+    const [, mimeType, encoding, data] = match;
+
+    if (!mimeType) {
+      throw new Error(`Missing image type in data URL`);
+    }
+
+    if (!isImageContentType(mimeType)) {
+      throw new Error(`Unsupported image type in data URL: ${mimeType}`);
+    }
+
+    if (!data) {
+      throw new Error('Missing image data in data URL');
+    }
+
+    let buffer: Buffer;
+
+    try {
+      buffer =
+        encoding === 'base64'
+          ? Buffer.from(data, 'base64')
+          : Buffer.from(decodeURIComponent(data), 'utf8');
+    } catch (error) {
+      throw new Error(
+        `Failed to decode image data from data URL: ${error instanceof Error ? error.message : 'unknown error occurred'}`
+      );
+    }
+
+    return { buffer, contentType: mimeType };
   }
 }

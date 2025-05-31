@@ -47,9 +47,10 @@ export class BookmarkMetadataProcessor
           ? {
               faviconUrl: metadata?.favicon
                 ? (
-                    await this.faviconService.storeFaviconFromUrl(
-                      metadata.favicon
-                    )
+                    await this.faviconService.storeFaviconFromUrl({
+                      hostname: new URL(job.data.url).hostname,
+                      faviconUrl: metadata.favicon,
+                    })
                   ).url
                 : null,
             }
@@ -59,9 +60,10 @@ export class BookmarkMetadataProcessor
                 : 'Untitled',
               faviconUrl: metadata?.favicon
                 ? (
-                    await this.faviconService.storeFaviconFromUrl(
-                      metadata.favicon
-                    )
+                    await this.faviconService.storeFaviconFromUrl({
+                      hostname: new URL(job.data.url).hostname,
+                      faviconUrl: metadata.favicon,
+                    })
                   ).url
                 : null,
             }),

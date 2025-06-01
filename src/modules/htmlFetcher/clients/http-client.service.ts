@@ -1,4 +1,6 @@
+import { sleep } from '@/common/utils/sleep.utils';
 import { isDataImageUrl, isValidImageMimeType } from '@/common/utils/url.utils';
+import { RetryableException } from '@/exceptions/retryable.exception';
 import { Injectable } from '@nestjs/common';
 import { fetch } from 'undici';
 
@@ -6,8 +8,11 @@ const MAX_DATA_URL_SIZE_BYTES = 100 * 1024; // 100 KB max for favicon data
 
 @Injectable()
 export class HttpClient {
+  // TODO: Make this config based
+  private readonly maxRetries = 3;
   private readonly maxRedirects = 5;
   private readonly requestTimeoutMs = 10_000;
+  private readonly baseRetryDelayMs = 300;
 
   async fetch(url: string): Promise<string> {
     return this.fetchWithRedirect(url, 0);
@@ -98,43 +103,85 @@ export class HttpClient {
       throw new Error(`Too many redirects (> ${this.maxRedirects})`);
     }
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), this.requestTimeoutMs);
+    for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
+      const controller = new AbortController();
+      const timeout = setTimeout(
+        () => controller.abort(),
+        this.requestTimeoutMs
+      );
 
-    try {
-      const response = await fetch(url, {
-        headers: { 'User-Agent': 'LinkraftBot/1.0' },
-        redirect: 'manual',
-        signal: controller.signal,
-      });
+      try {
+        const response = await fetch(url, {
+          headers: { 'User-Agent': 'LinkraftBot/1.0' },
+          redirect: 'manual',
+          signal: controller.signal,
+        });
 
-      if (response.status >= 300 && response.status < 400) {
-        const location = response.headers.get('location');
-        if (!location) {
-          throw new Error(
-            `Redirect status ${response.status} missing Location header`
-          );
+        if (response.status >= 300 && response.status < 400) {
+          const location = response.headers.get('location');
+          if (!location) {
+            throw new Error(
+              `Redirect status ${response.status} missing Location header`
+            );
+          }
+          const redirectUrl = new URL(location, url).toString();
+          return this.fetchBinaryWithRedirect(redirectUrl, redirectCount + 1);
         }
-        const redirectUrl = new URL(location, url).toString();
-        return this.fetchBinaryWithRedirect(redirectUrl, redirectCount + 1);
+
+        if (!response.ok) {
+          if (
+            response.status >= 500 ||
+            response.status === 408 ||
+            response.status === 429
+          ) {
+            throw new RetryableException(`Retryable error: ${response.status}`);
+          } else {
+            throw new Error(
+              `Request failed with status code ${response.status}`
+            );
+          }
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const contentType = response.headers.get('content-type') || '';
+
+        if (!isValidImageMimeType(contentType)) {
+          throw new Error(`Invalid content-type for favicon: ${contentType}`);
+        }
+
+        return { buffer, contentType };
+      } catch (error) {
+        const isLastAttempt = attempt === this.maxRetries;
+
+        const isAbortError =
+          error instanceof Error &&
+          (error.name === 'AbortError' || error.message.includes('aborted'));
+
+        const isRetryable = error instanceof RetryableException || isAbortError;
+
+        if (isRetryable) {
+          if (isLastAttempt) {
+            throw new Error(
+              `All retries failed: ${error instanceof Error ? error.message : 'unknown error'}`
+            );
+          }
+
+          const backoff = this.baseRetryDelayMs * 2 ** attempt;
+          const jitter = Math.floor(Math.random() * 100);
+          await sleep(backoff + jitter);
+          continue;
+        }
+
+        throw error;
+      } finally {
+        clearTimeout(timeout);
       }
-
-      if (!response.ok) {
-        throw new Error(`Request failed with status code ${response.status}`);
-      }
-
-      const arrayBuffer = await response.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      const contentType = response.headers.get('content-type') || '';
-
-      if (!isValidImageMimeType(contentType)) {
-        throw new Error(`Invalid content-type for favicon: ${contentType}`);
-      }
-
-      return { buffer, contentType };
-    } finally {
-      clearTimeout(timeout);
     }
+
+    throw new Error(
+      `Failed to fetch binary after ${this.maxRetries + 1} attempts`
+    );
   }
 
   private async handleDataUrl(

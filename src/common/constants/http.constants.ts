@@ -1,6 +1,12 @@
 export const HTTP_CLIENT_DEFAULTS = {
-  USER_AGENT: 'LinkraftBot/1.0',
+  DEFAULT_HEADERS: {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+    'Accept-Language': 'en-US,en;q=0.9',
+    Referer: 'https://www.google.com/',
+  },
   MAX_REDIRECTS: 5,
+  MAX_RETRIES: 3,
+  BASE_RETRY_DELAY_MS: 300,
   TIMEOUT_MS: 10_000,
-  MAX_CONTENT_LENGTH: 10 * 1024 * 1024, // 10MB
+  MAX_DATA_URL_SIZE_BYTES: 100 * 1024,
 } as const;

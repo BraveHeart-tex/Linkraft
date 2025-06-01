@@ -24,9 +24,11 @@ export const configSchema = z.object({
   BOOKMARK_IMPORT_TIMEOUT_MS: z.number().optional(),
 
   HTTP_MAX_REDIRECTS: z.number().optional(),
+  HTTP_MAX_RETRIES: z.number().optional(),
   HTTP_TIMEOUT_MS: z.number().optional(),
   HTTP_USER_AGENT: z.string().optional(),
-  HTTP_MAX_CONTENT_LENGTH: z.number().optional(),
+  HTTP_BASE_RETRY_DELAY_MS: z.number().optional(),
+  HTTP_MAX_DATA_URL_SIZE_BYTES: z.number().optional(),
 });
 
 export type ConfigSchema = z.infer<typeof configSchema>;

@@ -1,24 +1,49 @@
+import { HTTP_CLIENT_DEFAULTS } from '@/common/constants/http.constants';
 import { sleep } from '@/common/utils/sleep.utils';
 import { isDataImageUrl, isValidImageMimeType } from '@/common/utils/url.utils';
+import { AppConfigService } from '@/config/app-config.service';
 import { RetryableException } from '@/exceptions/retryable.exception';
 import { Injectable } from '@nestjs/common';
 import { fetch } from 'undici';
 
-const MAX_DATA_URL_SIZE_BYTES = 100 * 1024; // 100 KB max for favicon data
+interface HttpClientConfig {
+  defaultHeaders: HeadersInit;
+  maxRedirects: number;
+  maxRetries: number;
+  baseRetryDelayMs: number;
+  requestTimeoutMs: number;
+  maxDataUrlSizeBytes: number;
+}
 
 @Injectable()
 export class HttpClient {
-  // TODO: Make this config based
-  private readonly defaultHeaders: HeadersInit = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-    Accept: 'text/html,application/xhtml+xml',
-    'Accept-Language': 'en-US,en;q=0.9',
-    Referer: 'https://www.google.com/',
-  };
-  private readonly maxRetries = 3;
-  private readonly maxRedirects = 5;
-  private readonly requestTimeoutMs = 10_000;
-  private readonly baseRetryDelayMs = 300;
+  private readonly config: HttpClientConfig;
+
+  constructor(private readonly configService: AppConfigService) {
+    this.config = {
+      defaultHeaders: HTTP_CLIENT_DEFAULTS.DEFAULT_HEADERS,
+      maxRedirects: this.configService.get(
+        'HTTP_MAX_REDIRECTS',
+        HTTP_CLIENT_DEFAULTS.MAX_REDIRECTS
+      ),
+      maxRetries: this.configService.get(
+        'HTTP_MAX_RETRIES',
+        HTTP_CLIENT_DEFAULTS.MAX_RETRIES
+      ),
+      requestTimeoutMs: this.configService.get(
+        'HTTP_TIMEOUT_MS',
+        HTTP_CLIENT_DEFAULTS.TIMEOUT_MS
+      ),
+      baseRetryDelayMs: this.configService.get(
+        'HTTP_BASE_RETRY_DELAY_MS',
+        HTTP_CLIENT_DEFAULTS.BASE_RETRY_DELAY_MS
+      ),
+      maxDataUrlSizeBytes: this.configService.get(
+        'HTTP_MAX_DATA_URL_SIZE_BYTES',
+        HTTP_CLIENT_DEFAULTS.MAX_DATA_URL_SIZE_BYTES
+      ),
+    };
+  }
 
   async fetch(url: string): Promise<string> {
     return this.fetchWithRedirect(url, 0);
@@ -42,19 +67,19 @@ export class HttpClient {
     url: string,
     redirectCount: number
   ): Promise<string> {
-    if (redirectCount > this.maxRedirects) {
-      throw new Error(`Too many redirects (> ${this.maxRedirects})`);
+    if (redirectCount > this.config.maxRedirects) {
+      throw new Error(`Too many redirects (> ${this.config.maxRedirects})`);
     }
 
-    for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
+    for (let attempt = 0; attempt <= this.config.maxRetries; attempt++) {
       const controller = new AbortController();
       const timeout = setTimeout(
         () => controller.abort(),
-        this.requestTimeoutMs
+        this.config.requestTimeoutMs
       );
       try {
         const response = await fetch(url, {
-          headers: this.defaultHeaders,
+          headers: this.config.defaultHeaders,
           redirect: 'manual',
           signal: controller.signal,
         });
@@ -115,7 +140,7 @@ export class HttpClient {
 
         return headBuffer;
       } catch (error) {
-        const isLastAttempt = attempt === this.maxRetries;
+        const isLastAttempt = attempt === this.config.maxRetries;
 
         const isAbortError =
           error instanceof Error &&
@@ -130,7 +155,7 @@ export class HttpClient {
             );
           }
 
-          const backoff = this.baseRetryDelayMs * 2 ** attempt;
+          const backoff = this.config.baseRetryDelayMs * 2 ** attempt;
           const jitter = Math.floor(Math.random() * 100);
           await sleep(backoff + jitter);
           continue;
@@ -141,27 +166,29 @@ export class HttpClient {
         clearTimeout(timeout);
       }
     }
-    throw new Error(`Failed to fetch after ${this.maxRetries + 1} attempts`);
+    throw new Error(
+      `Failed to fetch after ${this.config.maxRetries + 1} attempts`
+    );
   }
 
   private async fetchBinaryWithRedirect(
     url: string,
     redirectCount: number
   ): Promise<{ buffer: Buffer; contentType: string }> {
-    if (redirectCount > this.maxRedirects) {
-      throw new Error(`Too many redirects (> ${this.maxRedirects})`);
+    if (redirectCount > this.config.maxRedirects) {
+      throw new Error(`Too many redirects (> ${this.config.maxRedirects})`);
     }
 
-    for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
+    for (let attempt = 0; attempt <= this.config.maxRetries; attempt++) {
       const controller = new AbortController();
       const timeout = setTimeout(
         () => controller.abort(),
-        this.requestTimeoutMs
+        this.config.requestTimeoutMs
       );
 
       try {
         const response = await fetch(url, {
-          headers: this.defaultHeaders,
+          headers: this.config.defaultHeaders,
           redirect: 'manual',
           signal: controller.signal,
         });
@@ -209,7 +236,7 @@ export class HttpClient {
 
         return { buffer, contentType };
       } catch (error) {
-        const isLastAttempt = attempt === this.maxRetries;
+        const isLastAttempt = attempt === this.config.maxRetries;
 
         const isAbortError =
           error instanceof Error &&
@@ -224,7 +251,7 @@ export class HttpClient {
             );
           }
 
-          const backoff = this.baseRetryDelayMs * 2 ** attempt;
+          const backoff = this.config.baseRetryDelayMs * 2 ** attempt;
           const jitter = Math.floor(Math.random() * 100);
           await sleep(backoff + jitter);
           continue;
@@ -237,7 +264,7 @@ export class HttpClient {
     }
 
     throw new Error(
-      `Failed to fetch binary after ${this.maxRetries + 1} attempts`
+      `Failed to fetch binary after ${this.config.maxRetries + 1} attempts`
     );
   }
 
@@ -268,7 +295,7 @@ export class HttpClient {
       ? (data.length * 3) / 4
       : decodeURIComponent(data).length;
 
-    if (approximateSize > MAX_DATA_URL_SIZE_BYTES) {
+    if (approximateSize > this.config.maxDataUrlSizeBytes) {
       throw new Error('Data URL exceeds maximum size');
     }
 
@@ -284,7 +311,7 @@ export class HttpClient {
       );
     }
 
-    if (buffer.length > MAX_DATA_URL_SIZE_BYTES) {
+    if (buffer.length > this.config.maxDataUrlSizeBytes) {
       throw new Error('Decoded image exceeds maximum allowed size');
     }
 

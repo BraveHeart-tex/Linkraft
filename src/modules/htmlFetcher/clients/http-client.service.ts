@@ -9,6 +9,12 @@ const MAX_DATA_URL_SIZE_BYTES = 100 * 1024; // 100 KB max for favicon data
 @Injectable()
 export class HttpClient {
   // TODO: Make this config based
+  private readonly defaultHeaders: HeadersInit = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+    Accept: 'text/html,application/xhtml+xml',
+    'Accept-Language': 'en-US,en;q=0.9',
+    Referer: 'https://www.google.com/',
+  };
   private readonly maxRetries = 3;
   private readonly maxRedirects = 5;
   private readonly requestTimeoutMs = 10_000;
@@ -40,59 +46,102 @@ export class HttpClient {
       throw new Error(`Too many redirects (> ${this.maxRedirects})`);
     }
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), this.requestTimeoutMs);
+    for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
+      const controller = new AbortController();
+      const timeout = setTimeout(
+        () => controller.abort(),
+        this.requestTimeoutMs
+      );
+      try {
+        const response = await fetch(url, {
+          headers: this.defaultHeaders,
+          redirect: 'manual',
+          signal: controller.signal,
+        });
 
-    try {
-      const response = await fetch(url, {
-        headers: { 'User-Agent': 'LinkraftBot/1.0' },
-        redirect: 'manual',
-        signal: controller.signal,
-      });
-
-      if (response.status >= 300 && response.status < 400) {
-        const location = response.headers.get('location');
-        if (!location) {
-          throw new Error(
-            `Redirect status ${response.status} missing Location header`
-          );
-        }
-        const redirectUrl = new URL(location, url).toString();
-        return this.fetchWithRedirect(redirectUrl, redirectCount + 1);
-      }
-
-      if (!response.ok) {
-        throw new Error(`Request failed with status code ${response.status}`);
-      }
-
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('No response body');
-      }
-
-      let headBuffer = '';
-      const decoder = new TextDecoder();
-      const headEndTag = '</head>';
-      let done = false;
-
-      while (!done) {
-        const { value, done: readerDone } = await reader.read();
-        if (value) {
-          headBuffer += decoder.decode(value, { stream: true });
-          const idx = headBuffer.toLowerCase().indexOf(headEndTag);
-          if (idx !== -1) {
-            headBuffer = headBuffer.slice(0, idx + headEndTag.length);
-            done = true;
-            break;
+        if (response.status >= 300 && response.status < 400) {
+          const location = response.headers.get('location');
+          if (!location) {
+            throw new Error(
+              `Redirect status ${response.status} missing Location header`
+            );
           }
+          const redirectUrl = new URL(location, url).toString();
+          return this.fetchWithRedirect(redirectUrl, redirectCount + 1);
         }
-        if (readerDone) break;
-      }
 
-      return headBuffer;
-    } finally {
-      clearTimeout(timeout);
+        if (!response.ok) {
+          const isRetryableStatus =
+            [408, 429].includes(response.status) || response.status >= 500;
+          const isForbidden = response.status === 403;
+
+          if (isRetryableStatus) {
+            throw new RetryableException(`Retryable error: ${response.status}`);
+          }
+
+          if (isForbidden && redirectCount === 0 && attempt === 0) {
+            const fallbackUrl = this.getFallbackRootUrl(url);
+            if (fallbackUrl && fallbackUrl !== url) {
+              return this.fetchWithRedirect(fallbackUrl, redirectCount + 1);
+            }
+          }
+
+          throw new Error(`Request failed with status code ${response.status}`);
+        }
+
+        const reader = response.body?.getReader();
+        if (!reader) {
+          throw new Error('No response body');
+        }
+
+        let headBuffer = '';
+        const decoder = new TextDecoder();
+        const headEndTag = '</head>';
+        let done = false;
+
+        while (!done) {
+          const { value, done: readerDone } = await reader.read();
+          if (value) {
+            headBuffer += decoder.decode(value, { stream: true });
+            const idx = headBuffer.toLowerCase().indexOf(headEndTag);
+            if (idx !== -1) {
+              headBuffer = headBuffer.slice(0, idx + headEndTag.length);
+              done = true;
+              break;
+            }
+          }
+          if (readerDone) break;
+        }
+
+        return headBuffer;
+      } catch (error) {
+        const isLastAttempt = attempt === this.maxRetries;
+
+        const isAbortError =
+          error instanceof Error &&
+          (error.name === 'AbortError' || error.message.includes('aborted'));
+
+        const isRetryable = error instanceof RetryableException || isAbortError;
+
+        if (isRetryable) {
+          if (isLastAttempt) {
+            throw new Error(
+              `All retries failed: ${error instanceof Error ? error.message : 'unknown error'}`
+            );
+          }
+
+          const backoff = this.baseRetryDelayMs * 2 ** attempt;
+          const jitter = Math.floor(Math.random() * 100);
+          await sleep(backoff + jitter);
+          continue;
+        }
+
+        throw error;
+      } finally {
+        clearTimeout(timeout);
+      }
     }
+    throw new Error(`Failed to fetch after ${this.maxRetries + 1} attempts`);
   }
 
   private async fetchBinaryWithRedirect(
@@ -112,7 +161,7 @@ export class HttpClient {
 
       try {
         const response = await fetch(url, {
-          headers: { 'User-Agent': 'LinkraftBot/1.0' },
+          headers: this.defaultHeaders,
           redirect: 'manual',
           signal: controller.signal,
         });
@@ -187,44 +236,43 @@ export class HttpClient {
   private async handleDataUrl(
     dataUrl: string
   ): Promise<{ buffer: Buffer; contentType: string }> {
-    const match = /^data:(image\/[a-zA-Z0-9.+-]+);(base64|utf8),(.*)$/.exec(
-      dataUrl
-    );
-    if (!match) {
-      throw new Error('Invalid data URL format');
+    if (!dataUrl.startsWith('data:')) {
+      throw new Error("Invalid data URL: must start with 'data:'");
     }
 
-    const [, mimeType, encoding, data] = match;
-
-    if (!mimeType) {
-      throw new Error(`Missing image type in data URL`);
+    const firstComma = dataUrl.indexOf(',');
+    if (firstComma === -1) {
+      throw new Error('Invalid data URL: missing comma separator');
     }
 
-    if (!isValidImageMimeType(mimeType)) {
-      throw new Error(`Unsupported image type in data URL: ${mimeType}`);
+    const meta = dataUrl.slice(5, firstComma); // everything after "data:" and before comma
+    const data = dataUrl.slice(firstComma + 1);
+
+    const metaParts = meta.split(';');
+    const mimeType = metaParts[0]?.toLowerCase();
+    const isBase64 = metaParts.includes('base64');
+
+    if (!mimeType || !isValidImageMimeType(mimeType)) {
+      throw new Error(`Unsupported or missing image MIME type: ${mimeType}`);
     }
 
-    if (!data) {
-      throw new Error('Missing image data in data URL');
-    }
+    const approximateSize = isBase64
+      ? (data.length * 3) / 4
+      : decodeURIComponent(data).length;
 
-    // Check size roughly before decoding (base64 expands ~33%)
-    const approximateSize =
-      encoding === 'base64' ? (data.length * 3) / 4 : data.length;
     if (approximateSize > MAX_DATA_URL_SIZE_BYTES) {
-      throw new Error('Data URL image exceeds maximum allowed size');
+      throw new Error('Data URL exceeds maximum size');
     }
 
     let buffer: Buffer;
 
     try {
-      buffer =
-        encoding === 'base64'
-          ? Buffer.from(data, 'base64')
-          : Buffer.from(decodeURIComponent(data), 'utf8');
-    } catch (error) {
+      buffer = isBase64
+        ? Buffer.from(data, 'base64')
+        : Buffer.from(decodeURIComponent(data), 'utf8');
+    } catch (e) {
       throw new Error(
-        `Failed to decode image data from data URL: ${error instanceof Error ? error.message : 'unknown error occurred'}`
+        `Failed to decode image data: ${e instanceof Error ? e.message : 'unknown error'}`
       );
     }
 
@@ -233,5 +281,14 @@ export class HttpClient {
     }
 
     return { buffer, contentType: mimeType };
+  }
+
+  private getFallbackRootUrl(originalUrl: string): string | null {
+    try {
+      const parsed = new URL(originalUrl);
+      return `${parsed.protocol}//${parsed.host}`;
+    } catch {
+      return null;
+    }
   }
 }

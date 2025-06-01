@@ -1,5 +1,6 @@
 import { isValidFaviconUrl } from '@/common/utils/url.utils';
 import { ApiException } from '@/exceptions/api.exception';
+import { LockService } from '@/modules/lock/lock.service';
 import { LoggerService } from '@/modules/logging/logger.service';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { createHash } from 'crypto';
@@ -14,7 +15,8 @@ export class FaviconService {
     private readonly r2Service: R2Service,
     private readonly faviconRepository: FaviconRepository,
     private readonly faviconFetcherService: FaviconFetcherService,
-    private readonly logger: LoggerService
+    private readonly logger: LoggerService,
+    private readonly lockService: LockService
   ) {}
 
   private hashFaviconImage(faviconBuffer: Buffer): string {
@@ -46,33 +48,39 @@ export class FaviconService {
 
     const faviconHash = this.hashFaviconImage(faviconBuffer);
 
-    let existingFavicon = await this.faviconRepository.findByHash(faviconHash);
+    return await this.lockService.acquireLock(hostname, async () => {
+      let existingFavicon =
+        await this.faviconRepository.findByHash(faviconHash);
 
-    if (existingFavicon) {
-      return existingFavicon;
-    }
+      if (existingFavicon) {
+        return existingFavicon;
+      }
 
-    existingFavicon = await this.faviconRepository.findByDomain(hostname);
+      existingFavicon = await this.faviconRepository.findByDomain(hostname);
 
-    if (existingFavicon) {
-      const updatedFavicon = await this.updateFavicon({
-        existingFavicon,
+      if (existingFavicon) {
+        const updatedFavicon = await this.updateFavicon({
+          existingFavicon,
+          faviconBuffer,
+          faviconHash,
+        });
+        return updatedFavicon;
+      }
+
+      const r2Result = await this.r2Service.uploadImage(
         faviconBuffer,
-        faviconHash,
+        hostname
+      );
+
+      const newFavicon = this.faviconRepository.create({
+        hash: faviconHash,
+        url: r2Result.url,
+        r2Key: r2Result.r2Key,
+        domain: hostname,
       });
-      return updatedFavicon;
-    }
 
-    const r2Result = await this.r2Service.uploadImage(faviconBuffer, hostname);
-
-    const newFavicon = this.faviconRepository.create({
-      hash: faviconHash,
-      url: r2Result.url,
-      r2Key: r2Result.r2Key,
-      domain: hostname,
+      return newFavicon;
     });
-
-    return newFavicon;
   }
 
   private async updateFavicon({
@@ -84,21 +92,23 @@ export class FaviconService {
     faviconBuffer: Buffer;
     faviconHash: string;
   }): Promise<Favicon> {
-    const r2Result = await this.r2Service.uploadImage(
-      faviconBuffer,
-      faviconHash
-    );
+    return this.lockService.acquireLock(existingFavicon.domain, async () => {
+      const r2Result = await this.r2Service.uploadImage(
+        faviconBuffer,
+        faviconHash
+      );
 
-    existingFavicon.hash = faviconHash;
-    existingFavicon.url = r2Result.url;
-    existingFavicon.r2Key = r2Result.r2Key;
+      existingFavicon.hash = faviconHash;
+      existingFavicon.url = r2Result.url;
+      existingFavicon.r2Key = r2Result.r2Key;
 
-    await this.faviconRepository.update(existingFavicon.id, {
-      hash: existingFavicon.hash,
-      url: existingFavicon.url,
-      r2Key: existingFavicon.r2Key,
+      await this.faviconRepository.update(existingFavicon.id, {
+        hash: existingFavicon.hash,
+        url: existingFavicon.url,
+        r2Key: existingFavicon.r2Key,
+      });
+
+      return existingFavicon;
     });
-
-    return existingFavicon;
   }
 }

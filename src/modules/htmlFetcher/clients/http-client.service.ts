@@ -178,17 +178,25 @@ export class HttpClient {
         }
 
         if (!response.ok) {
-          if (
-            response.status >= 500 ||
-            response.status === 408 ||
-            response.status === 429
-          ) {
+          const isRetryableStatus =
+            [408, 429].includes(response.status) || response.status >= 500;
+          const isForbidden = response.status === 403;
+
+          if (isRetryableStatus) {
             throw new RetryableException(`Retryable error: ${response.status}`);
-          } else {
-            throw new Error(
-              `Request failed with status code ${response.status}`
-            );
           }
+
+          if (isForbidden && redirectCount === 0 && attempt === 0) {
+            const fallbackUrl = this.getFallbackRootUrl(url);
+            if (fallbackUrl && fallbackUrl !== url) {
+              return this.fetchBinaryWithRedirect(
+                fallbackUrl,
+                redirectCount + 1
+              );
+            }
+          }
+
+          throw new Error(`Request failed with status code ${response.status}`);
         }
 
         const arrayBuffer = await response.arrayBuffer();

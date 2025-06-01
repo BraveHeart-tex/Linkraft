@@ -4,7 +4,7 @@ import { isDataImageUrl, isValidImageMimeType } from '@/common/utils/url.utils';
 import { AppConfigService } from '@/config/app-config.service';
 import { RetryableException } from '@/exceptions/retryable.exception';
 import { Injectable } from '@nestjs/common';
-import { fetch } from 'undici';
+import { fetch, Response } from 'undici';
 
 interface HttpClientConfig {
   defaultHeaders: HeadersInit;
@@ -67,114 +67,57 @@ export class HttpClient {
     url: string,
     redirectCount: number
   ): Promise<string> {
-    if (redirectCount > this.config.maxRedirects) {
-      throw new Error(`Too many redirects (> ${this.config.maxRedirects})`);
-    }
-
-    for (let attempt = 0; attempt <= this.config.maxRetries; attempt++) {
-      const controller = new AbortController();
-      const timeout = setTimeout(
-        () => controller.abort(),
-        this.config.requestTimeoutMs
-      );
-      try {
-        const response = await fetch(url, {
-          headers: this.config.defaultHeaders,
-          redirect: 'manual',
-          signal: controller.signal,
-        });
-
-        if (response.status >= 300 && response.status < 400) {
-          const location = response.headers.get('location');
-          if (!location) {
-            throw new Error(
-              `Redirect status ${response.status} missing Location header`
-            );
-          }
-          const redirectUrl = new URL(location, url).toString();
-          return this.fetchWithRedirect(redirectUrl, redirectCount + 1);
-        }
-
-        if (!response.ok) {
-          const isRetryableStatus =
-            [408, 429].includes(response.status) || response.status >= 500;
-          const isForbidden = response.status === 403;
-
-          if (isRetryableStatus) {
-            throw new RetryableException(`Retryable error: ${response.status}`);
-          }
-
-          if (isForbidden && redirectCount === 0 && attempt === 0) {
-            const fallbackUrl = this.getFallbackRootUrl(url);
-            if (fallbackUrl && fallbackUrl !== url) {
-              return this.fetchWithRedirect(fallbackUrl, redirectCount + 1);
-            }
-          }
-
-          throw new Error(`Request failed with status code ${response.status}`);
-        }
-
-        const reader = response.body?.getReader();
-        if (!reader) {
-          throw new Error('No response body');
-        }
-
-        let headBuffer = '';
-        const decoder = new TextDecoder();
-        const headEndTag = '</head>';
-        let done = false;
-
-        while (!done) {
-          const { value, done: readerDone } = await reader.read();
-          if (value) {
-            headBuffer += decoder.decode(value, { stream: true });
-            const idx = headBuffer.toLowerCase().indexOf(headEndTag);
-            if (idx !== -1) {
-              headBuffer = headBuffer.slice(0, idx + headEndTag.length);
-              done = true;
-              break;
-            }
-          }
-          if (readerDone) break;
-        }
-
-        return headBuffer;
-      } catch (error) {
-        const isLastAttempt = attempt === this.config.maxRetries;
-
-        const isAbortError =
-          error instanceof Error &&
-          (error.name === 'AbortError' || error.message.includes('aborted'));
-
-        const isRetryable = error instanceof RetryableException || isAbortError;
-
-        if (isRetryable) {
-          if (isLastAttempt) {
-            throw new Error(
-              `All retries failed: ${error instanceof Error ? error.message : 'unknown error'}`
-            );
-          }
-
-          const backoff = this.config.baseRetryDelayMs * 2 ** attempt;
-          const jitter = Math.floor(Math.random() * 100);
-          await sleep(backoff + jitter);
-          continue;
-        }
-
-        throw error;
-      } finally {
-        clearTimeout(timeout);
+    return this.performFetch<string>(url, redirectCount, async (response) => {
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body');
       }
-    }
-    throw new Error(
-      `Failed to fetch after ${this.config.maxRetries + 1} attempts`
-    );
+
+      let headBuffer = '';
+      const decoder = new TextDecoder();
+      const headEndTag = '</head>';
+      let done = false;
+
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        if (value) {
+          headBuffer += decoder.decode(value, { stream: true });
+          const idx = headBuffer.toLowerCase().indexOf(headEndTag);
+          if (idx !== -1) {
+            headBuffer = headBuffer.slice(0, idx + headEndTag.length);
+            done = true;
+            break;
+          }
+        }
+        if (readerDone) break;
+      }
+
+      return headBuffer;
+    });
   }
 
   private async fetchBinaryWithRedirect(
     url: string,
     redirectCount: number
   ): Promise<{ buffer: Buffer; contentType: string }> {
+    return this.performFetch(url, redirectCount, async (response) => {
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const contentType = response.headers.get('content-type') || '';
+
+      if (!isValidImageMimeType(contentType)) {
+        throw new Error(`Invalid content-type for favicon: ${contentType}`);
+      }
+
+      return { buffer, contentType };
+    });
+  }
+
+  private async performFetch<T>(
+    url: string,
+    redirectCount: number,
+    responseHandler: (response: Response, url: string) => Promise<T>
+  ): Promise<T> {
     if (redirectCount > this.config.maxRedirects) {
       throw new Error(`Too many redirects (> ${this.config.maxRedirects})`);
     }
@@ -201,7 +144,11 @@ export class HttpClient {
             );
           }
           const redirectUrl = new URL(location, url).toString();
-          return this.fetchBinaryWithRedirect(redirectUrl, redirectCount + 1);
+          return this.performFetch(
+            redirectUrl,
+            redirectCount + 1,
+            responseHandler
+          );
         }
 
         if (!response.ok) {
@@ -216,9 +163,10 @@ export class HttpClient {
           if (isForbidden && redirectCount === 0 && attempt === 0) {
             const fallbackUrl = this.getFallbackRootUrl(url);
             if (fallbackUrl && fallbackUrl !== url) {
-              return this.fetchBinaryWithRedirect(
+              return this.performFetch(
                 fallbackUrl,
-                redirectCount + 1
+                redirectCount + 1,
+                responseHandler
               );
             }
           }
@@ -226,37 +174,27 @@ export class HttpClient {
           throw new Error(`Request failed with status code ${response.status}`);
         }
 
-        const arrayBuffer = await response.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        const contentType = response.headers.get('content-type') || '';
-
-        if (!isValidImageMimeType(contentType)) {
-          throw new Error(`Invalid content-type for favicon: ${contentType}`);
-        }
-
-        return { buffer, contentType };
+        return await responseHandler(response, url);
       } catch (error) {
         const isLastAttempt = attempt === this.config.maxRetries;
-
         const isAbortError =
           error instanceof Error &&
           (error.name === 'AbortError' || error.message.includes('aborted'));
-
         const isRetryable = error instanceof RetryableException || isAbortError;
 
         if (isRetryable) {
           if (isLastAttempt) {
             throw new Error(
-              `All retries failed: ${error instanceof Error ? error.message : 'unknown error'}`
+              `All retries failed: ${
+                error instanceof Error ? error.message : 'unknown error'
+              }`
             );
           }
-
           const backoff = this.config.baseRetryDelayMs * 2 ** attempt;
           const jitter = Math.floor(Math.random() * 100);
           await sleep(backoff + jitter);
           continue;
         }
-
         throw error;
       } finally {
         clearTimeout(timeout);
@@ -264,7 +202,7 @@ export class HttpClient {
     }
 
     throw new Error(
-      `Failed to fetch binary after ${this.config.maxRetries + 1} attempts`
+      `Failed to fetch after ${this.config.maxRetries + 1} attempts`
     );
   }
 

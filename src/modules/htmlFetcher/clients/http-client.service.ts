@@ -232,11 +232,6 @@ export class HttpClient {
       throw new Error('Decoded image exceeds maximum allowed size');
     }
 
-    // TODO: Sanitize SVG if mimeType === 'image/svg+xml'
-    if (mimeType === 'image/svg+xml') {
-      // e.g., buffer = sanitizeSvg(buffer.toString('utf8'))
-    }
-
     return { buffer, contentType: mimeType };
   }
 }

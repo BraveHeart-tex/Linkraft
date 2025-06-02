@@ -22,6 +22,7 @@
     "db:seed": "tsx scripts/seeders/seedRunner.ts",
     "db:migrate": "drizzle-kit migrate",
     "db:generate:custom": "drizzle-kit generate --custom",
+    "sandbox": "tsx test.ts",
     "prepare": "husky"
   },
   "dependencies": {
@@ -50,10 +51,6 @@
     "ioredis": "^5.6.1",
     "jsdom": "^26.1.0",
     "luxon": "^3.6.1",
-    "metascraper": "^5.46.11",
-    "metascraper-description": "^5.46.11",
-    "metascraper-logo-favicon": "^5.46.11",
-    "metascraper-title": "^5.46.11",
     "nestjs-cls": "^5.4.2",
     "pg": "^8.14.1",
     "pino": "^9.6.0",

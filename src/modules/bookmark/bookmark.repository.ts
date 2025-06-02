@@ -1,4 +1,6 @@
 import { encodeCursor } from '@/common/utils/cursor.utils';
+import { getCurrentTimestamp } from '@/common/utils/date.utils';
+import { CollectionOwnershipParams } from '@/modules/collection/collection.types';
 import {
   DEFAULT_PAGE_SIZE,
   MAX_PAGE_SIZE,
@@ -271,9 +273,26 @@ export class BookmarkRepository {
     return this.txHost.tx
       .update(bookmarks)
       .set({
-        deletedAt: sql`NOW()`,
+        deletedAt: getCurrentTimestamp(),
       })
       .where(and(eq(bookmarks.userId, userId), eq(bookmarks.id, bookmarkId)));
+  }
+
+  softDeleteByCollectionIdAndUserId({
+    collectionId,
+    userId,
+  }: CollectionOwnershipParams) {
+    return this.txHost.tx
+      .update(bookmarks)
+      .set({
+        deletedAt: getCurrentTimestamp(),
+      })
+      .where(
+        and(
+          eq(bookmarks.userId, userId),
+          eq(bookmarks.collectionId, collectionId)
+        )
+      );
   }
 
   deleteByIdAndUserId({ bookmarkId, userId }: BookmarkOwnershipParams) {
@@ -289,7 +308,7 @@ export class BookmarkRepository {
     return this.txHost.tx
       .update(bookmarks)
       .set({
-        deletedAt: sql`NOW()`,
+        deletedAt: getCurrentTimestamp(),
       })
       .where(
         and(eq(bookmarks.userId, userId), inArray(bookmarks.id, bookmarkIds))

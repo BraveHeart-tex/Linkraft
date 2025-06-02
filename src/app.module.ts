@@ -1,4 +1,5 @@
 import { AuthGuard } from '@/guards/auth.guard';
+import { CollectionManagementModule } from '@/modules/collection-management/collection-management.module';
 import { CorrelationIdMiddleware } from '@/modules/logging/logging.middleware';
 import { LoggingModule } from '@/modules/logging/logging.module';
 import { SessionModule } from '@/modules/session/session.module';
@@ -74,6 +75,7 @@ import { TagModule } from './modules/tag/tag.module';
     StatsModule,
     SearchModule,
     SessionModule,
+    CollectionManagementModule,
   ],
   providers: [
     {

@@ -1,4 +1,5 @@
 import { Cursor } from '@/common/validation/schemas/shared/cursor.schema';
+import { CollectionManagementService } from '@/modules/collection-management/collection-management.service';
 import { DEFAULT_PAGE_SIZE } from '@/modules/database/database.constants';
 import { CursorPipe } from '@/pipes/cursor.pipe';
 import {
@@ -30,7 +31,10 @@ import { CollectionService } from './collection.service';
 
 @Controller('collections')
 export class CollectionController {
-  constructor(private readonly collectionService: CollectionService) {}
+  constructor(
+    private readonly collectionService: CollectionService,
+    private readonly collectionManagementService: CollectionManagementService
+  ) {}
 
   @Post('/')
   @ResponseMessage('Collection created successfully')
@@ -81,7 +85,7 @@ export class CollectionController {
     @CurrentUser() userSessionInfo: UserSessionContext,
     @Param('id') collectionId: Collection['id']
   ) {
-    return this.collectionService.deleteUserCollection({
+    return this.collectionManagementService.deleteCollectionAndCleanup({
       userId: userSessionInfo.user.id,
       collectionId,
     });

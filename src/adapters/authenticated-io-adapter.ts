@@ -1,11 +1,11 @@
 import { getErrorStack } from '@/common/utils/logging.utils';
+import { parseCookies } from '@/modules/auth/utils/session-token.utils';
 import { LoggerService } from '@/modules/logging/logger.service';
 import { INestApplication, Injectable } from '@nestjs/common';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import { ExtendedError, Namespace, ServerOptions, Socket } from 'socket.io';
 import { SESSION_TOKEN_COOKIE_NAME } from 'src/modules/auth/auth.constants';
 import { SessionService } from 'src/modules/auth/session.service';
-import { parseCookies } from 'src/modules/auth/utils/token.utils';
 import {
   SOCKET_NAMESPACES,
   SocketNamespaceKey,

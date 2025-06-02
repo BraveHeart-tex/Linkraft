@@ -14,7 +14,7 @@ import { hashPassword, verifyPassword } from './utils/password.utils';
 import {
   generateAuthTokenExpiryDate,
   generateSessionToken,
-} from './utils/token.utils';
+} from './utils/session-token.utils';
 
 @Injectable()
 export class AuthService {

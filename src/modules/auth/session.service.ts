@@ -4,7 +4,7 @@ import { Transactional } from '@nestjs-cls/transactional';
 import { Injectable } from '@nestjs/common';
 import { SessionRepository } from './session.repository';
 import { SessionValidationResult } from './session.types';
-import { getSessionId } from './utils/token.utils';
+import { getSessionId } from './utils/session-token.utils';
 
 @Injectable()
 export class SessionService {

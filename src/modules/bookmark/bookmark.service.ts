@@ -1,4 +1,5 @@
 import { buildUpdateDto } from '@/common/utils/object.utils';
+import { CollectionOwnershipParams } from '@/modules/collection/collection.types';
 import { Transactional } from '@nestjs-cls/transactional';
 import { InjectQueue } from '@nestjs/bullmq';
 import { HttpStatus, Injectable } from '@nestjs/common';
@@ -177,8 +178,10 @@ export class BookmarkService {
       bookmarkId,
       userId,
     });
+  }
 
-    return null;
+  async softDeleteByCollectionIdAndUserId(params: CollectionOwnershipParams) {
+    await this.bookmarkRepository.softDeleteByCollectionIdAndUserId(params);
   }
 
   async permanentlyDeleteUserBookmark(params: BookmarkOwnershipParams) {

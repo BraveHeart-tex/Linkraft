@@ -12,6 +12,7 @@ import {
   HttpStatus,
   Param,
   ParseIntPipe,
+  ParseUUIDPipe,
   Post,
   Put,
   Query,
@@ -76,7 +77,7 @@ export class BookmarkController {
   @ResponseMessage('Bookmark restored successfully.')
   @ResponseStatus(HttpStatus.OK)
   async restoreUserBookmarkFromTrash(
-    @Param('id') bookmarkId: Bookmark['id'],
+    @Param('id', new ParseUUIDPipe()) bookmarkId: Bookmark['id'],
     @CurrentUser() userSessionContext: UserSessionContext
   ) {
     return this.bookmarkService.updateUserBookmarkById({
@@ -90,7 +91,7 @@ export class BookmarkController {
 
   @Get('/:id')
   getUserBookmarkById(
-    @Param('id') bookmarkId: Bookmark['id'],
+    @Param('id', new ParseUUIDPipe()) bookmarkId: Bookmark['id'],
     @CurrentUser() userSessionContext: UserSessionContext
   ) {
     return this.bookmarkService.getUserBookmarkById({
@@ -118,7 +119,7 @@ export class BookmarkController {
   @ResponseMessage('Bookmark updated successfully.')
   @ResponseStatus(HttpStatus.OK)
   updateUserBookmarkById(
-    @Param('id') bookmarkId: Bookmark['id'],
+    @Param('id', new ParseUUIDPipe()) bookmarkId: Bookmark['id'],
     @Body(zodPipe(updateBookmarkSchema)) updates: UpdateBookmarkDto,
     @CurrentUser() userSessionContext: UserSessionContext
   ) {
@@ -157,11 +158,11 @@ export class BookmarkController {
     );
   }
 
-  @Delete('/:id(\\d+)/permanent')
+  @Delete('/:id/permanent')
   @ResponseMessage('Bookmark deleted successfully.')
   @ResponseStatus(HttpStatus.OK)
   permanentlyDeleteUserBookmark(
-    @Param('id') bookmarkId: Bookmark['id'],
+    @Param('id', new ParseUUIDPipe()) bookmarkId: Bookmark['id'],
     @CurrentUser() userSessionContext: UserSessionContext
   ) {
     return this.bookmarkService.permanentlyDeleteUserBookmark({
@@ -174,7 +175,7 @@ export class BookmarkController {
   @ResponseMessage('Bookmark moved to trash successfully.')
   @ResponseStatus(HttpStatus.OK)
   softDeleteUserBookmark(
-    @Param('id') bookmarkId: Bookmark['id'],
+    @Param('id', new ParseUUIDPipe()) bookmarkId: Bookmark['id'],
     @CurrentUser() userSessionContext: UserSessionContext
   ) {
     return this.bookmarkService.softDeleteUserBookmark({

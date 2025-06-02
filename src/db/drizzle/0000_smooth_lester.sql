@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
 CREATE TABLE "bookmark_tags" (
 	"bookmark_id" uuid NOT NULL,
 	"tag_id" uuid NOT NULL,

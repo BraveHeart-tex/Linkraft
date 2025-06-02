@@ -15,7 +15,6 @@ import { AppConfigService } from 'src/config/app-config.service';
 import { configSchema } from 'src/config/config.validation.schema';
 import { BookmarkModule } from 'src/modules/bookmark/bookmark.module';
 import { SearchModule } from 'src/modules/search/search.module';
-import { StatsModule } from 'src/modules/stats/stats.module';
 import { CurrentUserInterceptor } from './common/interceptors/current-user.interceptor';
 import { ExtendCookieMiddleware } from './common/middleware/extend-cookie.middleware';
 import { AuthModule } from './modules/auth/auth.module';
@@ -72,7 +71,6 @@ import { TagModule } from './modules/tag/tag.module';
     BookmarkModule,
     TagModule,
     BookmarkImportModule,
-    StatsModule,
     SearchModule,
     SessionModule,
     CollectionManagementModule,

@@ -80,7 +80,7 @@ export const bookmarks = pgTable(
       .$defaultFn(getCurrentTimestamp)
       .notNull(),
     collectionId: uuid('collection_id').references(() => collections.id, {
-      onDelete: 'cascade',
+      onDelete: 'set null',
     }),
     deletedAt: customTimestamp('deleted_at').default(sql`null`),
     isMetadataPending: boolean('is_metadata_pending').notNull(),

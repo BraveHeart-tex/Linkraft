@@ -3,6 +3,7 @@ import { sleep } from '@/common/utils/sleep.utils';
 import { isDataImageUrl, isValidImageMimeType } from '@/common/utils/url.utils';
 import { AppConfigService } from '@/config/app-config.service';
 import { RetryableException } from '@/exceptions/retryable.exception';
+import { IHttpClient } from '@/modules/htmlFetcher/html-fetcher.types';
 import { Injectable } from '@nestjs/common';
 import { fetch, Response } from 'undici';
 
@@ -16,7 +17,7 @@ interface HttpClientConfig {
 }
 
 @Injectable()
-export class HttpClient {
+export class HttpClient implements IHttpClient {
   private readonly config: HttpClientConfig;
 
   constructor(private readonly configService: AppConfigService) {

@@ -1,3 +1,4 @@
+import { encodeCursor } from '@/common/utils/cursor.utils';
 import {
   DEFAULT_PAGE_SIZE,
   MAX_PAGE_SIZE,
@@ -13,9 +14,7 @@ import {
   isNotNull,
   isNull,
   lt,
-  ne,
   or,
-  SQL,
   sql,
 } from 'drizzle-orm';
 import {
@@ -23,6 +22,7 @@ import {
   bookmarks,
   bookmarkTags,
   collections,
+  favicons,
   Tag,
   tags,
   User,
@@ -58,22 +58,20 @@ export class BookmarkRepository {
   > {
     limit = Math.min(limit, MAX_PAGE_SIZE);
 
-    const conditions = [
-      eq(bookmarks.userId, userId),
-      trashed ? isNotNull(bookmarks.deletedAt) : isNull(bookmarks.deletedAt),
-      collectionId ? eq(bookmarks.collectionId, collectionId) : undefined,
-      searchQuery
-        ? or(
-            ilike(bookmarks.title, `%${searchQuery}%`),
-            ilike(bookmarks.description, `%${searchQuery}%`)
-          )
-        : undefined,
-      cursor ? lt(bookmarks.id, cursor) : undefined,
-    ].filter((cond): cond is SQL => Boolean(cond));
-
     const query = this.txHost.tx
       .select({
-        bookmark: bookmarks,
+        bookmark: {
+          id: bookmarks.id,
+          userId: bookmarks.userId,
+          url: bookmarks.url,
+          title: bookmarks.title,
+          description: bookmarks.description,
+          faviconUrl: favicons.url,
+          createdAt: bookmarks.createdAt,
+          deletedAt: bookmarks.deletedAt,
+          collectionId: bookmarks.collectionId,
+          isMetadataPending: bookmarks.isMetadataPending,
+        },
         tags: sql<Pick<Tag, 'id' | 'name'>[]>`COALESCE(
         json_agg(json_build_object('id', ${tags.id}, 'name', ${tags.name}))
         FILTER (WHERE ${tags.id} IS NOT NULL),
@@ -85,12 +83,36 @@ export class BookmarkRepository {
         },
       })
       .from(bookmarks)
-      .where(and(...conditions))
+      .where(
+        and(
+          eq(bookmarks.userId, userId),
+          trashed
+            ? isNotNull(bookmarks.deletedAt)
+            : isNull(bookmarks.deletedAt),
+          collectionId ? eq(bookmarks.collectionId, collectionId) : undefined,
+          searchQuery
+            ? or(
+                ilike(bookmarks.title, `%${searchQuery}%`),
+                ilike(bookmarks.description, `%${searchQuery}%`)
+              )
+            : undefined,
+          cursor
+            ? or(
+                lt(bookmarks.createdAt, cursor.createdAt),
+                and(
+                  eq(bookmarks.createdAt, cursor.createdAt),
+                  lt(bookmarks.id, cursor.id)
+                )
+              )
+            : undefined
+        )
+      )
       .leftJoin(bookmarkTags, eq(bookmarkTags.bookmarkId, bookmarks.id))
       .leftJoin(tags, eq(bookmarkTags.tagId, tags.id))
       .leftJoin(collections, eq(bookmarks.collectionId, collections.id))
-      .groupBy(bookmarks.id, collections.id)
-      .orderBy(desc(bookmarks.id))
+      .leftJoin(favicons, eq(bookmarks.faviconId, favicons.id))
+      .groupBy(bookmarks.id, collections.id, favicons.id)
+      .orderBy(desc(bookmarks.createdAt), desc(bookmarks.id))
       .$dynamic();
 
     query.limit(limit);
@@ -103,10 +125,19 @@ export class BookmarkRepository {
       collection: row.collection,
     }));
 
-    const nextCursor =
-      items.length === limit ? (items[items.length - 1]?.id as number) : null;
+    const lastItem = items.length === limit ? items[items.length - 1] : null;
 
-    return { items, nextCursor };
+    return {
+      items,
+      nextCursor: encodeCursor(
+        lastItem
+          ? {
+              createdAt: lastItem.createdAt,
+              id: lastItem.id,
+            }
+          : null
+      ),
+    };
   }
 
   findByIdAndUserId({ bookmarkId, userId }: BookmarkOwnershipParams) {
@@ -122,7 +153,18 @@ export class BookmarkRepository {
   }: BookmarkOwnershipParams): Promise<BookmarkWithTagsAndCollection | null> {
     const query = this.txHost.tx
       .select({
-        bookmark: bookmarks,
+        bookmark: {
+          id: bookmarks.id,
+          userId: bookmarks.userId,
+          url: bookmarks.url,
+          title: bookmarks.title,
+          description: bookmarks.description,
+          faviconUrl: favicons.url,
+          createdAt: bookmarks.createdAt,
+          deletedAt: bookmarks.deletedAt,
+          collectionId: bookmarks.collectionId,
+          isMetadataPending: bookmarks.isMetadataPending,
+        },
         tags: sql<Pick<Tag, 'id' | 'name'>[]>`COALESCE(
           json_agg(json_build_object('id', ${tags.id}, 'name', ${tags.name}))
           FILTER (WHERE ${tags.id} IS NOT NULL),
@@ -138,7 +180,8 @@ export class BookmarkRepository {
       .leftJoin(bookmarkTags, eq(bookmarkTags.bookmarkId, bookmarks.id))
       .leftJoin(tags, eq(bookmarkTags.tagId, tags.id))
       .leftJoin(collections, eq(bookmarks.collectionId, collections.id))
-      .groupBy(bookmarks.id, collections.id)
+      .leftJoin(favicons, eq(bookmarks.faviconId, favicons.id))
+      .groupBy(bookmarks.id, collections.id, favicons.id)
       .limit(1)
       .$dynamic();
 
@@ -161,7 +204,18 @@ export class BookmarkRepository {
   > {
     const result = await this.txHost.tx
       .select({
-        bookmark: bookmarks,
+        bookmark: {
+          id: bookmarks.id,
+          userId: bookmarks.userId,
+          url: bookmarks.url,
+          title: bookmarks.title,
+          description: bookmarks.description,
+          faviconUrl: favicons.url,
+          createdAt: bookmarks.createdAt,
+          deletedAt: bookmarks.deletedAt,
+          collectionId: bookmarks.collectionId,
+          isMetadataPending: bookmarks.isMetadataPending,
+        },
         tags: sql<Pick<Tag, 'id' | 'name'>[]>`COALESCE(
           json_agg(json_build_object('id', ${tags.id}, 'name', ${tags.name}))
           FILTER (WHERE ${tags.id} IS NOT NULL),
@@ -176,9 +230,10 @@ export class BookmarkRepository {
       .where(and(eq(bookmarks.id, bookmarkId), eq(bookmarks.userId, userId)))
       .leftJoin(bookmarkTags, eq(bookmarkTags.bookmarkId, bookmarks.id))
       .leftJoin(tags, eq(bookmarkTags.tagId, tags.id))
+      .leftJoin(favicons, eq(favicons.id, bookmarks.faviconId))
       .leftJoin(collections, eq(bookmarks.collectionId, collections.id))
       .limit(1)
-      .groupBy(bookmarks.id, collections.id);
+      .groupBy(bookmarks.id, collections.id, favicons.id);
 
     if (!result[0]) return;
 
@@ -187,21 +242,6 @@ export class BookmarkRepository {
       collection: result[0].collection,
       tags: result[0].tags,
     };
-  }
-
-  async userHasBookmarkWithUrl({
-    url,
-    userId,
-  }: {
-    url: string;
-    userId: User['id'];
-  }) {
-    const result = await this.txHost.tx
-      .select()
-      .from(bookmarks)
-      .where(and(eq(bookmarks.userId, userId), eq(bookmarks.url, url)));
-
-    return result[0];
   }
 
   async create(data: BookmarkInsertDto) {
@@ -257,24 +297,6 @@ export class BookmarkRepository {
       .returning({
         deleteId: bookmarks.id,
       });
-  }
-
-  async findByUserIdAndUrlExcludingBookmark({
-    userId,
-    url,
-    excludeBookmarkId,
-  }: {
-    userId: number;
-    url: string;
-    excludeBookmarkId: number;
-  }) {
-    return this.txHost.tx.query.bookmarks.findFirst({
-      where: and(
-        eq(bookmarks.userId, userId),
-        eq(bookmarks.url, url),
-        ne(bookmarks.id, excludeBookmarkId)
-      ),
-    });
   }
 
   async bulkDeleteTrashedUserBookmarks(userId: User['id']) {

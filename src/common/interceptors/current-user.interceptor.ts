@@ -4,7 +4,7 @@ import {
   Injectable,
   NestInterceptor,
 } from '@nestjs/common';
-import { Observable } from 'rxjs';
+import type { Observable } from 'rxjs';
 import { SESSION_TOKEN_COOKIE_NAME } from 'src/modules/auth/auth.constants';
 import { SessionService } from 'src/modules/auth/session.service';
 import { toUserWithoutPassword } from 'src/modules/user/mappers/user.mapper';
@@ -21,7 +21,7 @@ export class CurrentUserInterceptor implements NestInterceptor {
 
     if (token) {
       const { user, session } =
-        await this.sessionService.validateAndRefreshSession(token);
+        await this.sessionService.validateSession(token);
       if (user && session) {
         request.currentUser = toUserWithoutPassword(user);
         request.currentSession = session;

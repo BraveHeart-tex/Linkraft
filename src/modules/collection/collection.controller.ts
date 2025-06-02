@@ -1,4 +1,6 @@
+import { Cursor } from '@/common/validation/schemas/shared/cursor.schema';
 import { DEFAULT_PAGE_SIZE } from '@/modules/database/database.constants';
+import { CursorPipe } from '@/pipes/cursor.pipe';
 import {
   Body,
   Controller,
@@ -11,7 +13,6 @@ import {
   Post,
   Put,
   Query,
-  UseGuards,
 } from '@nestjs/common';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { ResponseMessage } from 'src/common/decorators/response-message.decorator';
@@ -23,13 +24,11 @@ import {
 } from 'src/common/validation/schemas/collection/collection.schema';
 import { Collection, CollectionInsertDto } from 'src/db/schema';
 import { ApiException } from 'src/exceptions/api.exception';
-import { AuthGuard } from 'src/guards/auth.guard';
 import { zodPipe } from 'src/pipes/zod.pipe.factory';
 import { UserSessionContext } from '../auth/session.types';
 import { CollectionService } from './collection.service';
 
 @Controller('collections')
-@UseGuards(AuthGuard)
 export class CollectionController {
   constructor(private readonly collectionService: CollectionService) {}
 
@@ -50,7 +49,7 @@ export class CollectionController {
   @Get('/')
   @ResponseStatus(HttpStatus.OK)
   getCollectionsForUser(
-    @Query('cursor', new DefaultValuePipe(0), ParseIntPipe) cursor: number,
+    @Query('cursor', new CursorPipe()) cursor: Cursor,
     @Query('pageSize', new DefaultValuePipe(DEFAULT_PAGE_SIZE), ParseIntPipe)
     pageSize: number,
     @Query('search', new DefaultValuePipe('')) searchQuery: string,
@@ -67,7 +66,7 @@ export class CollectionController {
   @Get('/:id')
   @ResponseStatus(HttpStatus.OK)
   getAccessibleCollectionById(
-    @Param('id', ParseIntPipe) collectionId: Collection['id'],
+    @Param('id') collectionId: Collection['id'],
     @CurrentUser() userSessionInfo: UserSessionContext
   ) {
     return this.collectionService.getAccessibleCollectionById({
@@ -80,7 +79,7 @@ export class CollectionController {
   @ResponseStatus(HttpStatus.OK)
   deleteUserCollection(
     @CurrentUser() userSessionInfo: UserSessionContext,
-    @Param('id', ParseIntPipe) collectionId: Collection['id']
+    @Param('id') collectionId: Collection['id']
   ) {
     return this.collectionService.deleteUserCollection({
       userId: userSessionInfo.user.id,
@@ -95,7 +94,7 @@ export class CollectionController {
     @Body(zodPipe(UpdateCollectionSchema))
     updateCollectionDto: Partial<CollectionInsertDto>,
     @CurrentUser() userSessionInfo: UserSessionContext,
-    @Param('id', ParseIntPipe) collectionId: number
+    @Param('id') collectionId: Collection['id']
   ) {
     if (Object.keys(updateCollectionDto).length === 0) {
       throw new ApiException(

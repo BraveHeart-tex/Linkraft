@@ -1,204 +1,268 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
-import * as http from 'http';
-import * as https from 'https';
-import { IHttpClient } from 'src/modules/htmlFetcher/html-fetcher.types';
+import { HTTP_CLIENT_DEFAULTS } from '@/common/constants/http.constants';
+import { sleep } from '@/common/utils/sleep.utils';
+import { isDataImageUrl, isValidImageMimeType } from '@/common/utils/url.utils';
+import { AppConfigService } from '@/config/app-config.service';
+import { RetryableException } from '@/exceptions/retryable.exception';
+import { IHttpClient } from '@/modules/htmlFetcher/html-fetcher.types';
+import { Injectable } from '@nestjs/common';
+import { fetch, Response } from 'undici';
+
+interface HttpClientConfig {
+  defaultHeaders: HeadersInit;
+  maxRedirects: number;
+  maxRetries: number;
+  baseRetryDelayMs: number;
+  requestTimeoutMs: number;
+  maxDataUrlSizeBytes: number;
+}
 
 @Injectable()
 export class HttpClient implements IHttpClient {
-  private readonly maxRedirects = 5;
-  private readonly requestTimeoutMs = 10_000;
+  private readonly config: HttpClientConfig;
+
+  constructor(private readonly configService: AppConfigService) {
+    this.config = {
+      defaultHeaders: HTTP_CLIENT_DEFAULTS.DEFAULT_HEADERS,
+      maxRedirects: this.configService.get(
+        'HTTP_MAX_REDIRECTS',
+        HTTP_CLIENT_DEFAULTS.MAX_REDIRECTS
+      ),
+      maxRetries: this.configService.get(
+        'HTTP_MAX_RETRIES',
+        HTTP_CLIENT_DEFAULTS.MAX_RETRIES
+      ),
+      requestTimeoutMs: this.configService.get(
+        'HTTP_TIMEOUT_MS',
+        HTTP_CLIENT_DEFAULTS.TIMEOUT_MS
+      ),
+      baseRetryDelayMs: this.configService.get(
+        'HTTP_BASE_RETRY_DELAY_MS',
+        HTTP_CLIENT_DEFAULTS.BASE_RETRY_DELAY_MS
+      ),
+      maxDataUrlSizeBytes: this.configService.get(
+        'HTTP_MAX_DATA_URL_SIZE_BYTES',
+        HTTP_CLIENT_DEFAULTS.MAX_DATA_URL_SIZE_BYTES
+      ),
+    };
+  }
 
   async fetch(url: string): Promise<string> {
     return this.fetchWithRedirect(url, 0);
   }
 
   async fetchBinary(
-    url: string
+    rawUrl: string
   ): Promise<{ buffer: Buffer; contentType: string }> {
+    if (isDataImageUrl(rawUrl)) {
+      return this.handleDataUrl(rawUrl);
+    }
+    let url = rawUrl;
+    if (url.startsWith('//')) {
+      url = 'https:' + url;
+    }
+
     return this.fetchBinaryWithRedirect(url, 0);
   }
 
-  private normalizeUrl(rawUrl: string): string {
-    try {
-      const url = new URL(rawUrl);
-      // Ensures pathname, search, etc. are properly encoded
-      return url.toString();
-    } catch {
-      // Try to escape manually as a fallback
-      return encodeURI(rawUrl);
-    }
-  }
-
-  private fetchWithRedirect(
+  private async fetchWithRedirect(
     url: string,
     redirectCount: number
   ): Promise<string> {
-    return new Promise((resolve, reject) => {
-      url = this.normalizeUrl(url);
-      if (redirectCount > this.maxRedirects) {
-        return reject(new Error(`Too many redirects (> ${this.maxRedirects})`));
+    return this.performFetch<string>(url, redirectCount, async (response) => {
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body');
       }
 
-      const client = url.startsWith('https') ? https : http;
+      let headBuffer = '';
+      const decoder = new TextDecoder();
+      const headEndTag = '</head>';
+      let done = false;
 
-      const req = client.get(
-        url,
-        { headers: { 'User-Agent': 'LinkraftBot/1.0' } },
-        (res) => {
-          // Handle redirects
-          if (
-            res.statusCode &&
-            [
-              HttpStatus.MOVED_PERMANENTLY,
-              HttpStatus.FOUND,
-              HttpStatus.SEE_OTHER,
-              HttpStatus.TEMPORARY_REDIRECT,
-              HttpStatus.PERMANENT_REDIRECT,
-            ].includes(res.statusCode)
-          ) {
-            const location = res.headers.location;
-            if (!location) {
-              res.destroy();
-              return reject(
-                new Error(
-                  `Redirect status ${res.statusCode} missing Location header`
-                )
-              );
-            }
-            let redirectUrl: string;
-            try {
-              redirectUrl = new URL(location, url).toString();
-            } catch {
-              res.destroy();
-              return reject(new Error(`Invalid redirect URL: ${location}`));
-            }
-            res.destroy();
-            return resolve(
-              this.fetchWithRedirect(redirectUrl, redirectCount + 1)
-            );
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        if (value) {
+          headBuffer += decoder.decode(value, { stream: true });
+          const idx = headBuffer.toLowerCase().indexOf(headEndTag);
+          if (idx !== -1) {
+            headBuffer = headBuffer.slice(0, idx + headEndTag.length);
+            done = true;
+            break;
           }
-
-          // Non-success status codes
-          if (
-            res.statusCode &&
-            (res.statusCode < 200 || res.statusCode >= 300)
-          ) {
-            res.destroy();
-            return reject(
-              new Error(`Request failed with status code ${res.statusCode}`)
-            );
-          }
-
-          let headBuffer = '';
-          const headEndTag = '</head>';
-          let done = false;
-
-          res.on('data', (chunk: Buffer) => {
-            if (done) return;
-            headBuffer += chunk.toString();
-            const idx = headBuffer.toLowerCase().indexOf(headEndTag);
-            if (idx !== -1) {
-              done = true;
-              headBuffer = headBuffer.slice(0, idx + headEndTag.length);
-              res.destroy();
-              resolve(headBuffer);
-            }
-          });
-
-          res.on('end', () => {
-            if (!done) {
-              resolve(headBuffer);
-            }
-          });
-
-          res.on('error', (err) => {
-            if (!done) {
-              done = true;
-              reject(err);
-            }
-          });
         }
-      );
+        if (readerDone) break;
+      }
 
-      req.on('error', reject);
-      req.setTimeout(this.requestTimeoutMs, () => {
-        req.destroy(new Error('Request timed out'));
-      });
+      return headBuffer;
     });
   }
 
-  private fetchBinaryWithRedirect(
+  private async fetchBinaryWithRedirect(
     url: string,
     redirectCount: number
   ): Promise<{ buffer: Buffer; contentType: string }> {
-    url = this.normalizeUrl(url);
-    return new Promise((resolve, reject) => {
-      if (redirectCount > this.maxRedirects) {
-        return reject(new Error(`Too many redirects (> ${this.maxRedirects})`));
+    return this.performFetch(url, redirectCount, async (response) => {
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const contentType = response.headers.get('content-type') || '';
+
+      if (!isValidImageMimeType(contentType)) {
+        throw new Error(`Invalid content-type for favicon: ${contentType}`);
       }
 
-      const client = url.startsWith('https') ? https : http;
+      return { buffer, contentType };
+    });
+  }
 
-      const req = client.get(
-        url,
-        { headers: { 'User-Agent': 'LinkraftBot/1.0' } },
-        (res) => {
-          // Handle redirects
-          if (
-            res.statusCode &&
-            [301, 302, 303, 307, 308].includes(res.statusCode)
-          ) {
-            const location = res.headers.location;
-            if (!location) {
-              res.destroy();
-              return reject(
-                new Error(
-                  `Redirect status ${res.statusCode} missing Location header`
-                )
-              );
-            }
-            let redirectUrl: string;
-            try {
-              redirectUrl = new URL(location, url).toString();
-            } catch {
-              res.destroy();
-              return reject(new Error(`Invalid redirect URL: ${location}`));
-            }
-            res.destroy();
-            return resolve(
-              this.fetchBinaryWithRedirect(redirectUrl, redirectCount + 1)
-            );
-          }
+  private async performFetch<T>(
+    url: string,
+    redirectCount: number,
+    responseHandler: (response: Response, url: string) => Promise<T>
+  ): Promise<T> {
+    if (redirectCount > this.config.maxRedirects) {
+      throw new Error(`Too many redirects (> ${this.config.maxRedirects})`);
+    }
 
-          if (
-            res.statusCode &&
-            (res.statusCode < 200 || res.statusCode >= 300)
-          ) {
-            res.destroy();
-            return reject(
-              new Error(`Request failed with status code ${res.statusCode}`)
-            );
-          }
-
-          const contentType = res.headers['content-type'] || '';
-
-          const chunks: Buffer[] = [];
-          res.on('data', (chunk) => chunks.push(chunk));
-          res.on('end', () => {
-            resolve({
-              buffer: Buffer.concat(chunks),
-              contentType,
-            });
-          });
-
-          res.on('error', reject);
-        }
+    for (let attempt = 0; attempt <= this.config.maxRetries; attempt++) {
+      const controller = new AbortController();
+      const timeout = setTimeout(
+        () => controller.abort(),
+        this.config.requestTimeoutMs
       );
 
-      req.on('error', reject);
-      req.setTimeout(this.requestTimeoutMs, () => {
-        req.destroy(new Error('Request timed out'));
-      });
-    });
+      try {
+        const response = await fetch(url, {
+          headers: this.config.defaultHeaders,
+          redirect: 'manual',
+          signal: controller.signal,
+        });
+
+        if (response.status >= 300 && response.status < 400) {
+          const location = response.headers.get('location');
+          if (!location) {
+            throw new Error(
+              `Redirect status ${response.status} missing Location header`
+            );
+          }
+          const redirectUrl = new URL(location, url).toString();
+          return this.performFetch(
+            redirectUrl,
+            redirectCount + 1,
+            responseHandler
+          );
+        }
+
+        if (!response.ok) {
+          const isRetryableStatus =
+            [408, 429].includes(response.status) || response.status >= 500;
+          const isForbidden = response.status === 403;
+
+          if (isRetryableStatus) {
+            throw new RetryableException(`Retryable error: ${response.status}`);
+          }
+
+          if (isForbidden && redirectCount === 0 && attempt === 0) {
+            const fallbackUrl = this.getFallbackRootUrl(url);
+            if (fallbackUrl && fallbackUrl !== url) {
+              return this.performFetch(
+                fallbackUrl,
+                redirectCount + 1,
+                responseHandler
+              );
+            }
+          }
+
+          throw new Error(`Request failed with status code ${response.status}`);
+        }
+
+        return await responseHandler(response, url);
+      } catch (error) {
+        const isLastAttempt = attempt === this.config.maxRetries;
+        const isAbortError =
+          error instanceof Error &&
+          (error.name === 'AbortError' || error.message.includes('aborted'));
+        const isRetryable = error instanceof RetryableException || isAbortError;
+
+        if (isRetryable) {
+          if (isLastAttempt) {
+            throw new Error(
+              `All retries failed: ${
+                error instanceof Error ? error.message : 'unknown error'
+              }`
+            );
+          }
+          const backoff = this.config.baseRetryDelayMs * 2 ** attempt;
+          const jitter = Math.floor(Math.random() * 100);
+          await sleep(backoff + jitter);
+          continue;
+        }
+        throw error;
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
+
+    throw new Error(
+      `Failed to fetch after ${this.config.maxRetries + 1} attempts`
+    );
+  }
+
+  private async handleDataUrl(
+    dataUrl: string
+  ): Promise<{ buffer: Buffer; contentType: string }> {
+    if (!dataUrl.startsWith('data:')) {
+      throw new Error("Invalid data URL: must start with 'data:'");
+    }
+
+    const firstComma = dataUrl.indexOf(',');
+    if (firstComma === -1) {
+      throw new Error('Invalid data URL: missing comma separator');
+    }
+
+    const meta = dataUrl.slice(5, firstComma); // everything after "data:" and before comma
+    const data = dataUrl.slice(firstComma + 1);
+
+    const metaParts = meta.split(';');
+    const mimeType = metaParts[0]?.toLowerCase();
+    const isBase64 = metaParts.includes('base64');
+
+    if (!mimeType || !isValidImageMimeType(mimeType)) {
+      throw new Error(`Unsupported or missing image MIME type: ${mimeType}`);
+    }
+
+    const approximateSize = isBase64
+      ? (data.length * 3) / 4
+      : decodeURIComponent(data).length;
+
+    if (approximateSize > this.config.maxDataUrlSizeBytes) {
+      throw new Error('Data URL exceeds maximum size');
+    }
+
+    let buffer: Buffer;
+
+    try {
+      buffer = isBase64
+        ? Buffer.from(data, 'base64')
+        : Buffer.from(decodeURIComponent(data), 'utf8');
+    } catch (e) {
+      throw new Error(
+        `Failed to decode image data: ${e instanceof Error ? e.message : 'unknown error'}`
+      );
+    }
+
+    if (buffer.length > this.config.maxDataUrlSizeBytes) {
+      throw new Error('Decoded image exceeds maximum allowed size');
+    }
+
+    return { buffer, contentType: mimeType };
+  }
+
+  private getFallbackRootUrl(originalUrl: string): string | null {
+    try {
+      const parsed = new URL(originalUrl);
+      return `${parsed.protocol}//${parsed.host}`;
+    } catch {
+      return null;
+    }
   }
 }

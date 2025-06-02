@@ -1,11 +1,13 @@
+import { AuthGuard } from '@/guards/auth.guard';
 import { CorrelationIdMiddleware } from '@/modules/logging/logging.middleware';
 import { LoggingModule } from '@/modules/logging/logging.module';
+import { SessionModule } from '@/modules/session/session.module';
 import { ClsPluginTransactional } from '@nestjs-cls/transactional';
 import { TransactionalAdapterDrizzleOrm } from '@nestjs-cls/transactional-adapter-drizzle-orm';
 import { BullModule } from '@nestjs/bullmq';
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ClsModule } from 'nestjs-cls';
 import { AppConfigModule } from 'src/config/app-config.module';
 import { AppConfigService } from 'src/config/app-config.service';
@@ -56,8 +58,8 @@ import { TagModule } from './modules/tag/tag.module';
       imports: [AppConfigModule],
       useFactory: async (appConfigService: AppConfigService) => ({
         connection: {
-          host: appConfigService.get('REDIS_HOST'),
-          port: appConfigService.get('REDIS_PORT'),
+          host: appConfigService.getOrThrow('REDIS_HOST'),
+          port: appConfigService.getOrThrow('REDIS_PORT'),
         },
       }),
       inject: [AppConfigService],
@@ -71,11 +73,16 @@ import { TagModule } from './modules/tag/tag.module';
     BookmarkImportModule,
     StatsModule,
     SearchModule,
+    SessionModule,
   ],
   providers: [
     {
       provide: APP_INTERCEPTOR,
       useClass: CurrentUserInterceptor,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: AuthGuard,
     },
   ],
 })

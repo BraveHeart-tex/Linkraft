@@ -1,3 +1,4 @@
+import { Cursor } from '@/common/validation/schemas/shared/cursor.schema';
 import { PaginationSearchParams } from '@/modules/database/database.types';
 import { UpdateBookmarkDto } from 'src/common/validation/schemas/bookmark/bookmark.schema';
 import { bookmarks, Collection, SlimTag, User } from 'src/db/schema';
@@ -13,14 +14,16 @@ export type UpdateBookmarkParams = BookmarkOwnershipParams & {
 
 export interface FindUserBookmarksParams extends PaginationSearchParams {
   userId: User['id'];
-  cursor: number | null;
+  cursor: Cursor | null;
   trashed?: boolean;
   collectionId?: Collection['id'];
 }
 
 export type Bookmark = typeof bookmarks.$inferSelect;
+export type BookmarkWithFaviconUrl = Bookmark & { faviconUrl: string | null };
 
-export interface BookmarkWithTagsAndCollection extends Bookmark {
+export interface BookmarkWithTagsAndCollection
+  extends Omit<BookmarkWithFaviconUrl, 'faviconId' | 'tsv'> {
   collection: Pick<Collection, 'id' | 'name'> | null;
   tags: SlimTag[];
 }

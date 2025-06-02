@@ -1,1 +1,0 @@
-CREATE UNIQUE INDEX "emailUniqueIndex" ON "users" USING btree ("email");

@@ -1,1 +1,0 @@
-DROP TABLE "access_controls" CASCADE;

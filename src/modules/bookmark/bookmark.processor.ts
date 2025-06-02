@@ -1,16 +1,16 @@
 import { getErrorStack } from '@/common/utils/logging.utils';
+import { BookmarkImportProgressService } from '@/modules/bookmark-import-progress/bookmark-import-progress.service';
 import { LoggerService } from '@/modules/logging/logger.service';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { OnModuleDestroy } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { FetchBookmarkMetadataJob } from 'src/common/processors/processors.types';
 import { BOOKMARK_METADATA_QUEUE_NAME } from 'src/common/processors/queueNames';
-import { BookmarkImportProgressService } from 'src/modules/bookmark-import/bookmark-import-progress.service';
 import { BookmarkGateway } from 'src/modules/bookmark/bookmark.gateway';
 import { BookmarkRepository } from 'src/modules/bookmark/bookmark.repository';
 import { FaviconService } from 'src/modules/favicon/favicon.service';
 import { HtmlFetcherService } from 'src/modules/htmlFetcher/html-fetcher.service';
-import { truncateBookmarkTitle } from './bookmark.utils';
+import { ensureBookmarkTitleLength } from './bookmark.utils';
 
 @Processor(BOOKMARK_METADATA_QUEUE_NAME, {
   concurrency: 10,
@@ -45,24 +45,26 @@ export class BookmarkMetadataProcessor
       const updates = {
         ...(job.data?.onlyFavicon
           ? {
-              faviconUrl: metadata?.favicon
+              faviconId: metadata?.favicon
                 ? (
-                    await this.faviconService.storeFaviconFromUrl(
-                      metadata.favicon
-                    )
-                  ).url
+                    await this.faviconService.storeFaviconFromUrl({
+                      hostname: new URL(job.data.url).hostname,
+                      faviconUrl: metadata.favicon,
+                    })
+                  ).id
                 : null,
             }
           : {
               title: metadata.title
-                ? truncateBookmarkTitle(metadata.title)
+                ? ensureBookmarkTitleLength(metadata.title)
                 : 'Untitled',
-              faviconUrl: metadata?.favicon
+              faviconId: metadata?.favicon
                 ? (
-                    await this.faviconService.storeFaviconFromUrl(
-                      metadata.favicon
-                    )
-                  ).url
+                    await this.faviconService.storeFaviconFromUrl({
+                      hostname: new URL(job.data.url).hostname,
+                      faviconUrl: metadata.favicon,
+                    })
+                  ).id
                 : null,
             }),
         isMetadataPending: false,
@@ -91,7 +93,7 @@ export class BookmarkMetadataProcessor
       const updates = {
         isMetadataPending: false,
         title: 'Metadata fetch failed',
-        faviconUrl: null,
+        faviconId: null,
       };
 
       await this.bookmarkRepository.updateByIdAndUserId({

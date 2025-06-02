@@ -1,29 +1,6 @@
-import { MAX_BOOKMARK_TITLE_LENGTH } from 'src/db/schema';
-import { Bookmark } from './bookmark.types';
+import { MAX_BOOKMARK_TITLE_LENGTH } from './bookmark.constants';
 
-export const buildBookmarkUpdateDto = (
-  initialBookmarkValue: Bookmark,
-  updates: Partial<Bookmark>
-): Partial<Bookmark> => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const changedFields = {} as Partial<Record<keyof Bookmark, any>>;
-
-  Object.entries(updates).forEach(([key, newValue]) => {
-    const k = key as keyof Bookmark;
-    const initialValue = initialBookmarkValue[k];
-
-    if (
-      !Object.is(initialValue, newValue) &&
-      Object.prototype.hasOwnProperty.call(initialBookmarkValue, key)
-    ) {
-      changedFields[k] = newValue;
-    }
-  });
-
-  return changedFields;
-};
-
-export const truncateBookmarkTitle = (title: string): string =>
+export const ensureBookmarkTitleLength = (title: string): string =>
   title.length > MAX_BOOKMARK_TITLE_LENGTH
     ? title.slice(0, MAX_BOOKMARK_TITLE_LENGTH)
     : title;

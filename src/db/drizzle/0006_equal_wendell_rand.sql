@@ -1,0 +1,1 @@
+CREATE INDEX "bookmark_favicon_id_index" ON "bookmarks" USING btree ("favicon_id");

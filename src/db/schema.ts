@@ -1,28 +1,29 @@
+import { getCurrentTimestamp } from '@/common/utils/date.utils';
+import { MAX_BOOKMARK_TITLE_LENGTH } from '@/modules/bookmark/bookmark.constants';
 import { relations, sql } from 'drizzle-orm';
 import {
+  AnyPgColumn,
   boolean,
   index,
-  integer,
   pgTable,
   primaryKey,
-  serial,
   text,
-  timestamp,
   uniqueIndex,
+  uuid,
   varchar,
 } from 'drizzle-orm/pg-core';
-import { tsvector } from 'src/db/drizzle.utils';
+import { customTimestamp, tsvector } from 'src/db/drizzle.utils';
 
-export const MAX_BOOKMARK_TITLE_LENGTH = 255;
 export const users = pgTable(
   'users',
   {
-    id: serial('id').primaryKey(),
-    visibleName: varchar('visibleName', { length: 255 }).notNull(),
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    visibleName: varchar('visible_name', { length: 255 }).notNull(),
     email: varchar('email', { length: 255 }).unique().notNull(),
     passwordHash: varchar('password_hash', { length: 255 }).notNull(),
-    createdAt: timestamp('created_at').defaultNow(),
-    isActive: boolean('is_active').default(true),
+    createdAt: customTimestamp('created_at').$defaultFn(getCurrentTimestamp),
     profilePicture: varchar('profile_picture', { length: 255 }),
   },
   (table) => [uniqueIndex('emailUniqueIndex').on(table.email)]
@@ -32,13 +33,10 @@ export const sessions = pgTable(
   'sessions',
   {
     id: text('id').primaryKey(),
-    userId: integer('user_id')
+    userId: uuid('user_id')
       .notNull()
       .references(() => users.id),
-    expiresAt: timestamp('expires_at', {
-      withTimezone: true,
-      mode: 'date',
-    }).notNull(),
+    expiresAt: customTimestamp('expires_at').notNull(),
   },
   (table) => [index('session_user_id_index').on(table.userId)]
 );
@@ -46,9 +44,11 @@ export const sessions = pgTable(
 export const tags = pgTable(
   'tags',
   {
-    id: serial('id').primaryKey(),
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     name: varchar('name', { length: 64 }).notNull(),
-    userId: integer('user_id')
+    userId: uuid('user_id')
       .references(() => users.id)
       .notNull(),
     tsv: tsvector('tsv'),
@@ -62,8 +62,10 @@ export const tags = pgTable(
 export const bookmarks = pgTable(
   'bookmarks',
   {
-    id: serial('id').primaryKey(),
-    userId: integer('user_id')
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid('user_id')
       .notNull()
       .references(() => users.id, {
         onDelete: 'cascade',
@@ -71,15 +73,16 @@ export const bookmarks = pgTable(
     url: text('url').notNull(),
     title: varchar('title', { length: MAX_BOOKMARK_TITLE_LENGTH }).notNull(),
     description: text('description'),
-    faviconUrl: varchar('faviconUrl', { length: 255 }).default(sql`null`),
-    createdAt: timestamp('created_at').defaultNow(),
-    collectionId: integer('collection_id').references(() => collections.id, {
+    faviconId: uuid('favicon_id').references(() => favicons.id, {
+      onDelete: 'set null',
+    }),
+    createdAt: customTimestamp('created_at')
+      .$defaultFn(getCurrentTimestamp)
+      .notNull(),
+    collectionId: uuid('collection_id').references(() => collections.id, {
       onDelete: 'cascade',
     }),
-    deletedAt: timestamp('deleted_at', {
-      withTimezone: true,
-      mode: 'date',
-    }).default(sql`null`),
+    deletedAt: customTimestamp('deleted_at').default(sql`null`),
     isMetadataPending: boolean('is_metadata_pending').notNull(),
     tsv: tsvector('tsv'),
   },
@@ -88,6 +91,64 @@ export const bookmarks = pgTable(
     index('bookmark_user_id_index').on(table.userId),
     index('bookmark_collection_id_index').on(table.collectionId),
     index('bookmark_deleted_at_index').on(table.deletedAt),
+    index('bookmark_favicon_id_index').on(table.faviconId),
+  ]
+);
+
+export const bookmarkTags = pgTable(
+  'bookmark_tags',
+  {
+    bookmarkId: uuid('bookmark_id')
+      .notNull()
+      .references(() => bookmarks.id, { onDelete: 'cascade' }),
+    tagId: uuid('tag_id')
+      .notNull()
+      .references(() => tags.id, { onDelete: 'cascade' }),
+  },
+  (table) => [primaryKey({ columns: [table.bookmarkId, table.tagId] })]
+);
+
+export const collections = pgTable(
+  'collections',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    name: varchar('name', { length: 255 }).notNull(),
+    parentId: uuid('parent_id').references((): AnyPgColumn => collections.id, {
+      onDelete: 'set null',
+    }),
+    createdAt: customTimestamp('created_at')
+      .$defaultFn(getCurrentTimestamp)
+      .notNull(),
+    tsv: tsvector('tsv'),
+  },
+  (table) => [
+    index('collection_user_id_index').on(table.userId),
+    index('collections_tsv_index').using('gin', table.tsv),
+  ]
+);
+
+export const favicons = pgTable(
+  'favicons',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    url: text('url').notNull(),
+    hash: varchar('hash', { length: 64 }).notNull().unique(),
+    r2Key: text('r2_key').notNull(),
+    domain: varchar('domain', { length: 253 }).notNull().unique(),
+    createdAt: customTimestamp('created_at')
+      .notNull()
+      .default(sql`now()`),
+  },
+  (table) => [
+    uniqueIndex('favicons_unique_hash_index').on(table.hash),
+    uniqueIndex('favicons_unique_domain_index').on(table.domain),
   ]
 );
 
@@ -96,21 +157,16 @@ export const bookmarkRelations = relations(bookmarks, ({ one, many }) => ({
     fields: [bookmarks.collectionId],
     references: [collections.id],
   }),
+  favicon: one(favicons, {
+    fields: [bookmarks.faviconId],
+    references: [favicons.id],
+  }),
   bookmarkTags: many(bookmarkTags),
 }));
 
-export const bookmarkTags = pgTable(
-  'bookmark_tags',
-  {
-    bookmarkId: integer('bookmark_id')
-      .notNull()
-      .references(() => bookmarks.id, { onDelete: 'cascade' }),
-    tagId: integer('tag_id')
-      .notNull()
-      .references(() => tags.id, { onDelete: 'cascade' }),
-  },
-  (table) => [primaryKey({ columns: [table.bookmarkId, table.tagId] })]
-);
+export const collectionRelations = relations(collections, ({ many }) => ({
+  bookmarks: many(bookmarks),
+}));
 
 export const bookmarkTagRelations = relations(bookmarkTags, ({ one }) => ({
   tag: one(tags, {
@@ -123,44 +179,7 @@ export const bookmarkTagRelations = relations(bookmarkTags, ({ one }) => ({
   }),
 }));
 
-export const collections = pgTable(
-  'collections',
-  {
-    id: serial('id').primaryKey(),
-    userId: integer('user_id')
-      .notNull()
-      .references(() => users.id),
-    name: varchar('name', { length: 255 }).notNull(),
-    description: text('description'),
-    color: varchar('color', { length: 16 }),
-    createdAt: timestamp('created_at').defaultNow(),
-    tsv: tsvector('tsv'),
-  },
-  (table) => [
-    index('collection_user_id_index').on(table.userId),
-    index('collections_tsv_index').using('gin', table.tsv),
-  ]
-);
-
-export const favicons = pgTable(
-  'favicons',
-  {
-    id: varchar('id', { length: 36 }).primaryKey(),
-    url: text('url').notNull(),
-    hash: varchar('hash', { length: 64 }).notNull().unique(),
-    r2Key: text('r2_key').notNull(),
-    domain: varchar('domain', { length: 253 }).notNull().unique(),
-    createdAt: timestamp('created_at', { mode: 'date' })
-      .notNull()
-      .default(sql`now()`),
-  },
-  (table) => [
-    uniqueIndex('favicons_unique_hash_index').on(table.hash),
-    uniqueIndex('favicons_unique_domain_index').on(table.domain),
-  ]
-);
-
-export const collectionRelations = relations(collections, ({ many }) => ({
+export const faviconRelations = relations(favicons, ({ many }) => ({
   bookmarks: many(bookmarks),
 }));
 

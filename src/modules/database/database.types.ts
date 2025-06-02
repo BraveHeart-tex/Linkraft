@@ -19,5 +19,12 @@ export interface PaginationSearchParams {
 
 export interface PaginatedResult<T> {
   items: T[];
-  nextCursor: number | string | null | undefined;
+  nextCursor: string | null;
 }
+
+export interface CursorPayload {
+  createdAt: string;
+  id: string;
+}
+
+export type Update<T> = Partial<T>;

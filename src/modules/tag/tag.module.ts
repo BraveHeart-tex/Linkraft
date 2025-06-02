@@ -1,12 +1,11 @@
 import { Module } from '@nestjs/common';
-import { AuthModule } from '../auth/auth.module';
-import { TagService } from './tag.service';
-import { TagRepository } from './tag.repository';
-import { TagController } from './tag.controller';
 import { BookmarkTagModule } from '../bookmark-tag/bookmark-tag.module';
+import { TagController } from './tag.controller';
+import { TagRepository } from './tag.repository';
+import { TagService } from './tag.service';
 
 @Module({
-  imports: [AuthModule, BookmarkTagModule],
+  imports: [BookmarkTagModule],
   providers: [TagService, TagRepository],
   exports: [TagRepository, TagService],
   controllers: [TagController],

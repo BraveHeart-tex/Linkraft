@@ -11,10 +11,10 @@ import { REDIS_CLIENT } from 'src/modules/redis/redis.tokens';
       inject: [AppConfigService],
       useFactory: (appConfigService: AppConfigService) => {
         return new Redis({
-          host: appConfigService.get('REDIS_HOST'),
-          port: appConfigService.get('REDIS_PORT'),
-          password: appConfigService.get('REDIS_PASSWORD'),
-          db: appConfigService.get('REDIS_DB'),
+          host: appConfigService.getOrThrow('REDIS_HOST'),
+          port: appConfigService.getOrThrow('REDIS_PORT'),
+          password: appConfigService.getOrThrow('REDIS_PASSWORD'),
+          db: appConfigService.getOrThrow('REDIS_DB'),
         });
       },
     },

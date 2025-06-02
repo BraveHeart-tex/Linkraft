@@ -3,22 +3,19 @@ import {
   Controller,
   Post,
   UploadedFile,
-  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { BOOKMARK_IMPORT_QUEUE_NAME } from 'src/common/processors/queueNames';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { CurrentUser } from 'src/common/decorators/current-user.decorator';
-import { UserSessionContext } from '../auth/session.types';
-import { PARSE_BOOKMARKS_JOB_NAME } from 'src/common/processors/jobNames';
 import { Queue } from 'bullmq';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { PARSE_BOOKMARKS_JOB_NAME } from 'src/common/processors/jobNames';
+import { ImportBookmarkJob } from 'src/common/processors/processors.types';
+import { BOOKMARK_IMPORT_QUEUE_NAME } from 'src/common/processors/queueNames';
 import { FileSizeValidationPipe } from 'src/pipes/file-size-validation.pipe';
 import { FileTypeValidationPipe } from 'src/pipes/file-type-validation.pipe';
-import { AuthGuard } from 'src/guards/auth.guard';
-import { ImportBookmarkJob } from 'src/common/processors/processors.types';
+import { UserSessionContext } from '../auth/session.types';
 
 @Controller('import-bookmarks')
-@UseGuards(AuthGuard)
 export class BookmarkImportController {
   constructor(
     @InjectQueue(BOOKMARK_IMPORT_QUEUE_NAME)
@@ -34,20 +31,22 @@ export class BookmarkImportController {
     )
     file: Express.Multer.File,
     @CurrentUser() userSessionContext: UserSessionContext
-  ) {
+  ): Promise<{ jobId: string }> {
     const html = file.buffer.toString('utf-8');
 
-    const job = await this.bookmarkImportQueue.add(
+    const jobId = crypto.randomUUID();
+
+    await this.bookmarkImportQueue.add(
       PARSE_BOOKMARKS_JOB_NAME,
       {
         html,
         userId: userSessionContext.user.id,
       },
       {
-        jobId: crypto.randomUUID(),
+        jobId,
       }
     );
 
-    return { jobId: job.id };
+    return { jobId };
   }
 }

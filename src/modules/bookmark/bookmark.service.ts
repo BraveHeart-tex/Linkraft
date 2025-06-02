@@ -1,3 +1,4 @@
+import { buildUpdateDto } from '@/common/utils/object.utils';
 import { Transactional } from '@nestjs-cls/transactional';
 import { InjectQueue } from '@nestjs/bullmq';
 import { HttpStatus, Injectable } from '@nestjs/common';
@@ -20,10 +21,7 @@ import {
   UpdateBookmarkParams,
   UpdateBookmarkReturn,
 } from './bookmark.types';
-import {
-  buildBookmarkUpdateDto,
-  truncateBookmarkTitle,
-} from './bookmark.utils';
+import { ensureBookmarkTitleLength } from './bookmark.utils';
 
 @Injectable()
 export class BookmarkService {
@@ -50,22 +48,6 @@ export class BookmarkService {
 
   @Transactional()
   async createBookmarkForUser(dto: BookmarkInsertDto & CreateBookmarkDto) {
-    const bookmarkWithSameUrl =
-      await this.bookmarkRepository.userHasBookmarkWithUrl({
-        url: dto.url,
-        userId: dto.userId,
-      });
-
-    if (bookmarkWithSameUrl) {
-      throw new ApiException(
-        'A bookmark with the same URL already exists',
-        HttpStatus.CONFLICT,
-        {
-          bookmarkWithSameUrl,
-        }
-      );
-    }
-
     if (dto.collectionId) {
       const userHasAccessToCollection =
         await this.collectionService.userHasAccessToCollection({
@@ -84,12 +66,12 @@ export class BookmarkService {
     const bookmark = await this.bookmarkRepository.create({
       ...dto,
       title: dto?.title
-        ? truncateBookmarkTitle(dto?.title)
+        ? ensureBookmarkTitleLength(dto?.title)
         : 'Fetching title...',
       isMetadataPending: true,
     });
 
-    const bookmarkTagIds: number[] = [...(dto?.existingTagIds || [])];
+    const bookmarkTagIds = [...(dto?.existingTagIds || [])];
     if (dto.newTags?.length) {
       const createdTagIds = await this.tagRepository.bulkCreate(
         dto.newTags,
@@ -131,30 +113,11 @@ export class BookmarkService {
       throw new ApiException('Bookmark not found', HttpStatus.NOT_FOUND);
     }
 
-    if (updates?.url) {
-      const bookmarkWithSameUrl =
-        await this.bookmarkRepository.findByUserIdAndUrlExcludingBookmark({
-          excludeBookmarkId: bookmarkId,
-          url: updates.url,
-          userId,
-        });
-
-      if (bookmarkWithSameUrl) {
-        throw new ApiException(
-          'A bookmark with the same URL already exists',
-          HttpStatus.CONFLICT,
-          {
-            bookmarkWithSameUrl,
-          }
-        );
-      }
-    }
-
     const urlChanged = updates.url && updates.url !== bookmark.url;
     const titleChanged = updates.title && updates.title !== bookmark.title;
 
     const bookmarkUpdates = {
-      ...buildBookmarkUpdateDto(bookmark, updates),
+      ...buildUpdateDto(bookmark, updates),
       ...(urlChanged && titleChanged
         ? {
             isMetadataPending: true,

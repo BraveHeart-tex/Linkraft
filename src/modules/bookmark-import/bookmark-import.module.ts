@@ -1,17 +1,15 @@
+import { BookmarkImportProgressModule } from '@/modules/bookmark-import-progress/bookmark-import-progress.module';
 import { BullModule } from '@nestjs/bullmq';
-import { forwardRef, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import {
   BOOKMARK_IMPORT_QUEUE_NAME,
   BOOKMARK_METADATA_QUEUE_NAME,
 } from 'src/common/processors/queueNames';
 import { BookmarkModule } from '../bookmark/bookmark.module';
 import { CollectionModule } from '../collection/collection.module';
-import { BookmarkImportService } from './bookmark-import.service';
 import { BookmarkImportQueueProcessor } from './bookmark-import-queue.processor';
 import { BookmarkImportController } from './bookmark-import.controller';
-import { AuthModule } from '../auth/auth.module';
-import { BookmarkImportProgressService } from 'src/modules/bookmark-import/bookmark-import-progress.service';
-import { RedisModule } from 'src/modules/redis/redis.module';
+import { BookmarkImportService } from './bookmark-import.service';
 
 @Module({
   imports: [
@@ -21,17 +19,11 @@ import { RedisModule } from 'src/modules/redis/redis.module';
     BullModule.registerQueue({
       name: BOOKMARK_METADATA_QUEUE_NAME,
     }),
-    forwardRef(() => BookmarkModule),
+    BookmarkModule,
     CollectionModule,
-    AuthModule,
-    RedisModule,
+    BookmarkImportProgressModule,
   ],
   controllers: [BookmarkImportController],
-  providers: [
-    BookmarkImportService,
-    BookmarkImportQueueProcessor,
-    BookmarkImportProgressService,
-  ],
-  exports: [BookmarkImportProgressService],
+  providers: [BookmarkImportService, BookmarkImportQueueProcessor],
 })
 export class BookmarkImportModule {}

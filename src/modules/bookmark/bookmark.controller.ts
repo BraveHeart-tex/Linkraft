@@ -1,5 +1,8 @@
+import { Cursor } from '@/common/validation/schemas/shared/cursor.schema';
 import { Collection } from '@/db/schema';
+import { Bookmark } from '@/modules/bookmark/bookmark.types';
 import { DEFAULT_PAGE_SIZE } from '@/modules/database/database.constants';
+import { CursorPipe } from '@/pipes/cursor.pipe';
 import {
   Body,
   Controller,
@@ -12,7 +15,6 @@ import {
   Post,
   Put,
   Query,
-  UseGuards,
 } from '@nestjs/common';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { ResponseMessage } from 'src/common/decorators/response-message.decorator';
@@ -25,23 +27,21 @@ import {
   createBookmarkSchema,
   updateBookmarkSchema,
 } from 'src/common/validation/schemas/bookmark/bookmark.schema';
-import { AuthGuard } from 'src/guards/auth.guard';
 import { zodPipe } from 'src/pipes/zod.pipe.factory';
 import { UserSessionContext } from '../auth/session.types';
 import { BookmarkService } from './bookmark.service';
 
 @Controller('bookmarks')
-@UseGuards(AuthGuard)
 export class BookmarkController {
   constructor(private readonly bookmarkService: BookmarkService) {}
 
   @Get()
   getUserBookmarks(
-    @Query('cursor', new DefaultValuePipe(0), ParseIntPipe) cursor: number,
+    @Query('cursor', new CursorPipe()) cursor: Cursor,
     @Query('pageSize', new DefaultValuePipe(DEFAULT_PAGE_SIZE), ParseIntPipe)
     pageSize: number,
     @Query('search', new DefaultValuePipe('')) searchQuery: string,
-    @Query('collectionId', new DefaultValuePipe(0), ParseIntPipe)
+    @Query('collectionId')
     collectionId: Collection['id'],
     @CurrentUser() userSessionContext: UserSessionContext
   ) {
@@ -57,7 +57,7 @@ export class BookmarkController {
 
   @Get('trash')
   getTrashedUserBookmarks(
-    @Query('cursor', new DefaultValuePipe(0), ParseIntPipe) cursor: number,
+    @Query('cursor', new CursorPipe()) cursor: Cursor,
     @Query('pageSize', new DefaultValuePipe(DEFAULT_PAGE_SIZE), ParseIntPipe)
     pageSize: number,
     @Query('search', new DefaultValuePipe('')) searchQuery: string,
@@ -76,7 +76,7 @@ export class BookmarkController {
   @ResponseMessage('Bookmark restored successfully.')
   @ResponseStatus(HttpStatus.OK)
   async restoreUserBookmarkFromTrash(
-    @Param('id', ParseIntPipe) bookmarkId: number,
+    @Param('id') bookmarkId: Bookmark['id'],
     @CurrentUser() userSessionContext: UserSessionContext
   ) {
     return this.bookmarkService.updateUserBookmarkById({
@@ -90,7 +90,7 @@ export class BookmarkController {
 
   @Get('/:id')
   getUserBookmarkById(
-    @Param('id', ParseIntPipe) bookmarkId: number,
+    @Param('id') bookmarkId: Bookmark['id'],
     @CurrentUser() userSessionContext: UserSessionContext
   ) {
     return this.bookmarkService.getUserBookmarkById({
@@ -118,7 +118,7 @@ export class BookmarkController {
   @ResponseMessage('Bookmark updated successfully.')
   @ResponseStatus(HttpStatus.OK)
   updateUserBookmarkById(
-    @Param('id', ParseIntPipe) bookmarkId: number,
+    @Param('id') bookmarkId: Bookmark['id'],
     @Body(zodPipe(updateBookmarkSchema)) updates: UpdateBookmarkDto,
     @CurrentUser() userSessionContext: UserSessionContext
   ) {
@@ -161,7 +161,7 @@ export class BookmarkController {
   @ResponseMessage('Bookmark deleted successfully.')
   @ResponseStatus(HttpStatus.OK)
   permanentlyDeleteUserBookmark(
-    @Param('id', ParseIntPipe) bookmarkId: number,
+    @Param('id') bookmarkId: Bookmark['id'],
     @CurrentUser() userSessionContext: UserSessionContext
   ) {
     return this.bookmarkService.permanentlyDeleteUserBookmark({
@@ -174,7 +174,7 @@ export class BookmarkController {
   @ResponseMessage('Bookmark moved to trash successfully.')
   @ResponseStatus(HttpStatus.OK)
   softDeleteUserBookmark(
-    @Param('id', ParseIntPipe) bookmarkId: number,
+    @Param('id') bookmarkId: Bookmark['id'],
     @CurrentUser() userSessionContext: UserSessionContext
   ) {
     return this.bookmarkService.softDeleteUserBookmark({

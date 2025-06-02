@@ -16,6 +16,7 @@ type SlimCollection = Pick<Collection, 'id' | 'name'>;
 type BookmarkWithExtras = Bookmark & {
   collection: SlimCollection | null;
   bookmarkTags: BookmarkTagWithTag[];
+  favicon: { url: string | null } | null;
 };
 
 export const mapCollectionBookmark = (
@@ -27,12 +28,11 @@ export const mapCollectionBookmark = (
     url: bookmark.url,
     title: bookmark.title,
     description: bookmark.description,
-    faviconUrl: bookmark.faviconUrl,
+    faviconUrl: bookmark?.favicon ? bookmark?.favicon?.url : null,
     createdAt: bookmark.createdAt,
     collectionId: bookmark.collectionId,
     deletedAt: bookmark.deletedAt,
     isMetadataPending: bookmark.isMetadataPending,
-    tsv: bookmark.tsv,
     collection: bookmark.collection,
     tags: bookmark.bookmarkTags.map((bookmarkTag) => bookmarkTag.tag),
   };

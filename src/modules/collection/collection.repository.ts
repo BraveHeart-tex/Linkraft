@@ -1,4 +1,4 @@
-import { Bookmark } from '@/modules/bookmark/bookmark.types';
+import { encodeCursor } from '@/common/utils/cursor.utils';
 import { mapCollectionBookmark } from '@/modules/collection/collection.utils';
 import { DEFAULT_PAGE_SIZE } from '@/modules/database/database.constants';
 import { TransactionHost } from '@nestjs-cls/transactional';
@@ -38,14 +38,14 @@ export class CollectionRepository {
   }
 
   async bulkCreate(data: CollectionInsertDto[]) {
-    return await this.txHost.tx.insert(collections).values(data).returning();
+    return this.txHost.tx.insert(collections).values(data).returning();
   }
 
   async update(
-    updatedData: Partial<CollectionInsertDto> & { id: number },
+    updatedData: Partial<CollectionInsertDto> & { id: Collection['id'] },
     userId: User['id']
   ) {
-    return await this.txHost.tx
+    return this.txHost.tx
       .update(collections)
       .set(updatedData)
       .where(
@@ -62,15 +62,13 @@ export class CollectionRepository {
     PaginatedResult<CollectionWithBookmarkCount>
   > {
     limit = Math.min(limit, DEFAULT_PAGE_SIZE);
-
     const items = await this.txHost.tx
       .select({
         id: collections.id,
         userId: collections.userId,
         name: collections.name,
-        description: collections.description,
+        parentId: collections.parentId,
         createdAt: collections.createdAt,
-        color: collections.color,
         bookmarkCount: count(
           sql`CASE WHEN ${bookmarks.deletedAt} is null THEN ${bookmarks.id} ELSE NULL END`
         ),
@@ -78,19 +76,23 @@ export class CollectionRepository {
       .from(collections)
       .leftJoin(bookmarks, eq(bookmarks.collectionId, collections.id))
       .groupBy(collections.id)
-      .orderBy(desc(collections.id))
+      .orderBy(desc(collections.id), desc(collections.createdAt))
       .where(
         and(
           eq(collections.userId, userId),
-          cursor ? lt(collections.id, cursor) : undefined,
+          cursor ? lt(collections.createdAt, cursor.createdAt) : undefined,
           searchQuery ? like(collections.name, `%${searchQuery}%`) : undefined
         )
       )
       .limit(limit);
 
+    const lastItem = items.length === limit ? items[items.length - 1] : null;
+
     return {
       items,
-      nextCursor: items.length === limit ? items[items.length - 1]?.id : null,
+      nextCursor: encodeCursor(
+        lastItem ? { id: lastItem.id, createdAt: lastItem.createdAt } : null
+      ),
     };
   }
 
@@ -105,6 +107,11 @@ export class CollectionRepository {
         with: {
           bookmarks: {
             with: {
+              favicon: {
+                columns: {
+                  url: true,
+                },
+              },
               collection: {
                 columns: {
                   id: true,
@@ -131,14 +138,19 @@ export class CollectionRepository {
 
     if (!collectionWithBookmarks) return null;
 
+    const lastBookmark =
+      collectionWithBookmarks.bookmarks.length === DEFAULT_PAGE_SIZE
+        ? collectionWithBookmarks.bookmarks[DEFAULT_PAGE_SIZE - 1]
+        : null;
+
     return {
       ...collectionWithBookmarks,
       bookmarks: collectionWithBookmarks.bookmarks.map(mapCollectionBookmark),
-      nextBookmarkCursor:
-        collectionWithBookmarks.bookmarks.length === DEFAULT_PAGE_SIZE
-          ? (collectionWithBookmarks.bookmarks[DEFAULT_PAGE_SIZE - 1]
-              ?.id as Bookmark['id'])
-          : null,
+      nextBookmarkCursor: encodeCursor(
+        lastBookmark
+          ? { id: lastBookmark.id, createdAt: lastBookmark.createdAt }
+          : null
+      ),
     };
   }
 

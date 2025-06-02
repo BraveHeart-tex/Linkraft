@@ -1,66 +1,59 @@
+import type { Session, User } from '@/db/schema';
+import { SessionPolicy } from '@/modules/auth/session.policy';
+import { Transactional } from '@nestjs-cls/transactional';
 import { Injectable } from '@nestjs/common';
 import { SessionRepository } from './session.repository';
 import { SessionValidationResult } from './session.types';
 import { getSessionId } from './utils/token.utils';
-import { SESSION_HALF_LIFE_MS, SESSION_LIFETIME_MS } from './auth.constants';
 
 @Injectable()
 export class SessionService {
-  constructor(private readonly repo: SessionRepository) {}
+  constructor(
+    private readonly sessionPolicy: SessionPolicy,
+    private readonly sessionRepository: SessionRepository
+  ) {}
 
-  async createUserSession(token: string, userId: number) {
+  async createUserSession(token: string, userId: User['id']): Promise<Session> {
     const sessionId = getSessionId(token);
     const session = {
       id: sessionId,
       userId,
-      expiresAt: new Date(Date.now() + SESSION_LIFETIME_MS),
+      expiresAt: this.sessionPolicy.getNewExpiry(),
     };
-    await this.repo.insertSession(session);
+    await this.sessionRepository.insertSession(session);
     return session;
   }
 
-  async validateSessionCommon(
-    token: string,
-    shouldRefresh: boolean = false
-  ): Promise<SessionValidationResult> {
+  @Transactional()
+  async validateSession(token: string): Promise<SessionValidationResult> {
     const sessionId = getSessionId(token);
-    const result = await this.repo.getSessionWithUser(sessionId);
+    const result = await this.sessionRepository.getSessionWithUser(sessionId);
 
     if (!result) return { session: null, user: null };
 
     const { session, user } = result;
 
-    if (Date.now() >= session.expiresAt.getTime()) {
-      await this.repo.deleteSession(session.id);
+    if (this.sessionPolicy.isExpired(session.expiresAt)) {
+      await this.sessionRepository.deleteSession(session.id);
       return { session: null, user: null };
     }
 
-    if (
-      shouldRefresh &&
-      Date.now() >= session.expiresAt.getTime() - SESSION_HALF_LIFE_MS
-    ) {
-      session.expiresAt = new Date(Date.now() + SESSION_LIFETIME_MS);
-      await this.repo.updateSessionExpiry(session.id, session.expiresAt);
+    if (this.sessionPolicy.shouldRefresh(session.expiresAt)) {
+      session.expiresAt = this.sessionPolicy.getNewExpiry();
+      await this.sessionRepository.updateSessionExpiry(
+        session.id,
+        session.expiresAt
+      );
     }
 
     return { session, user };
   }
 
-  async validateSession(token: string): Promise<SessionValidationResult> {
-    return this.validateSessionCommon(token, false);
+  async invalidateSession(sessionId: Session['id']): Promise<void> {
+    await this.sessionRepository.deleteSession(sessionId);
   }
 
-  async validateAndRefreshSession(
-    token: string
-  ): Promise<SessionValidationResult> {
-    return this.validateSessionCommon(token, true);
-  }
-
-  async invalidateSession(sessionId: string) {
-    await this.repo.deleteSession(sessionId);
-  }
-
-  async invalidateAllSessions(userId: number) {
-    await this.repo.deleteAllSessionsForUser(userId);
+  async invalidateAllSessions(userId: User['id']): Promise<void> {
+    await this.sessionRepository.deleteAllSessionsForUser(userId);
   }
 }

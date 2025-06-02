@@ -13,7 +13,6 @@ export const createBookmarkSchema = createInsertSchema(bookmarks, {
     .nullable()
     .optional(),
   isMetadataPending: z.boolean().optional(),
-  faviconUrl: z.string().url().nullable().default(null),
 })
   .omit({
     id: true,
@@ -21,8 +20,8 @@ export const createBookmarkSchema = createInsertSchema(bookmarks, {
     userId: true,
   })
   .extend({
-    collectionId: z.number().nullable().optional(),
-    existingTagIds: z.number().array().nullable().optional(),
+    collectionId: z.string().nullable().optional(),
+    existingTagIds: z.string().array().nullable().optional(),
     newTags: z.string().array().nullable().optional(),
   });
 
@@ -32,7 +31,6 @@ export const updateBookmarkSchema = createBookmarkSchema
     description: true,
     url: true,
     isMetadataPending: true,
-    faviconUrl: true,
     deletedAt: true,
     collectionId: true,
     existingTagIds: true,
@@ -45,7 +43,7 @@ export const updateBookmarkSchema = createBookmarkSchema
 
 export const bulkSoftDeleteBookmarkSchema = z.object({
   bookmarkIds: z
-    .array(z.number())
+    .array(z.string())
     .min(1, 'Please provide at least one bookmark to delete.'),
 });
 

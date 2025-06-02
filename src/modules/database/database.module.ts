@@ -18,7 +18,7 @@ import { DrizzleLoggerService } from './drizzle-logger/drizzle-logger.service';
     {
       provide: PG_POOL,
       useFactory: (config: AppConfigService): Pool =>
-        createPgPool({ connectionString: config.get('DATABASE_URL') }),
+        createPgPool({ connectionString: config.getOrThrow('DATABASE_URL') }),
       inject: [AppConfigService],
     },
     {

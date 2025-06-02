@@ -1,3 +1,4 @@
+import { Job } from 'bullmq';
 import { User } from 'src/db/schema';
 import { Bookmark } from 'src/modules/bookmark/bookmark.types';
 
@@ -24,3 +25,5 @@ export interface ImportBookmarkJob {
   html: string;
   userId: User['id'];
 }
+
+export type JobWithId<T> = Job<T> & { id: string };

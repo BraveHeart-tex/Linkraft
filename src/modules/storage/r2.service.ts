@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { Injectable } from '@nestjs/common';
 import { AppConfigService } from 'src/config/app-config.service';
 import { Readable } from 'stream';
 
@@ -10,10 +10,12 @@ export class R2Service {
   constructor(private readonly appConfigService: AppConfigService) {
     this.s3Client = new S3Client({
       region: 'auto',
-      endpoint: this.appConfigService.get('R2_ENDPOINT'),
+      endpoint: this.appConfigService.getOrThrow('R2_ENDPOINT'),
       credentials: {
-        accessKeyId: this.appConfigService.get('R2_ACCESS_KEY_ID'),
-        secretAccessKey: this.appConfigService.get('R2_SECRET_ACCESS_KEY'),
+        accessKeyId: this.appConfigService.getOrThrow('R2_ACCESS_KEY_ID'),
+        secretAccessKey: this.appConfigService.getOrThrow(
+          'R2_SECRET_ACCESS_KEY'
+        ),
       },
     });
   }
@@ -23,7 +25,7 @@ export class R2Service {
     faviconDomain: string
   ): Promise<{ url: string; r2Key: string }> {
     const r2Key = `favicons/${faviconDomain}.ico`;
-    const bucketName = this.appConfigService.get('R2_BUCKET_NAME');
+    const bucketName = this.appConfigService.getOrThrow('R2_BUCKET_NAME');
 
     try {
       const command = new PutObjectCommand({
@@ -36,7 +38,7 @@ export class R2Service {
       await this.s3Client.send(command);
 
       return {
-        url: `${this.appConfigService.get('R2_CDN_URL')}/${faviconDomain}`,
+        url: `${this.appConfigService.getOrThrow('R2_CDN_URL')}/${faviconDomain}`,
         r2Key,
       };
     } catch (error) {

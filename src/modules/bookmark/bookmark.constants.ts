@@ -23,3 +23,4 @@ export type SocketNamespace =
 export const SOCKET_ROOMS = {
   user: (userId: User['id']) => `user:${userId}` as const,
 };
+export const MAX_BOOKMARK_TITLE_LENGTH = 255;

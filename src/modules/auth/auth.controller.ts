@@ -1,36 +1,27 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpStatus,
-  Post,
-  Res,
-  UseGuards,
-} from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { zodPipe } from 'src/pipes/zod.pipe.factory';
-import {
-  SignUpDto,
-  SignUpSchema,
-} from 'src/common/validation/schemas/auth/sign-up.schema';
+import { PublicRoute } from '@/common/decorators/public-route.decorator';
+import { Body, Controller, Get, HttpStatus, Post, Res } from '@nestjs/common';
+import { Response } from 'express';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { ResponseMessage } from 'src/common/decorators/response-message.decorator';
+import { ResponseStatus } from 'src/common/decorators/response-status.decorator';
 import {
   SignInDto,
   SignInSchema,
 } from 'src/common/validation/schemas/auth/sign-in.schema';
-import { Response } from 'express';
-import { ResponseMessage } from 'src/common/decorators/response-message.decorator';
-import { CurrentUser } from 'src/common/decorators/current-user.decorator';
-import { SessionValidationResult, UserSessionContext } from './session.types';
+import {
+  SignUpDto,
+  SignUpSchema,
+} from 'src/common/validation/schemas/auth/sign-up.schema';
 import { ApiException } from 'src/exceptions/api.exception';
-import { ResponseStatus } from 'src/common/decorators/response-status.decorator';
-import { AuthGuard } from 'src/guards/auth.guard';
+import { zodPipe } from 'src/pipes/zod.pipe.factory';
+import { AuthService } from './auth.service';
+import { SessionValidationResult, UserSessionContext } from './session.types';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Get('me')
-  @UseGuards(AuthGuard)
   getAuthenticatedUser(@CurrentUser() userSessionInfo: UserSessionContext) {
     return {
       user: userSessionInfo.user,
@@ -38,6 +29,7 @@ export class AuthController {
   }
 
   @Post('sign-up')
+  @PublicRoute()
   @ResponseMessage('Signed up successfully')
   signUp(
     @Body(zodPipe(SignUpSchema)) signUpDto: SignUpDto,
@@ -58,6 +50,7 @@ export class AuthController {
   }
 
   @Post('sign-in')
+  @PublicRoute()
   @ResponseMessage('Signed in successfully')
   signIn(
     @Body(zodPipe(SignInSchema)) signInDto: SignInDto,
@@ -83,7 +76,6 @@ export class AuthController {
   @Post('sign-out')
   @ResponseMessage('Signed out successfully')
   @ResponseStatus(HttpStatus.OK)
-  @UseGuards(AuthGuard)
   signOut(
     @Res({
       passthrough: true,

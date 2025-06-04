@@ -5,11 +5,11 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { ResponseMessage } from 'src/common/decorators/response-message.decorator';
 import { ResponseStatus } from 'src/common/decorators/response-status.decorator';
 import {
-  SignInDto,
+  SignInInput,
   SignInSchema,
 } from 'src/common/validation/schemas/auth/sign-in.schema';
 import {
-  SignUpDto,
+  SignUpInput,
   SignUpSchema,
 } from 'src/common/validation/schemas/auth/sign-up.schema';
 import { ApiException } from 'src/exceptions/api.exception';
@@ -32,7 +32,7 @@ export class AuthController {
   @PublicRoute()
   @ResponseMessage('Signed up successfully')
   signUp(
-    @Body(zodPipe(SignUpSchema)) signUpDto: SignUpDto,
+    @Body(zodPipe(SignUpSchema)) signUpDto: SignUpInput,
     @Res({
       passthrough: true,
     })
@@ -53,7 +53,7 @@ export class AuthController {
   @PublicRoute()
   @ResponseMessage('Signed in successfully')
   signIn(
-    @Body(zodPipe(SignInSchema)) signInDto: SignInDto,
+    @Body(zodPipe(SignInSchema)) signInDto: SignInInput,
     @Res({
       passthrough: true,
     })

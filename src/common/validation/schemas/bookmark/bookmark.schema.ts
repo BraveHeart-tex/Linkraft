@@ -2,7 +2,7 @@ import { createInsertSchema } from 'drizzle-zod';
 import { bookmarks } from 'src/db/schema';
 import { z } from 'zod';
 
-export const createBookmarkSchema = createInsertSchema(bookmarks, {
+export const CreateBookmarkSchema = createInsertSchema(bookmarks, {
   url: z
     .string({ required_error: 'URL is required' })
     .url('Please enter a valid URL'),
@@ -25,17 +25,16 @@ export const createBookmarkSchema = createInsertSchema(bookmarks, {
     newTags: z.string().array().nullable().optional(),
   });
 
-export const updateBookmarkSchema = createBookmarkSchema
-  .pick({
-    title: true,
-    description: true,
-    url: true,
-    isMetadataPending: true,
-    deletedAt: true,
-    collectionId: true,
-    existingTagIds: true,
-    newTags: true,
-  })
+export const UpdateBookmarkSchema = CreateBookmarkSchema.pick({
+  title: true,
+  description: true,
+  url: true,
+  isMetadataPending: true,
+  deletedAt: true,
+  collectionId: true,
+  existingTagIds: true,
+  newTags: true,
+})
   .partial()
   .refine((data) => Object.keys(data).length > 0, {
     message: 'Please provide at least one field to update.',
@@ -51,5 +50,5 @@ export type BulkSoftDeleteBookmarkDto = z.infer<
   typeof bulkSoftDeleteBookmarkSchema
 >;
 
-export type CreateBookmarkDto = z.infer<typeof createBookmarkSchema>;
-export type UpdateBookmarkDto = z.infer<typeof updateBookmarkSchema>;
+export type CreateBookmarkInput = z.infer<typeof CreateBookmarkSchema>;
+export type UpdateBookmarkInput = z.infer<typeof UpdateBookmarkSchema>;

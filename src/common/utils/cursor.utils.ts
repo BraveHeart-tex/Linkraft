@@ -1,7 +1,7 @@
-import { Cursor } from '@/common/validation/schemas/shared/cursor.schema';
+import { CursorInput } from '@/common/validation/schemas/shared/cursor.schema';
 
 export const encodeCursor = (
-  cursor: Cursor | null | undefined
+  cursor: CursorInput | null | undefined
 ): string | null => {
   if (!cursor) {
     return null;

@@ -1,4 +1,4 @@
-import { emailSchema } from '@/common/validation/schemas/shared/email.schema';
+import { EmailSchema } from '@/common/validation/schemas/shared/email.schema';
 import { passwordSchema } from '@/common/validation/schemas/shared/password.schema';
 import { z } from 'zod';
 
@@ -9,8 +9,8 @@ export const SignUpSchema = z.object({
     })
     .min(1, 'Please provide a visible name')
     .max(255, 'Visible name cannot be more than 255 characters'),
-  email: emailSchema,
+  email: EmailSchema,
   password: passwordSchema,
 });
 
-export type SignUpDto = z.infer<typeof SignUpSchema>;
+export type SignUpInput = z.infer<typeof SignUpSchema>;

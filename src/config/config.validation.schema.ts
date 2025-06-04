@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const configSchema = z.object({
+export const ConfigSchema = z.object({
   R2_BUCKET_NAME: z.string().min(1, 'R2_BUCKET_NAME is required'),
   R2_ENDPOINT: z.string().url('R2_ENDPOINT must be a valid URL'),
   R2_ACCESS_KEY_ID: z.string().min(1, 'R2_ACCESS_KEY_ID is required'),
@@ -31,4 +31,4 @@ export const configSchema = z.object({
   HTTP_MAX_DATA_URL_SIZE_BYTES: z.number().optional(),
 });
 
-export type ConfigSchema = z.infer<typeof configSchema>;
+export type ConfigInput = z.infer<typeof ConfigSchema>;

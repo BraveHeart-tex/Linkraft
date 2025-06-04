@@ -1,8 +1,8 @@
 import { Transactional } from '@nestjs-cls/transactional';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { Response } from 'express';
-import { SignInDto } from 'src/common/validation/schemas/auth/sign-in.schema';
-import { SignUpDto } from 'src/common/validation/schemas/auth/sign-up.schema';
+import { SignInInput } from 'src/common/validation/schemas/auth/sign-in.schema';
+import { SignUpInput } from 'src/common/validation/schemas/auth/sign-up.schema';
 import { Session, UserWithoutPasswordHash } from 'src/db/schema';
 import { ApiException } from 'src/exceptions/api.exception';
 import { toUserWithoutPassword } from '../user/mappers/user.mapper';
@@ -27,7 +27,7 @@ export class AuthService {
   @Transactional()
   async registerUserWithSession(
     res: Response,
-    signUpDto: SignUpDto
+    signUpDto: SignUpInput
   ): Promise<{
     user: UserWithoutPasswordHash;
   }> {
@@ -58,7 +58,7 @@ export class AuthService {
 
   async authenticateUserAndCreateSession(
     res: Response,
-    signInDto: SignInDto
+    signInDto: SignInInput
   ): Promise<{
     user: UserWithoutPasswordHash;
   }> {

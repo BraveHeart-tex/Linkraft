@@ -1,4 +1,4 @@
-import { cursorSchema } from '@/common/validation/schemas/shared/cursor.schema';
+import { CursorSchema } from '@/common/validation/schemas/shared/cursor.schema';
 import { BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
 
 @Injectable()
@@ -17,6 +17,6 @@ export class CursorPipe implements PipeTransform {
 
     if (decoded === null) return null;
 
-    return cursorSchema.parse(decoded);
+    return CursorSchema.parse(decoded);
   }
 }

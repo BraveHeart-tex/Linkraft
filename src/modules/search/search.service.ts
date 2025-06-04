@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { SearchRepository } from 'src/modules/search/search.repository';
-import { searchAllResponseSchema } from 'src/modules/search/search.schema';
+import { SearchAllResponseSchema } from 'src/modules/search/search.schema';
 import { SearchAllParams } from 'src/modules/search/search.types';
 import { toTsQueryString } from 'src/modules/search/search.utils';
 
@@ -13,7 +13,7 @@ export class SearchService {
       ...params,
       query: toTsQueryString(params.query),
     });
-    const validatedRows = searchAllResponseSchema.parse({
+    const validatedRows = SearchAllResponseSchema.parse({
       results: result.rows,
     });
     return validatedRows.results;

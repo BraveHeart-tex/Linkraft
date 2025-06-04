@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon';
 import { z } from 'zod';
 
-export const timestampSchema = z
+export const TimestampSchema = z
   .union([z.string(), z.date()])
   .transform((val) => {
     const iso = val instanceof Date ? val.toISOString() : val;

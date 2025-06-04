@@ -1,4 +1,4 @@
-import { Cursor } from '@/common/validation/schemas/shared/cursor.schema';
+import { CursorInput } from '@/common/validation/schemas/shared/cursor.schema';
 import { CollectionManagementService } from '@/modules/collection-management/collection-management.service';
 import { DEFAULT_PAGE_SIZE } from '@/modules/database/database.constants';
 import { CursorPipe } from '@/pipes/cursor.pipe';
@@ -53,7 +53,7 @@ export class CollectionController {
   @Get('/')
   @ResponseStatus(HttpStatus.OK)
   getCollectionsForUser(
-    @Query('cursor', new CursorPipe()) cursor: Cursor,
+    @Query('cursor', new CursorPipe()) cursor: CursorInput,
     @Query('pageSize', new DefaultValuePipe(DEFAULT_PAGE_SIZE), ParseIntPipe)
     pageSize: number,
     @Query('search', new DefaultValuePipe('')) searchQuery: string,

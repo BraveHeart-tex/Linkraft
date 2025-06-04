@@ -1,4 +1,4 @@
-import { Cursor } from '@/common/validation/schemas/shared/cursor.schema';
+import { CursorInput } from '@/common/validation/schemas/shared/cursor.schema';
 import { Collection } from '@/db/schema';
 import { Bookmark } from '@/modules/bookmark/bookmark.types';
 import { DEFAULT_PAGE_SIZE } from '@/modules/database/database.constants';
@@ -22,11 +22,11 @@ import { ResponseMessage } from 'src/common/decorators/response-message.decorato
 import { ResponseStatus } from 'src/common/decorators/response-status.decorator';
 import {
   BulkSoftDeleteBookmarkDto,
-  CreateBookmarkDto,
-  UpdateBookmarkDto,
   bulkSoftDeleteBookmarkSchema,
-  createBookmarkSchema,
-  updateBookmarkSchema,
+  CreateBookmarkInput,
+  CreateBookmarkSchema,
+  UpdateBookmarkInput,
+  UpdateBookmarkSchema,
 } from 'src/common/validation/schemas/bookmark/bookmark.schema';
 import { zodPipe } from 'src/pipes/zod.pipe.factory';
 import { UserSessionContext } from '../auth/session.types';
@@ -38,7 +38,7 @@ export class BookmarkController {
 
   @Get()
   getUserBookmarks(
-    @Query('cursor', new CursorPipe()) cursor: Cursor,
+    @Query('cursor', new CursorPipe()) cursor: CursorInput,
     @Query('pageSize', new DefaultValuePipe(DEFAULT_PAGE_SIZE), ParseIntPipe)
     pageSize: number,
     @Query('search', new DefaultValuePipe('')) searchQuery: string,
@@ -58,7 +58,7 @@ export class BookmarkController {
 
   @Get('trash')
   getTrashedUserBookmarks(
-    @Query('cursor', new CursorPipe()) cursor: Cursor,
+    @Query('cursor', new CursorPipe()) cursor: CursorInput,
     @Query('pageSize', new DefaultValuePipe(DEFAULT_PAGE_SIZE), ParseIntPipe)
     pageSize: number,
     @Query('search', new DefaultValuePipe('')) searchQuery: string,
@@ -104,7 +104,7 @@ export class BookmarkController {
   @ResponseMessage('Bookmark created successfully.')
   @ResponseStatus(HttpStatus.CREATED)
   createBookmarkForUser(
-    @Body(zodPipe(createBookmarkSchema)) data: CreateBookmarkDto,
+    @Body(zodPipe(CreateBookmarkSchema)) data: CreateBookmarkInput,
     @CurrentUser() userSessionContext: UserSessionContext
   ) {
     return this.bookmarkService.createBookmarkForUser({
@@ -120,7 +120,7 @@ export class BookmarkController {
   @ResponseStatus(HttpStatus.OK)
   updateUserBookmarkById(
     @Param('id', new ParseUUIDPipe()) bookmarkId: Bookmark['id'],
-    @Body(zodPipe(updateBookmarkSchema)) updates: UpdateBookmarkDto,
+    @Body(zodPipe(UpdateBookmarkSchema)) updates: UpdateBookmarkInput,
     @CurrentUser() userSessionContext: UserSessionContext
   ) {
     return this.bookmarkService.updateUserBookmarkById({

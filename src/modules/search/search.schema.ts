@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const searchResultSchema = z.object({
+export const SearchResultSchema = z.object({
   id: z.string(),
   type: z.enum(['bookmark', 'tag', 'collection']),
   title: z.string(),
@@ -9,6 +9,6 @@ export const searchResultSchema = z.object({
   url: z.string(),
 });
 
-export const searchAllResponseSchema = z.object({
-  results: z.array(searchResultSchema),
+export const SearchAllResponseSchema = z.object({
+  results: z.array(SearchResultSchema),
 });

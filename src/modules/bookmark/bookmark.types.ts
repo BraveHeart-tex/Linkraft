@@ -1,6 +1,6 @@
-import { Cursor } from '@/common/validation/schemas/shared/cursor.schema';
+import { CursorInput } from '@/common/validation/schemas/shared/cursor.schema';
 import { PaginationSearchParams } from '@/modules/database/database.types';
-import { UpdateBookmarkDto } from 'src/common/validation/schemas/bookmark/bookmark.schema';
+import { UpdateBookmarkInput } from 'src/common/validation/schemas/bookmark/bookmark.schema';
 import { bookmarks, Collection, SlimTag, User } from 'src/db/schema';
 
 export interface BookmarkOwnershipParams {
@@ -9,12 +9,12 @@ export interface BookmarkOwnershipParams {
 }
 
 export type UpdateBookmarkParams = BookmarkOwnershipParams & {
-  updates: UpdateBookmarkDto;
+  updates: UpdateBookmarkInput;
 };
 
 export interface FindUserBookmarksParams extends PaginationSearchParams {
   userId: User['id'];
-  cursor: Cursor | null;
+  cursor: CursorInput | null;
   trashed?: boolean;
   collectionId?: Collection['id'];
 }

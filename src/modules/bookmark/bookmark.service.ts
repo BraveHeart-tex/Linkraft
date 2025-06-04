@@ -7,7 +7,7 @@ import { Queue } from 'bullmq';
 import { FETCH_BOOKMARK_METADATA_JOB_NAME } from 'src/common/processors/jobNames';
 import { FetchBookmarkMetadataJob } from 'src/common/processors/processors.types';
 import { BOOKMARK_METADATA_QUEUE_NAME } from 'src/common/processors/queueNames';
-import { CreateBookmarkDto } from 'src/common/validation/schemas/bookmark/bookmark.schema';
+import { CreateBookmarkInput } from 'src/common/validation/schemas/bookmark/bookmark.schema';
 import { BookmarkInsertDto, User } from 'src/db/schema';
 import { ApiException } from 'src/exceptions/api.exception';
 import { BookmarkTagRepository } from '../bookmark-tag/bookmark-tag.repository';
@@ -48,7 +48,7 @@ export class BookmarkService {
   }
 
   @Transactional()
-  async createBookmarkForUser(dto: BookmarkInsertDto & CreateBookmarkDto) {
+  async createBookmarkForUser(dto: BookmarkInsertDto & CreateBookmarkInput) {
     if (dto.collectionId) {
       const userHasAccessToCollection =
         await this.collectionService.userHasAccessToCollection({

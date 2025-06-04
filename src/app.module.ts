@@ -12,7 +12,7 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ClsModule } from 'nestjs-cls';
 import { AppConfigModule } from 'src/config/app-config.module';
 import { AppConfigService } from 'src/config/app-config.service';
-import { configSchema } from 'src/config/config.validation.schema';
+import { ConfigSchema } from 'src/config/config.validation.schema';
 import { BookmarkModule } from 'src/modules/bookmark/bookmark.module';
 import { SearchModule } from 'src/modules/search/search.module';
 import { CurrentUserInterceptor } from './common/interceptors/current-user.interceptor';
@@ -29,7 +29,7 @@ import { TagModule } from './modules/tag/tag.module';
     ConfigModule.forRoot({
       isGlobal: true,
       validate: (config) => {
-        const result = configSchema.safeParse(config);
+        const result = ConfigSchema.safeParse(config);
 
         if (!result.success) {
           const errorMessages = result.error.errors

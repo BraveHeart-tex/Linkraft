@@ -61,7 +61,7 @@ function* generateCollectionsForUsers(
       yield {
         userId,
         name: faker.lorem.word(),
-        displayOrder: i + 1,
+        displayOrder: i,
       };
     }
   }

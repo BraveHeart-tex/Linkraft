@@ -316,8 +316,7 @@ export class BookmarkImportService {
       parentId: collection.parentId
         ? collectionMap.get(collection.parentId) || null
         : null,
-      // TODO: Check if this really makes sense
-      displayOrder: index + 1,
+      displayOrder: index,
     }));
 
     return await this.collectionRepository.bulkCreate(collectionDtos);

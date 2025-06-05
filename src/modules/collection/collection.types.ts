@@ -1,6 +1,4 @@
-import { CursorInput } from '@/common/validation/schemas/shared/cursor.schema';
 import { BookmarkWithTagsAndCollection } from '@/modules/bookmark/bookmark.types';
-import { PaginationSearchParams } from '@/modules/database/database.types';
 import type { Collection, User } from 'src/db/schema';
 
 export interface CollectionOwnershipParams {
@@ -8,8 +6,7 @@ export interface CollectionOwnershipParams {
   collectionId: Collection['id'];
 }
 
-export interface FindUserCollectionsParams extends PaginationSearchParams {
-  cursor: CursorInput | null;
+export interface FindUserCollectionsParams {
   userId: User['id'];
 }
 

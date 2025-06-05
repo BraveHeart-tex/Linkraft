@@ -5,6 +5,7 @@ import {
   AnyPgColumn,
   boolean,
   index,
+  integer,
   pgTable,
   primaryKey,
   text,
@@ -83,6 +84,7 @@ export const bookmarks = pgTable(
       onDelete: 'set null',
     }),
     deletedAt: customTimestamp('deleted_at').default(sql`null`),
+
     isMetadataPending: boolean('is_metadata_pending').notNull(),
     tsv: tsvector('tsv'),
   },
@@ -121,6 +123,7 @@ export const collections = pgTable(
     parentId: uuid('parent_id').references((): AnyPgColumn => collections.id, {
       onDelete: 'set null',
     }),
+    displayOrder: integer('display_order').notNull(),
     createdAt: customTimestamp('created_at')
       .$defaultFn(getCurrentTimestamp)
       .notNull(),

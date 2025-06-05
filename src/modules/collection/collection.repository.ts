@@ -3,7 +3,7 @@ import { mapCollectionBookmark } from '@/modules/collection/collection.utils';
 import { DEFAULT_PAGE_SIZE } from '@/modules/database/database.constants';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { Injectable } from '@nestjs/common';
-import { and, count, desc, eq, isNull, like, lt, sql } from 'drizzle-orm';
+import { and, count, desc, eq, isNull, sql } from 'drizzle-orm';
 import { QueryResult } from 'pg';
 import {
   bookmarks,
@@ -12,10 +12,7 @@ import {
   collections,
   User,
 } from 'src/db/schema';
-import {
-  PaginatedResult,
-  TransactionalDbAdapter,
-} from '../database/database.types';
+import { TransactionalDbAdapter } from '../database/database.types';
 import {
   CollectionOwnershipParams,
   CollectionWithBookmarkCount,
@@ -53,21 +50,16 @@ export class CollectionRepository {
       );
   }
 
-  async getCollectionsForUser({
-    searchQuery,
-    userId,
-    cursor,
-    limit = DEFAULT_PAGE_SIZE,
-  }: FindUserCollectionsParams): Promise<
-    PaginatedResult<CollectionWithBookmarkCount>
-  > {
-    limit = Math.min(limit, DEFAULT_PAGE_SIZE);
+  async getCollectionsForUser({ userId }: FindUserCollectionsParams): Promise<{
+    items: CollectionWithBookmarkCount[];
+  }> {
     const items = await this.txHost.tx
       .select({
         id: collections.id,
         userId: collections.userId,
         name: collections.name,
         parentId: collections.parentId,
+        displayOrder: collections.displayOrder,
         createdAt: collections.createdAt,
         bookmarkCount: count(
           sql`CASE WHEN ${bookmarks.deletedAt} is null THEN ${bookmarks.id} ELSE NULL END`
@@ -77,22 +69,10 @@ export class CollectionRepository {
       .leftJoin(bookmarks, eq(bookmarks.collectionId, collections.id))
       .groupBy(collections.id)
       .orderBy(desc(collections.id), desc(collections.createdAt))
-      .where(
-        and(
-          eq(collections.userId, userId),
-          cursor ? lt(collections.createdAt, cursor.createdAt) : undefined,
-          searchQuery ? like(collections.name, `%${searchQuery}%`) : undefined
-        )
-      )
-      .limit(limit);
-
-    const lastItem = items.length === limit ? items[items.length - 1] : null;
+      .where(and(eq(collections.userId, userId)));
 
     return {
       items,
-      nextCursor: encodeCursor(
-        lastItem ? { id: lastItem.id, createdAt: lastItem.createdAt } : null
-      ),
     };
   }
 

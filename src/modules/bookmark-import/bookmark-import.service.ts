@@ -310,12 +310,14 @@ export class BookmarkImportService {
     userId: User['id'],
     collectionMap: Map<string, Collection['id']>
   ) {
-    const collectionDtos = collections.map((collection) => ({
+    const collectionDtos = collections.map((collection, index) => ({
       name: collection.title,
       userId,
       parentId: collection.parentId
         ? collectionMap.get(collection.parentId) || null
         : null,
+      // TODO: Check if this really makes sense
+      displayOrder: index + 1,
     }));
 
     return await this.collectionRepository.bulkCreate(collectionDtos);

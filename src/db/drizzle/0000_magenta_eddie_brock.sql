@@ -1,5 +1,3 @@
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
-
 CREATE TABLE "bookmark_tags" (
 	"bookmark_id" uuid NOT NULL,
 	"tag_id" uuid NOT NULL,
@@ -12,8 +10,8 @@ CREATE TABLE "bookmarks" (
 	"url" text NOT NULL,
 	"title" varchar(255) NOT NULL,
 	"description" text,
-	"favicon_url" varchar(255) DEFAULT null,
-	"created_at" timestamp DEFAULT now(),
+	"favicon_id" uuid,
+	"created_at" timestamp with time zone NOT NULL,
 	"collection_id" uuid,
 	"deleted_at" timestamp with time zone DEFAULT null,
 	"is_metadata_pending" boolean NOT NULL,
@@ -25,7 +23,8 @@ CREATE TABLE "collections" (
 	"user_id" uuid NOT NULL,
 	"name" varchar(255) NOT NULL,
 	"parent_id" uuid,
-	"created_at" timestamp DEFAULT now(),
+	"display_order" integer NOT NULL,
+	"created_at" timestamp with time zone NOT NULL,
 	"tsv" "tsvector"
 );
 --> statement-breakpoint
@@ -35,7 +34,7 @@ CREATE TABLE "favicons" (
 	"hash" varchar(64) NOT NULL,
 	"r2_key" text NOT NULL,
 	"domain" varchar(253) NOT NULL,
-	"created_at" timestamp DEFAULT now() NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "favicons_hash_unique" UNIQUE("hash"),
 	CONSTRAINT "favicons_domain_unique" UNIQUE("domain")
 );
@@ -58,8 +57,7 @@ CREATE TABLE "users" (
 	"visible_name" varchar(255) NOT NULL,
 	"email" varchar(255) NOT NULL,
 	"password_hash" varchar(255) NOT NULL,
-	"created_at" timestamp DEFAULT now(),
-	"is_active" boolean DEFAULT true,
+	"created_at" timestamp with time zone,
 	"profile_picture" varchar(255),
 	CONSTRAINT "users_email_unique" UNIQUE("email")
 );
@@ -67,7 +65,8 @@ CREATE TABLE "users" (
 ALTER TABLE "bookmark_tags" ADD CONSTRAINT "bookmark_tags_bookmark_id_bookmarks_id_fk" FOREIGN KEY ("bookmark_id") REFERENCES "public"."bookmarks"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "bookmark_tags" ADD CONSTRAINT "bookmark_tags_tag_id_tags_id_fk" FOREIGN KEY ("tag_id") REFERENCES "public"."tags"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "bookmarks" ADD CONSTRAINT "bookmarks_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "bookmarks" ADD CONSTRAINT "bookmarks_collection_id_collections_id_fk" FOREIGN KEY ("collection_id") REFERENCES "public"."collections"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "bookmarks" ADD CONSTRAINT "bookmarks_favicon_id_favicons_id_fk" FOREIGN KEY ("favicon_id") REFERENCES "public"."favicons"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "bookmarks" ADD CONSTRAINT "bookmarks_collection_id_collections_id_fk" FOREIGN KEY ("collection_id") REFERENCES "public"."collections"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "collections" ADD CONSTRAINT "collections_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "collections" ADD CONSTRAINT "collections_parent_id_collections_id_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."collections"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sessions" ADD CONSTRAINT "sessions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -76,6 +75,7 @@ CREATE INDEX "bookmarks_tsv_index" ON "bookmarks" USING gin ("tsv");--> statemen
 CREATE INDEX "bookmark_user_id_index" ON "bookmarks" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "bookmark_collection_id_index" ON "bookmarks" USING btree ("collection_id");--> statement-breakpoint
 CREATE INDEX "bookmark_deleted_at_index" ON "bookmarks" USING btree ("deleted_at");--> statement-breakpoint
+CREATE INDEX "bookmark_favicon_id_index" ON "bookmarks" USING btree ("favicon_id");--> statement-breakpoint
 CREATE INDEX "collection_user_id_index" ON "collections" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "collections_tsv_index" ON "collections" USING gin ("tsv");--> statement-breakpoint
 CREATE UNIQUE INDEX "favicons_unique_hash_index" ON "favicons" USING btree ("hash");--> statement-breakpoint

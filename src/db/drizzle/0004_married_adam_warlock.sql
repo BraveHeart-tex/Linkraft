@@ -1,1 +1,0 @@
-ALTER TABLE "collections" ALTER COLUMN "created_at" SET NOT NULL;

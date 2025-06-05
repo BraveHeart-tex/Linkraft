@@ -1,5 +1,5 @@
 {
-  "id": "1881f041-87b9-4cd7-9eb3-8dec35a7d034",
+  "id": "46de47a7-c8f3-4e2b-8be3-051333e8f29c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -88,19 +88,17 @@
           "primaryKey": false,
           "notNull": false
         },
-        "favicon_url": {
-          "name": "favicon_url",
-          "type": "varchar(255)",
+        "favicon_id": {
+          "name": "favicon_id",
+          "type": "uuid",
           "primaryKey": false,
-          "notNull": false,
-          "default": "null"
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
+          "notNull": true
         },
         "collection_id": {
           "name": "collection_id",
@@ -188,6 +186,21 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "bookmark_favicon_id_index": {
+          "name": "bookmark_favicon_id_index",
+          "columns": [
+            {
+              "expression": "favicon_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -200,13 +213,22 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
+        "bookmarks_favicon_id_favicons_id_fk": {
+          "name": "bookmarks_favicon_id_favicons_id_fk",
+          "tableFrom": "bookmarks",
+          "tableTo": "favicons",
+          "columnsFrom": ["favicon_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
         "bookmarks_collection_id_collections_id_fk": {
           "name": "bookmarks_collection_id_collections_id_fk",
           "tableFrom": "bookmarks",
           "tableTo": "collections",
           "columnsFrom": ["collection_id"],
           "columnsTo": ["id"],
-          "onDelete": "cascade",
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -245,12 +267,17 @@
           "primaryKey": false,
           "notNull": false
         },
+        "display_order": {
+          "name": "display_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
+          "notNull": true
         },
         "tsv": {
           "name": "tsv",
@@ -354,7 +381,7 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -583,17 +610,9 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
-        },
-        "is_active": {
-          "name": "is_active",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": false,
-          "default": true
+          "notNull": false
         },
         "profile_picture": {
           "name": "profile_picture",

@@ -1,19 +1,13 @@
-import { CursorInput } from '@/common/validation/schemas/shared/cursor.schema';
 import { CollectionManagementService } from '@/modules/collection-management/collection-management.service';
-import { DEFAULT_PAGE_SIZE } from '@/modules/database/database.constants';
-import { CursorPipe } from '@/pipes/cursor.pipe';
 import {
   Body,
   Controller,
-  DefaultValuePipe,
   Delete,
   Get,
   HttpStatus,
   Param,
-  ParseIntPipe,
   Post,
   Put,
-  Query,
 } from '@nestjs/common';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { ResponseMessage } from 'src/common/decorators/response-message.decorator';
@@ -52,18 +46,9 @@ export class CollectionController {
 
   @Get('/')
   @ResponseStatus(HttpStatus.OK)
-  getCollectionsForUser(
-    @Query('cursor', new CursorPipe()) cursor: CursorInput,
-    @Query('pageSize', new DefaultValuePipe(DEFAULT_PAGE_SIZE), ParseIntPipe)
-    pageSize: number,
-    @Query('search', new DefaultValuePipe('')) searchQuery: string,
-    @CurrentUser() userSessionInfo: UserSessionContext
-  ) {
+  getCollectionsForUser(@CurrentUser() userSessionInfo: UserSessionContext) {
     return this.collectionService.getCollectionsForUser({
       userId: userSessionInfo.user.id,
-      cursor,
-      limit: pageSize,
-      searchQuery,
     });
   }
 

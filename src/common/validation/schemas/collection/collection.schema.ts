@@ -8,6 +8,11 @@ export const CreateCollectionSchema = z.object({
   displayOrder: z.number(),
 });
 
+export const RenameCollectionSchema = CreateCollectionSchema.pick({
+  name: true,
+});
+
 export const UpdateCollectionSchema = CreateCollectionSchema.optional();
 
 export type CreateCollectionDto = z.infer<typeof CreateCollectionSchema>;
+export type RenameCollectionInput = z.infer<typeof RenameCollectionSchema>;

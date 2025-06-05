@@ -15,10 +15,10 @@ import { ResponseStatus } from 'src/common/decorators/response-status.decorator'
 import {
   CreateCollectionDto,
   CreateCollectionSchema,
-  UpdateCollectionSchema,
+  RenameCollectionInput,
+  RenameCollectionSchema,
 } from 'src/common/validation/schemas/collection/collection.schema';
-import { Collection, CollectionInsertDto } from 'src/db/schema';
-import { ApiException } from 'src/exceptions/api.exception';
+import { Collection } from 'src/db/schema';
 import { zodPipe } from 'src/pipes/zod.pipe.factory';
 import { UserSessionContext } from '../auth/session.types';
 import { CollectionService } from './collection.service';
@@ -76,24 +76,17 @@ export class CollectionController {
     });
   }
 
-  @Put('/:id')
-  @ResponseMessage('Collection updated successfully')
+  @Put('/:id/rename')
+  @ResponseMessage('Collection renamed successfully')
   @ResponseStatus(HttpStatus.OK)
-  updateUserCollection(
-    @Body(zodPipe(UpdateCollectionSchema))
-    updateCollectionDto: Partial<CollectionInsertDto>,
+  renameUserCollection(
+    @Body(zodPipe(RenameCollectionSchema))
+    renameCollectionDto: RenameCollectionInput,
     @CurrentUser() userSessionInfo: UserSessionContext,
     @Param('id') collectionId: Collection['id']
   ) {
-    if (Object.keys(updateCollectionDto).length === 0) {
-      throw new ApiException(
-        'Please provide fields to update',
-        HttpStatus.BAD_REQUEST
-      );
-    }
-
-    return this.collectionService.updateUserCollection(
-      { ...updateCollectionDto, id: collectionId },
+    return this.collectionService.renameUserCollection(
+      { ...renameCollectionDto, id: collectionId },
       userSessionInfo.user.id
     );
   }

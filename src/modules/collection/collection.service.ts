@@ -1,3 +1,4 @@
+import { RenameCollectionInput } from '@/common/validation/schemas/collection/collection.schema';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { Collection, CollectionInsertDto, User } from 'src/db/schema';
 import { ApiException } from 'src/exceptions/api.exception';
@@ -14,12 +15,13 @@ export class CollectionService {
     return this.collectionRepository.create(data);
   }
 
-  updateUserCollection(
-    updatedData: Partial<CollectionInsertDto> & { id: Collection['id'] },
+  renameUserCollection(
+    input: RenameCollectionInput & { id: Collection['id'] },
     userId: User['id']
   ) {
-    return this.collectionRepository.update(updatedData, userId);
+    return this.collectionRepository.update(input, userId);
   }
+
   getCollectionsForUser(params: FindUserCollectionsParams) {
     return this.collectionRepository.getCollectionsForUser(params);
   }

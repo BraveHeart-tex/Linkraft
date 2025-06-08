@@ -278,21 +278,27 @@ export class BookmarkRepository {
       .where(and(eq(bookmarks.userId, userId), eq(bookmarks.id, bookmarkId)));
   }
 
-  softDeleteByCollectionIdAndUserId({
+  async softDeleteCollectionDescendants({
     collectionId,
     userId,
   }: CollectionOwnershipParams) {
-    return this.txHost.tx
-      .update(bookmarks)
-      .set({
-        deletedAt: getCurrentTimestamp(),
-      })
-      .where(
-        and(
-          eq(bookmarks.userId, userId),
-          eq(bookmarks.collectionId, collectionId)
-        )
-      );
+    await this.txHost.tx.execute(sql`
+      WITH RECURSIVE descendant_collections AS (
+        SELECT id
+        FROM collections
+        WHERE id = ${collectionId} AND user_id = ${userId}
+
+        UNION ALL
+
+        SELECT c.id
+        FROM collections c
+        INNER JOIN descendant_collections dc ON c.parent_id = dc.id
+        WHERE c.user_id = ${userId}
+      )
+      UPDATE bookmarks
+      SET deleted_at = ${getCurrentTimestamp()}
+      WHERE collection_id IN (SELECT id FROM descendant_collections)
+    `);
   }
 
   deleteByIdAndUserId({ bookmarkId, userId }: BookmarkOwnershipParams) {

@@ -13,7 +13,7 @@ export class CollectionManagementService {
 
   @Transactional()
   async deleteCollectionAndCleanup(params: CollectionOwnershipParams) {
-    await this.bookmarkService.softDeleteByCollectionIdAndUserId(params);
+    await this.bookmarkService.softDeleteCollectionDescendants(params);
     await this.collectionService.deleteUserCollection(params);
   }
 }

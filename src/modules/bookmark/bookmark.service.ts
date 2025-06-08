@@ -180,8 +180,8 @@ export class BookmarkService {
     });
   }
 
-  async softDeleteByCollectionIdAndUserId(params: CollectionOwnershipParams) {
-    await this.bookmarkRepository.softDeleteByCollectionIdAndUserId(params);
+  async softDeleteCollectionDescendants(params: CollectionOwnershipParams) {
+    await this.bookmarkRepository.softDeleteCollectionDescendants(params);
   }
 
   async permanentlyDeleteUserBookmark(params: BookmarkOwnershipParams) {

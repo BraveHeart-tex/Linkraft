@@ -8,6 +8,13 @@
       "when": 1749142699234,
       "tag": "0000_magenta_eddie_brock",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1749386259815,
+      "tag": "0001_great_swordsman",
+      "breakpoints": true
     }
   ]
 }

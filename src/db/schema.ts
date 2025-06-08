@@ -121,7 +121,7 @@ export const collections = pgTable(
       .references(() => users.id),
     name: varchar('name', { length: 255 }).notNull(),
     parentId: uuid('parent_id').references((): AnyPgColumn => collections.id, {
-      onDelete: 'set null',
+      onDelete: 'cascade',
     }),
     displayOrder: integer('display_order').notNull(),
     createdAt: customTimestamp('created_at')
